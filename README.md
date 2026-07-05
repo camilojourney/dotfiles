@@ -1,4 +1,4 @@
-# dotfiles-mac-nix
+# dotfiles
 
 This repo is the public, reusable core of my Mac setup.
 
@@ -49,8 +49,8 @@ The goal is to provide a reusable foundation that you can make your own.
 ### 1. Clone the repo
 
 ```bash
-git clone git@github.com:kunchenguid/dotfiles-mac-nix.git ~/github/dotfiles-mac-nix
-cd ~/github/dotfiles-mac-nix
+git clone git@github.com:camilojourney/dotfiles.git ~/github/dotfiles
+cd ~/github/dotfiles
 ```
 
 ### 2. Replace the placeholders
@@ -109,7 +109,7 @@ rebuild
 This alias is included in the shell config and expands to the repo path used in this guide:
 
 ```bash
-/run/current-system/sw/bin/darwin-rebuild switch --flake ~/github/dotfiles-mac-nix#mac
+/run/current-system/sw/bin/darwin-rebuild switch --flake ~/github/dotfiles#mac
 ```
 
 ## Testing
@@ -148,4 +148,5 @@ That is why this repo focuses on the reusable core.
 ## Related
 
 - Long-form write-up: [blog post](https://open.substack.com/pub/kunchenguid/p/how-i-built-a-reproducible-mac-setup?utm_campaign=post-expanded-share&utm_medium=web)
-- GitHub repo: <https://github.com/kunchenguid/dotfiles-mac-nix>
+- GitHub repo: <https://github.com/camilojourney/dotfiles>
+- Forked from: <https://github.com/kunchenguid/dotfiles-mac-nix>
