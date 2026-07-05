@@ -4,12 +4,13 @@ let
   dotfilesDir = "${config.home.homeDirectory}/github/dotfiles-mac-nix";
 in
 {
-  home.username = "yourname";
-  home.homeDirectory = "/Users/yourname";
+  home.username = "camiloslaptop";
+  home.homeDirectory = "/Users/camiloslaptop";
   home.stateVersion = "23.11";
   home.language.base = "en_US.UTF-8";
 
   home.packages = with pkgs; [
+    neovim
     git
     curl
     wget
@@ -35,7 +36,7 @@ in
   fonts.fontconfig.enable = true;
 
   home.sessionVariables = {
-    EDITOR = "vim";
+    EDITOR = "nvim";
   };
 
   programs.git = {
@@ -44,10 +45,10 @@ in
     signing.format = null;
     settings = {
       user = {
-        name = "Your Name";
-        email = "you@example.com";
+        name = "Camilo Martinez";
+        email = "juancamilomabe@gmail.com";
       };
-      core.editor = "vim";
+      core.editor = "nvim";
       color.ui = true;
       push.autoSetupRemote = true;
       pull.rebase = true;

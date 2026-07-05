@@ -8,14 +8,14 @@
 
   homebrew = {
     enable = true;
-    onActivation.cleanup = "zap";
+    onActivation.cleanup = "uninstall";  # was "zap": remove unlisted apps but keep their user data
     taps = [ ];
     brews = [
-      "autoconf"
+      "herdr"
     ];
     casks = [
       "wezterm"
-      "amethyst"
+      "claude-code"
     ];
   };
 
@@ -23,9 +23,9 @@
     starship
   ];
 
-  system.primaryUser = "yourname";
-  users.users.yourname = {
-    home = "/Users/yourname";
+  system.primaryUser = "camiloslaptop";
+  users.users.camiloslaptop = {
+    home = "/Users/camiloslaptop";
     shell = pkgs.zsh;
   };
 
@@ -56,7 +56,7 @@
 
   environment.systemPath = [
     "/run/current-system/sw/bin"
-    "/etc/profiles/per-user/yourname/bin"
+    "/etc/profiles/per-user/camiloslaptop/bin"
   ];
 
   system.stateVersion = 6;
