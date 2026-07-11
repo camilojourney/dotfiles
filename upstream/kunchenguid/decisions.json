@@ -1,0 +1,91 @@
+{
+  "$schema_note": "Tracks how we follow kunchenguid/dotfiles for wezterm/nvim/herdr. Live configs live in files/.config/; this file records policy so future upstream updates are reviewable, not blind overwrites.",
+  "upstream": {
+    "repo": "https://github.com/kunchenguid/dotfiles",
+    "ref": "main",
+    "config_root": "home/.config",
+    "last_checked_commit": "207ffe8d7f45baa4e8c20c16f77244d8eeb74b08",
+    "last_checked_at": "2026-07-11"
+  },
+  "policies": {
+    "track": "Stay aligned with upstream. Safe auto-apply when our file still matches the last adopted upstream hash.",
+    "extend": "Upstream is the base; we intentionally added local behavior. Never auto-apply; show a three-way style review (old upstream vs new upstream vs ours).",
+    "fork": "We own this file. Upstream diffs are inspiration only.",
+    "ignore": "Do not track."
+  },
+  "files": {
+    "wezterm/wezterm.lua": {
+      "policy": "track",
+      "adopted_upstream_sha256": "e22f021600bd0db5f1d971dd886dbdc1f01d6db32f5dbf9e99d7385a7fe376a5",
+      "our_additions": [],
+      "notes": "Minimal WezTerm: rose-pine-moon, Hack Nerd Font, blur, hide tab bar when one tab, RESIZE. No tmux - use WezTerm panes/tabs + herdr for agents."
+    },
+    "herdr/config.toml": {
+      "policy": "track",
+      "adopted_upstream_sha256": "810ff65ff9c109b5a9d9c817ca9eec15d51da29a5af371e2db7a184e13923009",
+      "our_additions": [],
+      "notes": "Agent multiplexer with tmux-like Ctrl+B prefix. mouse_capture=false pairs with nvim mouse=''."
+    },
+    "nvim/init.lua": {
+      "policy": "track",
+      "adopted_upstream_sha256": "769bb42e87c0395daf85b6c1da6901e903844a6a2188f3581eab0249edb66bb1",
+      "our_additions": [],
+      "notes": ""
+    },
+    "nvim/lazy-lock.json": {
+      "policy": "track",
+      "adopted_upstream_sha256": "dd6ec032b40e6e9889c9f8164a04d7f9dc1ed83347be78b39906c6e9b907e82c",
+      "our_additions": [],
+      "notes": "Pin plugin commits to his lockfile when adopting nvim plugin changes."
+    },
+    "nvim/lua/keys.lua": {
+      "policy": "track",
+      "adopted_upstream_sha256": "5167b4f52c888f77c9da950de033203a235f41b52497d914636ba3dcacdc2acd",
+      "our_additions": [],
+      "notes": "Esc saves; Ctrl-A select all; visual paste keeps clipboard."
+    },
+    "nvim/lua/plugin.lua": {
+      "policy": "track",
+      "adopted_upstream_sha256": "bc2989eb72533d0844655d129739943277fc6b0eec921d68494b4756584e9f69",
+      "our_additions": [],
+      "notes": ""
+    },
+    "nvim/lua/vim_config.lua": {
+      "policy": "track",
+      "adopted_upstream_sha256": "7e46e0f73c388dbc3358eef26a242446d6cda9545ddc89389944e39e8684abc4",
+      "our_additions": [],
+      "notes": "mouse='' required for herdr Escape behavior."
+    },
+    "nvim/lua/plugins/colorscheme.lua": {
+      "policy": "track",
+      "adopted_upstream_sha256": "b5e81cb0ce27adac573b6c070b627effe70f775fd0296fe00a175c62bbb6a020",
+      "our_additions": [],
+      "notes": "rose-pine moon + transparency on Darwin."
+    },
+    "nvim/lua/plugins/git.lua": {
+      "policy": "track",
+      "adopted_upstream_sha256": "0e43a3aa98ff578516820d9b57a327b44583320a7807555352dd692801c3cb77",
+      "our_additions": [],
+      "notes": ""
+    },
+    "nvim/lua/plugins/navigation.lua": {
+      "policy": "track",
+      "adopted_upstream_sha256": "c2c637abd0391f3b4bd8b6b373d77c5e8edcb81f3ded1374bd16a9a6ec5a0dd3",
+      "our_additions": [],
+      "notes": ""
+    },
+    "nvim/lua/plugins/ui.lua": {
+      "policy": "track",
+      "adopted_upstream_sha256": "a67968a1a52ce8e2eb49a251e2260ad6e2e04b99ae6353b51d25c20be9c2442d",
+      "our_additions": [],
+      "notes": ""
+    }
+  },
+  "howto_add_our_own": [
+    "Edit files/.config/... as usual (live configs).",
+    "Set that file's policy to 'extend' (or 'fork' if you no longer want upstream).",
+    "List what you added in our_additions so the next check explains the divergence.",
+    "Run: bash scripts/check-upstream-configs.sh",
+    "Review; only use --apply for clean 'track' files."
+  ]
+}

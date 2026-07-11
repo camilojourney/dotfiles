@@ -39,9 +39,12 @@ fi
 
 # Apply the Nix configuration. (DARWIN_REBUILD_BIN is overridable so tests
 # can point at a sandboxed binary instead of the real one.)
+# DARWIN_FLAKE_ATTR selects which darwinConfigurations.* to build
+# (default: camilo; use camilo-mini on the Mac Mini).
 : "${DARWIN_REBUILD_BIN:=/run/current-system/sw/bin/darwin-rebuild}"
+: "${DARWIN_FLAKE_ATTR:=camilo}"
 if [ -x "$DARWIN_REBUILD_BIN" ]; then
-  sudo "$DARWIN_REBUILD_BIN" switch --flake "$DOTFILES_DIR#mac"
+  sudo "$DARWIN_REBUILD_BIN" switch --flake "$DOTFILES_DIR#$DARWIN_FLAKE_ATTR"
 else
   # First activation: nix-darwin has never run, so darwin-rebuild doesn't
   # exist yet and has to be fetched via `nix run`. Resolve nix by absolute
@@ -50,7 +53,7 @@ else
   # already have them.
   NIX_BIN=$(command -v nix || echo /nix/var/nix/profiles/default/bin/nix)
   sudo "$NIX_BIN" --extra-experimental-features "nix-command flakes" \
-    run nix-darwin/master#darwin-rebuild -- switch --flake "$DOTFILES_DIR#mac"
+    run nix-darwin/master#darwin-rebuild -- switch --flake "$DOTFILES_DIR#$DARWIN_FLAKE_ATTR"
 fi
 
 # Install nvm and a default Node.js if missing

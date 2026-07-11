@@ -1,0 +1,11 @@
+herdr/config.toml
+nvim/init.lua
+nvim/lazy-lock.json
+nvim/lua/keys.lua
+nvim/lua/plugin.lua
+nvim/lua/plugins/colorscheme.lua
+nvim/lua/plugins/git.lua
+nvim/lua/plugins/navigation.lua
+nvim/lua/plugins/ui.lua
+nvim/lua/vim_config.lua
+wezterm/wezterm.lua

@@ -12,16 +12,39 @@
     taps = [ ];
     brews = [
       "herdr"
+      "espeak-ng"
+      "fswatch" # used by invoz justfile watch loops
+      "gh"
+      "just" # invoz (and other) Justfiles
+      "opencode"
+      "mas" # Mac App Store CLI (Dato, etc.)
     ];
     casks = [
       "wezterm"
       "claude-code"
+      "claude"
+      "codex"
+      "font-hack-nerd-font"
+      "gcloud-cli"
+      "google-chrome"
+      "chatgpt"
+      "cursor"
+      "deepl"
+      "grammarly-desktop"
+      "mullvad-vpn"
+      "nomachine"
+      "obsidian"
+      "tailscale-app"
+      "whatsapp"
     ];
+    # App Store apps (not available as Homebrew casks).
+    masApps = {
+      Dato = 1470584107;
+    };
   };
 
-  environment.systemPackages = with pkgs; [
-    starship
-  ];
+  # starship comes from Home Manager (programs.starship in shared/user.nix)
+  environment.systemPackages = [ ];
 
   system.primaryUser = "camiloslaptop";
   users.users.camiloslaptop = {
@@ -47,6 +70,7 @@
     finder = {
       AppleShowAllExtensions = true;
       ShowPathbar = true;
+      FXPreferredViewStyle = "clmv"; # columns view by default
     };
 
     trackpad = {

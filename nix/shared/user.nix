@@ -16,6 +16,7 @@ in
     wget
     jq
     fd
+    fzf
     fastfetch
     ripgrep
     killall
@@ -56,46 +57,17 @@ in
     };
   };
 
+  # Lean prompt (aligned with kunchenguid): directory + git + duration + ❯
   programs.starship = {
     enable = true;
     settings = {
-      command_timeout = 1000;
       add_newline = false;
-      format = "$username$hostname$directory$git_branch$git_state$git_status$cmd_duration$line_break$character";
-
-      directory.style = "blue";
-
+      format = "$directory$git_branch$git_status$cmd_duration$line_break$character";
       character = {
         success_symbol = "[❯](purple)";
         error_symbol = "[❯](red)";
-        vimcmd_symbol = "[❮](green)";
       };
-
-      git_branch = {
-        format = "[$branch]($style)";
-        style = "bright-black";
-      };
-
-      git_status = {
-        format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)](218) ($ahead_behind$stashed)]($style)";
-        style = "cyan";
-        stashed = "≡";
-      };
-
-      git_state = {
-        format = "\\([$state( $progress_current/$progress_total)]($style)\\) ";
-        style = "bright-black";
-      };
-
-      cmd_duration = {
-        format = "[$duration]($style) ";
-        style = "yellow";
-      };
-
-      python = {
-        format = "[$virtualenv]($style) ";
-        style = "bright-black";
-      };
+      cmd_duration.format = "[$duration]($style) ";
     };
   };
 
@@ -115,15 +87,23 @@ in
       reset = "git reset --soft HEAD^";
       rebasem = "git rebase -i main";
       rebasemst = "git rebase -i master";
-      rebuild = "/run/current-system/sw/bin/darwin-rebuild switch --flake ~/github/dotfiles#mac";
+      # High-agency agent shortcuts (same idea as Kun's home.nix)
+      cc = "claude --dangerously-skip-permissions";
+      co = "codex --full-auto";
     };
     initContent = ''
       bindkey '^f' autosuggest-accept
     '';
   };
 
+  # Edit-in-place: repo files stay canonical; home paths are symlinks.
   home.file = {
     ".config/wezterm".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/wezterm";
     ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/nvim";
+    ".config/herdr".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/herdr";
+    ".claude/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.claude/settings.json";
+    ".claude/CLAUDE.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
+    ".codex/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
+    ".config/opencode/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
   };
 }

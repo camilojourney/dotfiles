@@ -37,12 +37,69 @@ The goal is to provide a reusable foundation that you can make your own.
 
 - `setup/mac.sh` - bootstrap a fresh Mac
 - `setup/README.md` - bootstrap usage and testing notes
-- `flake.nix` - top-level Nix wiring
-- `nix/host.nix` - machine-level macOS config (nix-darwin)
-- `nix/user.nix` - user environment: packages, shell, git, fonts, dotfiles (Home Manager)
-- `files/.config/wezterm/wezterm.lua` - example app config linked into place
+- `flake.nix` - top-level Nix wiring (`#camilo` and `#camilo-mini`)
+- `nix/shared/` - foundation host + user config shared by both machines
+- `nix/camilo/` - main laptop extras (Camo, Logi Options+, Stream Deck, OBS, Wispr) + `rebuild` alias
+- `nix/camilo-mini/` - Mini overlay (foundation only + `rebuild` alias)
+- `files/.config/` - live WezTerm / Neovim / herdr configs (symlinked by Home Manager)
+- `upstream/kunchenguid/` - decisions + snapshot for tracking [Kun's configs](https://github.com/kunchenguid/dotfiles)
+- `scripts/check-upstream-configs.sh` - check / safely adopt his updates
 - `tests/` - regression tests for the bootstrap script
 - `blog.md` - local copy of the [blog post](https://open.substack.com/pub/kunchenguid/p/how-i-built-a-reproducible-mac-setup?utm_campaign=post-expanded-share&utm_medium=web)
+
+## Tracking Kun's config updates (wezterm / nvim / herdr)
+
+We treat [kunchenguid/dotfiles](https://github.com/kunchenguid/dotfiles) as the expert baseline for terminal, editor, and agent multiplexer configs. Our live copies live under `files/.config/`. We keep the freedom to add our own changes without losing the ability to pull his next improvements.
+
+### How it works
+
+| Piece | Role |
+|-------|------|
+| `files/.config/{wezterm,nvim,herdr}` | What the machine actually uses |
+| `upstream/kunchenguid/snapshot/` | Last fetched copy of his files (for diffs) |
+| `upstream/kunchenguid/decisions.json` | Per-file policy + hash of the upstream version we last adopted + notes about our additions |
+
+Policies in `decisions.json`:
+
+- **`track`** - stay with him. Auto-apply is safe when our file still matches the last adopted hash.
+- **`extend`** - his base + our additions (list them in `our_additions`). Never auto-overwrite; review when he changes.
+- **`fork`** - we own it; his diffs are inspiration only.
+- **`ignore`** - stop watching.
+
+### Routine (do this when he updates, or monthly)
+
+```bash
+bash scripts/check-upstream-configs.sh
+```
+
+Read the STATUS column:
+
+- `IN_SYNC` - nothing to do
+- `UPSTREAM_UPDATE` - he changed it; we did not customize → safe to adopt
+- `EXTENDED` - we customized; upstream unchanged
+- `CONFLICT` - both changed → open a diff and merge by hand
+
+Adopt only the safe track updates:
+
+```bash
+bash scripts/check-upstream-configs.sh --apply
+```
+
+Inspect a file before applying:
+
+```bash
+diff -u files/.config/wezterm/wezterm.lua upstream/kunchenguid/snapshot/wezterm/wezterm.lua
+```
+
+### Adding our own changes
+
+1. Edit `files/.config/...` as usual.
+2. In `upstream/kunchenguid/decisions.json`, set that file's `policy` to `extend` (or `fork`).
+3. Record what you added in `our_additions` (short bullets).
+4. Re-run the check script so the next update surfaces as `EXTENDED` / `CONFLICT` instead of a blind overwrite.
+
+Example: if you add WezTerm `Cmd+D` splits on top of his minimal config, mark `wezterm/wezterm.lua` as `extend` and put `"Cmd+D / Cmd+Shift+D pane splits"` in `our_additions`.
+
 
 ## How to use it
 
@@ -82,6 +139,12 @@ This repo is primarily set up for Apple Silicon Macs. If you are on Intel, make 
 bash setup/mac.sh
 ```
 
+On the Mac Mini, select that host instead:
+
+```bash
+DARWIN_FLAKE_ATTR=camilo-mini bash setup/mac.sh
+```
+
 The script will:
 
 - install [Determinate Nix Installer](https://determinate.systems/nix-installer/) if needed
@@ -93,7 +156,8 @@ On a fresh machine, the bootstrap is designed to complete in one run.
 After the Determinate installer runs, the script sources the Nix daemon profile into the current shell and uses an absolute `nix` path for the first `nix-darwin` activation, so you should not need a second shell or a second setup run.
 
 The `NIX_DAEMON_PROFILE` and `DARWIN_REBUILD_BIN` environment variables are only there so the regression test can point the script at sandboxed paths.
-Normal use should leave them unset.
+`DARWIN_FLAKE_ATTR` selects which flake output to apply (`camilo` by default, or `camilo-mini`).
+Normal use should leave the first two unset.
 
 ## How I manage changes later
 
@@ -106,10 +170,10 @@ After the initial bootstrap, the usual workflow is:
 rebuild
 ```
 
-This alias is included in the shell config and expands to the repo path used in this guide:
+This alias is included in the shell config and expands to the host-specific flake attr (`#camilo` on the laptop, `#camilo-mini` on the Mini):
 
 ```bash
-/run/current-system/sw/bin/darwin-rebuild switch --flake ~/github/dotfiles#mac
+/run/current-system/sw/bin/darwin-rebuild switch --flake ~/github/dotfiles#camilo
 ```
 
 ## Testing

@@ -193,7 +193,15 @@ make_fixture_repo() {
     -e 's#/Users/yourname#/Users/testuser#g' \
     -e 's/Your Name/Test User/g' \
     -e 's/you@example\.com/test@example.com/g' \
-    "$dest/flake.nix" "$dest"/nix/*.nix
+    "$dest/flake.nix"
+  find "$dest/nix" -name '*.nix' -print0 | while IFS= read -r -d '' nix_file; do
+    sed -i.bak \
+      -e 's/yourname/testuser/g' \
+      -e 's#/Users/yourname#/Users/testuser#g' \
+      -e 's/Your Name/Test User/g' \
+      -e 's/you@example\.com/test@example.com/g' \
+      "$nix_file"
+  done
   find "$dest" -name '*.bak' -delete
 }
 
@@ -427,6 +435,8 @@ EOF
       "$name: hardened first-activation invocation ran exactly once" && pass "$name: hardened first-activation invocation ran exactly once"
     assert_contains "$invocations" "extra-experimental-features nix-command flakes" \
       "$name: experimental features enabled for first activation" && pass "$name: experimental features enabled for first activation"
+    assert_contains "$invocations" "#camilo" \
+      "$name: default flake attr is camilo" && pass "$name: default flake attr is camilo"
     assert_not_contains "$invocations" "darwin-rebuild switch --flake" \
       "$name: already-installed fast path not used" && pass "$name: already-installed fast path not used"
   else
@@ -434,6 +444,8 @@ EOF
       "$name: installer never runs when nix is already present" && pass "$name: installer never runs when nix is already present"
     assert_line_count "$invocations" "darwin-rebuild switch --flake" 1 \
       "$name: already-installed fast path ran exactly once" && pass "$name: already-installed fast path ran exactly once"
+    assert_contains "$invocations" "#camilo" \
+      "$name: default flake attr is camilo" && pass "$name: default flake attr is camilo"
     assert_not_contains "$invocations" "run nix-darwin/master#darwin-rebuild" \
       "$name: first-activation path not used" && pass "$name: first-activation path not used"
   fi

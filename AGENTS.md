@@ -18,3 +18,17 @@ Run `bash tests/mac_setup_test.sh`. It simulates a fresh Mac by copying the repo
 
 Each scenario sandboxes `HOME`, re-homes `NVM_DIR` under that temp root, and unsets inherited `BASH_ENV`/`ENV` before invoking `setup/mac.sh` (an inherited absolute `NVM_DIR` from hm-session-vars would otherwise leak stub writes).
 Harness and stub writes call `assert_path_under_sandbox` / `guard_write_path` so a future leak through parent traversal, symlink escape, or another absolute write path fails the test instead of mutating the host.
+
+## Adopting upstream expert patterns (kunchenguid/dotfiles)
+
+This repo tracks https://github.com/kunchenguid/dotfiles as the reference for WezTerm, Neovim, and herdr.
+
+**Do not blind-copy.** Use the check script and decisions file:
+
+1. `bash scripts/check-upstream-configs.sh` - fetch his latest into `upstream/kunchenguid/snapshot/` and report status vs `files/.config/`.
+2. Read `upstream/kunchenguid/decisions.json` - each file has policy `track` | `extend` | `fork` | `ignore`, plus `our_additions` and the last adopted upstream hash.
+3. Explain why a delta exists before adopting.
+4. `bash scripts/check-upstream-configs.sh --apply` only auto-updates clean `track` files (ours still matches last adopted hash). `extend` / `fork` / conflicts stay manual.
+5. Keep our multi-host Nix layout (`#camilo` / `#camilo-mini`); this tracker is only for `files/.config/{wezterm,nvim,herdr}`.
+
+Path mapping: his `home/.config/X` → our `files/.config/X`.
