@@ -6,7 +6,13 @@
     "elgato-stream-deck"
     "obs"
     "wispr-flow"
+    "whatsapp"
+    "deepl"
   ];
+
+  homebrew.masApps = {
+    Dato = 1470584107;
+  };
 
   # Finder is always leftmost (macOS); Trash is always rightmost.
   system.defaults.dock = {

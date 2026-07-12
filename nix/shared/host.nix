@@ -31,17 +31,14 @@
       "google-chrome"
       "chatgpt"
       "cursor"
-      "deepl"
       # grammarly-desktop: install from site - brew adopt fails on xattr
       "mullvad-vpn"
       # nomachine: install manually when needed - brew download/pkg often fails mid-switch
       "obsidian"
       "tailscale-app"
-      "whatsapp"
     ];
     # App Store apps (not available as Homebrew casks).
     masApps = {
-      Dato = 1470584107;
       Xcode = 497799835;
     };
   };

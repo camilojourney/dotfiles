@@ -429,7 +429,7 @@ EOF
       "$name: canonical Determinate URL requested" && pass "$name: canonical Determinate URL requested"
     assert_not_contains "$invocations" "install.determinate.sh" \
       "$name: wrong .sh domain never requested" && pass "$name: wrong .sh domain never requested"
-    assert_contains "$invocations" "sh -s -- install" \
+    assert_contains "$invocations" "sh -s -- install --no-confirm" \
       "$name: installer invoked" && pass "$name: installer invoked"
     assert_line_count "$invocations" "nix .*run nix-darwin/master#darwin-rebuild -- switch" 1 \
       "$name: hardened first-activation invocation ran exactly once" && pass "$name: hardened first-activation invocation ran exactly once"

@@ -15,7 +15,7 @@ fi
 
 # Install Nix via Determinate if missing
 if ! command -v nix &> /dev/null; then
-  curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+  curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm
 
   # The installer wires Nix into new shells, but this script is still running
   # in the shell that started before Nix existed. Source the daemon profile
