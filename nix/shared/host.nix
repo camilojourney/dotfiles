@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, userName, homeDirectory, ... }:
 
 {
   # If you use Determinate Nix Installer (recommended), let it manage Nix itself.
@@ -49,10 +49,12 @@
   # starship comes from Home Manager (programs.starship in shared/user.nix)
   environment.systemPackages = [ ];
 
-  system.primaryUser = "camiloslaptop";
-  users.users.camiloslaptop = {
-    home = "/Users/camiloslaptop";
-    shell = pkgs.zsh;
+  system.primaryUser = userName;
+  users.users = {
+    ${userName} = {
+      home = homeDirectory;
+      shell = pkgs.zsh;
+    };
   };
 
   system.defaults = {
@@ -85,7 +87,7 @@
     "/opt/homebrew/bin"
     "/opt/homebrew/sbin"
     "/run/current-system/sw/bin"
-    "/etc/profiles/per-user/camiloslaptop/bin"
+    "/etc/profiles/per-user/${userName}/bin"
   ];
 
   system.stateVersion = 6;

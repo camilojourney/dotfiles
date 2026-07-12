@@ -1,11 +1,11 @@
-{ config, pkgs, ... }:
+{ config, pkgs, userName, homeDirectory, ... }:
 
 let
   dotfilesDir = "${config.home.homeDirectory}/github/dotfiles";
 in
 {
-  home.username = "camiloslaptop";
-  home.homeDirectory = "/Users/camiloslaptop";
+  home.username = userName;
+  home.homeDirectory = homeDirectory;
   home.stateVersion = "23.11";
   home.language.base = "en_US.UTF-8";
 

@@ -15,9 +15,12 @@
 
   outputs = { nixpkgs, nix-darwin, home-manager, ... }:
   let
-    mkDarwin = { hostModule, userModule }:
+    mkDarwin = { hostModule, userModule, userName, homeDirectory }:
       nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
+        specialArgs = {
+          inherit userName homeDirectory;
+        };
         modules = [
           ./nix/shared/host.nix
           hostModule
@@ -26,8 +29,13 @@
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.backupFileExtension = "backup";
-            home-manager.users.camiloslaptop = {
-              imports = [ ./nix/shared/user.nix userModule ];
+            home-manager.extraSpecialArgs = {
+              inherit userName homeDirectory;
+            };
+            home-manager.users = {
+              ${userName} = {
+                imports = [ ./nix/shared/user.nix userModule ];
+              };
             };
           }
         ];
@@ -36,10 +44,14 @@
     darwinConfigurations.camilo = mkDarwin {
       hostModule = ./nix/camilo/host.nix;
       userModule = ./nix/camilo/user.nix;
+      userName = "camiloslaptop";
+      homeDirectory = "/Users/camiloslaptop";
     };
     darwinConfigurations.camilo-mini = mkDarwin {
       hostModule = ./nix/camilo-mini/host.nix;
       userModule = ./nix/camilo-mini/user.nix;
+      userName = "mini";
+      homeDirectory = "/Users/mini";
     };
   };
 }
