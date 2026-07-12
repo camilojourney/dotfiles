@@ -8,6 +8,7 @@
 
   homebrew = {
     enable = true;
+    enableZshIntegration = true; # puts /opt/homebrew/bin on PATH (claude, codex, etc.)
     onActivation.cleanup = "uninstall";  # was "zap": remove unlisted apps but keep their user data
     taps = [ ];
     brews = [
@@ -18,6 +19,7 @@
       "just" # invoz (and other) Justfiles
       "opencode"
       "mas" # Mac App Store CLI (Dato, etc.)
+      "starship" # brew binary; nixpkgs starship currently fails to link on Darwin
     ];
     casks = [
       "wezterm"
@@ -30,9 +32,9 @@
       "chatgpt"
       "cursor"
       "deepl"
-      "grammarly-desktop"
+      # grammarly-desktop: install from site - brew adopt fails on xattr
       "mullvad-vpn"
-      "nomachine"
+      # nomachine: install manually when needed - brew download/pkg often fails mid-switch
       "obsidian"
       "tailscale-app"
       "whatsapp"
@@ -40,6 +42,7 @@
     # App Store apps (not available as Homebrew casks).
     masApps = {
       Dato = 1470584107;
+      Xcode = 497799835;
     };
   };
 
@@ -79,6 +82,8 @@
   };
 
   environment.systemPath = [
+    "/opt/homebrew/bin"
+    "/opt/homebrew/sbin"
     "/run/current-system/sw/bin"
     "/etc/profiles/per-user/camiloslaptop/bin"
   ];

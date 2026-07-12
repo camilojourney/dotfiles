@@ -58,8 +58,13 @@ in
   };
 
   # Lean prompt (aligned with kunchenguid): directory + git + duration + ❯
+  # Package comes from Homebrew - nixpkgs starship fails to link on current
+  # aarch64-darwin (ld64 crash in mac-notification-sys).
   programs.starship = {
     enable = true;
+    package = pkgs.writeShellScriptBin "starship" ''
+      exec /opt/homebrew/bin/starship "$@"
+    '';
     settings = {
       add_newline = false;
       format = "$directory$git_branch$git_status$cmd_duration$line_break$character";
@@ -93,6 +98,10 @@ in
     };
     initContent = ''
       bindkey '^f' autosuggest-accept
+      # Ensure Homebrew CLIs (claude, codex, brew) are on PATH in GUI terminals.
+      if [[ -x /opt/homebrew/bin/brew ]]; then
+        eval "$(/opt/homebrew/bin/brew shellenv zsh)"
+      fi
     '';
   };
 

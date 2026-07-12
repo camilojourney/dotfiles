@@ -10,4 +10,16 @@ config.macos_window_background_blur = 50
 config.hide_tab_bar_if_only_one_tab = true
 config.window_decorations = "RESIZE"
 
+config.keys = {
+  -- Cmd+D: split right | Cmd+Shift+D: split bottom
+  { key = "d", mods = "CMD", action = wezterm.action.SplitHorizontal { domain = "CurrentPaneDomain" } },
+  { key = "d", mods = "CMD|SHIFT", action = wezterm.action.SplitVertical { domain = "CurrentPaneDomain" } },
+  -- Cmd+W: close pane; if only one pane left, closes the tab
+  { key = "w", mods = "CMD", action = wezterm.action.CloseCurrentPane { confirm = false } },
+  { key = "LeftArrow", mods = "CMD|SHIFT", action = wezterm.action.ActivatePaneDirection "Left" },
+  { key = "RightArrow", mods = "CMD|SHIFT", action = wezterm.action.ActivatePaneDirection "Right" },
+  { key = "UpArrow", mods = "CMD|SHIFT", action = wezterm.action.ActivatePaneDirection "Up" },
+  { key = "DownArrow", mods = "CMD|SHIFT", action = wezterm.action.ActivatePaneDirection "Down" },
+}
+
 return config

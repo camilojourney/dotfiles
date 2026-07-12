@@ -1,5 +1,5 @@
 {
   programs.zsh.shellAliases = {
-    rebuild = "/run/current-system/sw/bin/darwin-rebuild switch --flake ~/github/dotfiles#camilo";
+    rebuild = "sudo /run/current-system/sw/bin/darwin-rebuild switch --flake ~/github/dotfiles#camilo";
   };
 }
