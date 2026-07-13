@@ -13,7 +13,13 @@ goto             = "prefix+g"
 copy_mode  = "prefix+y"  # herdr's copy-mode entry key; copy-mode's own internal keys (v/space select, y/Enter copy, q/Esc cancel) aren't configurable
 
 [ui]
-# Disable Herdr's host mouse capture so a trackpad event can't tailgate a held
-# Escape and get it swallowed in the pane (e.g. Neovim stuck in insert mode).
-# Only effective together with the pane keeping mouse off (see nvim mouse below).
-mouse_capture = false
+# Capture host mouse input for Herdr's mouse UI.
+mouse_capture = true
+
+[theme]
+name = "terminal"
+auto_switch = false
+
+[experimental]
+pane_history = false
+switch_ascii_input_source_in_prefix = false

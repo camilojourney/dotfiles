@@ -9,7 +9,10 @@
   homebrew = {
     enable = true;
     enableZshIntegration = true; # puts /opt/homebrew/bin on PATH (claude, codex, etc.)
-    onActivation.cleanup = "uninstall";  # was "zap": remove unlisted apps but keep their user data
+    # Keep activation focused on declared installs. This machine has existing
+    # third-party taps; cleanup can fail on Homebrew tap trust before core tools
+    # like herdr/starship get installed.
+    onActivation.cleanup = "none";
     taps = [ ];
     brews = [
       "herdr"
@@ -23,9 +26,10 @@
     ];
     casks = [
       "wezterm"
-      "claude-code"
       "claude"
-      "codex"
+      # claude-code and codex CLIs are already installed globally under
+      # /opt/homebrew/lib/node_modules; their Brew casks conflict on
+      # /opt/homebrew/bin/{claude,codex}.
       "font-hack-nerd-font"
       "gcloud-cli"
       "google-chrome"
@@ -35,12 +39,13 @@
       "mullvad-vpn"
       # nomachine: install manually when needed - brew download/pkg often fails mid-switch
       "obsidian"
-      "tailscale-app"
+      # tailscale-app: installed/running manually; Brew pkg adoption currently
+      # fails during upgrade scripts, so do not block system activation on it.
     ];
-    # App Store apps (not available as Homebrew casks).
-    masApps = {
-      Xcode = 497799835;
-    };
+    # App Store apps are intentionally host-specific. Xcode is already present
+    # on the Mini, and `mas` currently cannot detect indexed App Store apps
+    # there, so managing it here blocks activation.
+    masApps = { };
   };
 
   # starship comes from Home Manager (programs.starship in shared/user.nix)
