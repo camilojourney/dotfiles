@@ -1,19 +1,32 @@
+onboarding = false
 [keys]
 prefix = "ctrl+b"
+workspace_picker = "prefix+w"
+goto = "prefix+g"
+toggle_sidebar = "prefix+b"
+new_tab = "prefix+c"
+close_tab = "prefix+shift+x"
+close_pane = "prefix+x"
 focus_pane_left  = "prefix+h"
 focus_pane_down  = "prefix+j"
 focus_pane_up    = "prefix+k"
 focus_pane_right = "prefix+l"
-split_horizontal = "prefix+double_quote"
-split_vertical    = "prefix+percent"
-new_tab   = "prefix+c"
-close_tab = "prefix+ampersand"
-workspace_picker = "prefix+w"
-goto             = "prefix+g"
+cycle_pane_next = "prefix+tab"
+cycle_pane_previous = "prefix+shift+tab"
+split_vertical = "prefix+v"
+split_horizontal = "prefix+minus"
+resize_mode = "prefix+r"
 copy_mode  = "prefix+y"  # herdr's copy-mode entry key; copy-mode's own internal keys (v/space select, y/Enter copy, q/Esc cancel) aren't configurable
+navigate_workspace_up = "up"
+navigate_workspace_down = "down"
+navigate_pane_left = "h"
+navigate_pane_down = "j"
+navigate_pane_up = "k"
+navigate_pane_right = "l"
 
 [ui]
-# Disable Herdr's host mouse capture so a trackpad event can't tailgate a held
-# Escape and get it swallowed in the pane (e.g. Neovim stuck in insert mode).
-# Only effective together with the pane keeping mouse off (see nvim mouse below).
-mouse_capture = false
+# Enable Herdr's mouse-first UI: sidebar clicks, pane focus, drag resize, and
+# context menus. Set false only if pane apps need normal terminal mouse handling.
+mouse_capture = true
+prompt_new_tab_name = false
+agent_panel_sort = "spaces"

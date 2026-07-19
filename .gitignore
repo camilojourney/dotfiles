@@ -1,2 +1,7 @@
 # no-mistakes pipeline evidence should never be committed to this public repo
 .no-mistakes/
+
+# Herdr runtime state (lives under files/.config/herdr via HM symlink)
+files/.config/herdr/*.log
+files/.config/herdr/*.sock
+files/.config/herdr/session.json

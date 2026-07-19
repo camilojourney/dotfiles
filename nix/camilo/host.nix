@@ -8,6 +8,8 @@
     "wispr-flow"
     "whatsapp"
     "deepl"
+    "notion"
+
   ];
 
   homebrew.masApps = {

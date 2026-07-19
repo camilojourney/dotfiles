@@ -23,6 +23,7 @@
     ];
     casks = [
       "wezterm"
+      "antigravity-cli"
       "claude-code"
       "claude"
       "codex"
@@ -31,9 +32,9 @@
       "google-chrome"
       "chatgpt"
       "cursor"
-      # grammarly-desktop: install from site - brew adopt fails on xattr
+      "grammarly-desktop"
       "mullvad-vpn"
-      # nomachine: install manually when needed - brew download/pkg often fails mid-switch
+      "nomachine"
       "obsidian"
       "tailscale-app"
     ];
@@ -57,6 +58,7 @@
   system.defaults = {
     NSGlobalDomain = {
       AppleInterfaceStyle = "Dark";
+      AppleInterfaceStyleSwitchesAutomatically = false;
       KeyRepeat = 2;
       InitialKeyRepeat = 15;
       "com.apple.swipescrolldirection" = false;
