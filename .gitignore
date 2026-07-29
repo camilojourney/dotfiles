@@ -1,6 +1,9 @@
 # no-mistakes pipeline evidence should never be committed to this public repo
 .no-mistakes/
 
+# Graphify outputs are generated per checkout.
+graphify-out/
+
 # Herdr runtime state (lives under files/.config/herdr via HM symlink)
 files/.config/herdr/*.log
 files/.config/herdr/*.sock

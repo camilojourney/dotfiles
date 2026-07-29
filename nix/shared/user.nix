@@ -39,6 +39,9 @@ in
   home.sessionVariables = {
     EDITOR = "nvim";
   };
+  home.sessionPath = [
+    "${config.home.homeDirectory}/.local/bin"
+  ];
 
   programs.git = {
     enable = true;
