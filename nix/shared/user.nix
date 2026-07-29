@@ -110,9 +110,44 @@ in
     ".config/wezterm".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/wezterm";
     ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/nvim";
     ".config/herdr".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/herdr";
+    ".config/cursor-launchers/config.sh.example".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/cursor-launchers/config.sh.example";
+    "bin/cursor-go".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/scripts/cursor-launchers/cursor-go";
+    "bin/cursor-go-bg".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/scripts/cursor-launchers/cursor-go-bg";
     ".claude/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.claude/settings.json";
     ".claude/CLAUDE.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
     ".codex/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
     ".config/opencode/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
+    ".claude/skills/graphify" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/skills/graphify";
+      force = true;
+    };
+    ".codex/skills/graphify" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/skills/graphify";
+      force = true;
+    };
+    ".cursor/skills/graphify" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/skills/graphify";
+      force = true;
+    };
+    ".agents/skills/graphify" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/skills/graphify";
+      force = true;
+    };
+    ".gemini/skills/graphify" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/skills/graphify";
+      force = true;
+    };
+    ".gemini/antigravity/skills/graphify" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/skills/graphify";
+      force = true;
+    };
+    ".gemini/antigravity-cli/skills/graphify" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/skills/graphify";
+      force = true;
+    };
+    ".gemini/config/skills/graphify" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/skills/graphify";
+      force = true;
+    };
   };
 }

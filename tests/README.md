@@ -4,6 +4,8 @@ Run all tests with:
 
 ```bash
 bash tests/mac_setup_test.sh
+bash tests/graphify_sync_test.sh
+bash tests/cursor_launcher_test.sh
 ```
 
 `mac_setup_test.sh` is a regression test for `setup/mac.sh`.
@@ -19,3 +21,11 @@ It covers two scenarios:
 - an already-bootstrapped machine, where the existing `darwin-rebuild switch` fast path is used instead
 
 See `AGENTS.md` for the fresh-machine single-pass contract these tests protect.
+
+`graphify_sync_test.sh` verifies the vendored Graphify skill and Home Manager
+link declarations through `scripts/verify-graphify-sync.sh`. It uses a fake
+home directory so installed symlink checks never read or write the real home.
+
+`cursor_launcher_test.sh` verifies the Cursor launcher scripts with stubbed
+macOS and Cursor commands, including the Job Tracker argv and no-newline
+manifest handling.

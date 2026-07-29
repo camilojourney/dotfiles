@@ -29,6 +29,7 @@
       "codex"
       "font-hack-nerd-font"
       "gcloud-cli"
+      "grok-build"
       "google-chrome"
       "chatgpt"
       "cursor"

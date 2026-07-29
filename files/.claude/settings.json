@@ -1,4 +1,5 @@
 {
+  "model": "opus",
   "hooks": {
     "SessionStart": [
       {
@@ -10,6 +11,26 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "chrome-devtools-axi",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "lavish-axi",
+            "timeout": 10
+          }
+        ]
       }
     ]
   },
@@ -18,5 +39,6 @@
     "command": "input=$(cat); model=$(echo \"$input\" | jq -r '.model.display_name'); used=$(echo \"$input\" | jq -r '.context_window.used_percentage // empty'); if [ -n \"$used\" ]; then printf \"%s | ctx: %.0f%% used\" \"$model\" \"$used\"; else printf \"%s\" \"$model\"; fi"
   },
   "theme": "dark-ansi",
-  "model": "claude-fable-5[1m]"
+  "agentPushNotifEnabled": true,
+  "skipDangerousModePermissionPrompt": true
 }
