@@ -47,6 +47,8 @@ The goal is to provide a reusable foundation that you can make your own.
 - `tests/` - regression tests for the bootstrap script
 - `blog.md` - local copy of the [blog post](https://open.substack.com/pub/kunchenguid/p/how-i-built-a-reproducible-mac-setup?utm_campaign=post-expanded-share&utm_medium=web)
 
+Generated `graphify-out/` directories are local to each checkout and ignored by Git.
+
 ## Tracking Kun's config updates (wezterm / nvim / herdr)
 
 We treat [kunchenguid/dotfiles](https://github.com/kunchenguid/dotfiles) as the expert baseline for terminal, editor, and agent multiplexer configs. Our live copies live under `files/.config/`. We keep the freedom to add our own changes without losing the ability to pull his next improvements.
@@ -197,6 +199,8 @@ My rough rule of thumb:
 - use **ecosystem-specific package managers** like `npm` when that is the right abstraction for the tool
 
 A good setup does not force every tool through one package manager. It just makes the ownership of each layer clear.
+
+Tools installed by an ecosystem-specific manager that places executables in `~/.local/bin`, such as `uv`, are available in Home Manager-managed shells.
 
 ## Why this setup looks like this
 
