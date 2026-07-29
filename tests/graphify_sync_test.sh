@@ -156,7 +156,7 @@ point_fake_home_at_repo() {
   local repo="$1" rel
 
   for rel in "${links[@]}"; do
-    rm -rf "$FAKE_HOME/$rel"
+    rm -rf "${FAKE_HOME:?}/$rel"
     mkdir -p "$FAKE_HOME/$(dirname "$rel")"
     ln -s "$repo/files/skills/graphify" "$FAKE_HOME/$rel"
   done

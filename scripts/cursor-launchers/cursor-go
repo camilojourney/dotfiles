@@ -3,6 +3,7 @@ set -euo pipefail
 
 # Optional machine-specific settings belong here, not in this tracked file.
 config_file="${CURSOR_LAUNCHER_CONFIG:-$HOME/.config/cursor-launchers/config.sh}"
+# shellcheck source=/dev/null
 [[ -r "$config_file" ]] && source "$config_file"
 
 cursor_bin="${CURSOR_BIN:-/Applications/Cursor.app/Contents/Resources/app/bin/cursor}"

@@ -1,3 +1,5 @@
+# shellcheck shell=bash disable=SC2034
+
 # Copy to ~/.config/cursor-launchers/config.sh and customize this restored Mac.
 # The copied config.sh is deliberately untracked so usernames, SSH aliases, and
 # remote filesystem paths do not become part of the portable launcher source.

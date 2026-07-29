@@ -147,7 +147,7 @@ if ! grep -qF "Unsupported cursor-go target: unsupported" <<<"$unsupported_make_
 fi
 echo "PASS: launcher generator rejects unsupported cursor-go target"
 
-rm -rf "$DESTINATION"/*
+rm -rf "${DESTINATION:?}"/*
 mkdir -p "$DESTINATION/Cursor Unsupported.app/Contents/Resources/Scripts"
 printf '%s\n' "Cursor Unsupported" > "$DESTINATION/Cursor Unsupported.app/Contents/Info.plist"
 printf '%s\n' 'quoted form of "unsupported"' > "$DESTINATION/Cursor Unsupported.app/Contents/Resources/Scripts/main.scpt"

@@ -10,6 +10,7 @@ if pgrep -xq "Cursor"; then
   osascript -e 'tell application "Cursor" to activate' >/dev/null 2>&1 || true
 fi
 
+# shellcheck disable=SC2016
 nohup bash -c '
 set -u
 
