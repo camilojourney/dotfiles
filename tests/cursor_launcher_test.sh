@@ -51,7 +51,13 @@ if actual != expected:
 PY
 echo "PASS: job-tracker launcher uses exact Cursor argv"
 
-printf '# Display name<TAB>cursor-go target\nAlpha\talpha\nLast One\tlast-one' > "$SCRIPT_COPY/launchers.tsv"
+while IFS=$'\t' read -r name target || [[ -n "$name" ]]; do
+  [[ -z "$name" || "$name" == \#* ]] && continue
+  "$SCRIPT_COPY/cursor-go" --validate-target "$target"
+done < "$SCRIPT_COPY/launchers.tsv"
+echo "PASS: production launcher manifest uses supported cursor-go targets"
+
+printf '# Display name<TAB>cursor-go target\nInvoz\tinvoz\nVault\tvault' > "$SCRIPT_COPY/launchers.tsv"
 
 cat > "$FAKE_BIN/osacompile" <<'STUB'
 #!/usr/bin/env bash
@@ -109,8 +115,8 @@ PATH="$FAKE_BIN:$PATH" \
 OSACOMPILE_BIN="$FAKE_BIN/osacompile" \
   "$SCRIPT_COPY/make-launchers.sh" "$DESTINATION" >/dev/null
 
-[ -d "$DESTINATION/Cursor Alpha.app" ] || { echo "FAIL: missing generated Alpha launcher" >&2; exit 1; }
-[ -d "$DESTINATION/Cursor Last One.app" ] || { echo "FAIL: final no-newline launcher was not generated" >&2; exit 1; }
+[ -d "$DESTINATION/Cursor Invoz.app" ] || { echo "FAIL: missing generated Invoz launcher" >&2; exit 1; }
+[ -d "$DESTINATION/Cursor Vault.app" ] || { echo "FAIL: final no-newline launcher was not generated" >&2; exit 1; }
 
 PATH="$FAKE_BIN:$PATH" \
 PLISTBUDDY_BIN="$FAKE_BIN/plistbuddy" \
@@ -119,4 +125,52 @@ CODESIGN_BIN="$FAKE_BIN/codesign" \
   "$SCRIPT_COPY/verify-launchers.sh" "$DESTINATION" >/dev/null
 
 echo "PASS: launcher generation and verification process final manifest line without newline"
+
+printf '# Display name<TAB>cursor-go target\nUnsupported\tunsupported' > "$SCRIPT_COPY/launchers.tsv"
+
+set +e
+unsupported_make_output=$(
+  PATH="$FAKE_BIN:$PATH" \
+  OSACOMPILE_BIN="$FAKE_BIN/osacompile" \
+    "$SCRIPT_COPY/make-launchers.sh" "$DESTINATION" 2>&1
+)
+unsupported_make_status=$?
+set -e
+
+if [ "$unsupported_make_status" -eq 0 ]; then
+  echo "FAIL: launcher generator accepted unsupported cursor-go target" >&2
+  exit 1
+fi
+if ! grep -qF "Unsupported cursor-go target: unsupported" <<<"$unsupported_make_output"; then
+  echo "FAIL: launcher generator did not identify unsupported target" >&2
+  exit 1
+fi
+echo "PASS: launcher generator rejects unsupported cursor-go target"
+
+rm -rf "$DESTINATION"/*
+mkdir -p "$DESTINATION/Cursor Unsupported.app/Contents/Resources/Scripts"
+printf '%s\n' "Cursor Unsupported" > "$DESTINATION/Cursor Unsupported.app/Contents/Info.plist"
+printf '%s\n' 'quoted form of "unsupported"' > "$DESTINATION/Cursor Unsupported.app/Contents/Resources/Scripts/main.scpt"
+
+set +e
+unsupported_verify_output=$(
+  PATH="$FAKE_BIN:$PATH" \
+  PLISTBUDDY_BIN="$FAKE_BIN/plistbuddy" \
+  OSADECOMPILE_BIN="$FAKE_BIN/osadecompile" \
+  CODESIGN_BIN="$FAKE_BIN/codesign" \
+    "$SCRIPT_COPY/verify-launchers.sh" "$DESTINATION" 2>&1
+)
+unsupported_verify_status=$?
+set -e
+
+if [ "$unsupported_verify_status" -eq 0 ]; then
+  echo "FAIL: launcher verifier accepted unsupported cursor-go target" >&2
+  exit 1
+fi
+if ! grep -qF "Unsupported cursor-go target: unsupported" <<<"$unsupported_verify_output"; then
+  echo "FAIL: launcher verifier did not identify unsupported target" >&2
+  exit 1
+fi
+echo "PASS: launcher verifier rejects unsupported cursor-go target"
+
 echo "ALL CURSOR LAUNCHER TESTS COMPLETED SUCCESSFULLY."

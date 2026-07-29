@@ -50,11 +50,11 @@ Drop any folder of code, docs, papers, images, or video into graphify and get a 
 
 If the user invoked `/graphify --help` or `/graphify -h` (with no other arguments), print the contents of the `## Usage` section above verbatim and stop. Do not run any commands, do not detect files, do not default the path to `.`. Just print the Usage block and return.
 
-**Fast path — existing graph:** Before doing anything else, check whether `graphify-out/graph.json` exists. The expected location is `graphify-out/graph.json` relative to the **current working directory** (i.e. the project root where you are running commands). If it exists AND the user's request is a natural-language question about the codebase (e.g. "How does X work?", "What calls Y?", "Trace the data flow through Z") and NOT an explicit rebuild command (`--update`, `--cluster-only`, or a bare path/URL that implies fresh extraction): **skip Steps 1–5 entirely and jump straight to `## For /graphify query`.** Run `graphify query "<question>"` immediately. Do not run detect. Do not check corpus size. Do not ask the user to narrow. The graph is already built — use it.
+**Fast path — existing graph:** Before doing anything else, check whether `graphify-out/graph.json` exists. The expected location is `graphify-out/graph.json` relative to the **current working directory** (i.e. the project root where you are running commands). If it exists AND the user's request is a natural-language question about the codebase (e.g. "How does X work?", "What calls Y?", "Trace the data flow through Z") and NOT an explicit rebuild command (`--update`, `--cluster-only`, or a bare path/URL that implies fresh extraction): **run Step 1 with `INPUT_PATH` set to `.`, then skip Steps 2–5 and jump straight to `## For /graphify query`.** Do not run detect. Do not check corpus size. Do not ask the user to narrow. The graph is already built — use it.
 
 If no path was given, use `.` (current directory). Do not ask the user for a path.
 
-If the path argument starts with `https://github.com/` or `http://github.com/`, treat it as a GitHub URL - run Step 0 before anything else, then continue with the resolved local path.
+If the path argument starts with `https://github.com/` or `http://github.com/`, treat it as a GitHub URL - follow Step 0, including its pinned-runtime bootstrap, then continue with the resolved local path.
 
 Follow these steps in order. Do not skip steps.
 
@@ -66,11 +66,25 @@ Only when the path is one or more `https://github.com/...` URLs, or several loca
 
 ```bash
 # Detect the correct Python interpreter (handles uv tool, pipx, venv, system installs)
+GRAPHIFY_VERSION="0.9.29"
+GRAPHIFY_PACKAGE="graphifyy==$GRAPHIFY_VERSION"
+graphify_version_matches() {
+    (
+        cd "$(dirname "$1")" || exit 1
+        PYTHONPATH= "$1" -c "from importlib.metadata import version; raise SystemExit(version('graphifyy') != '$GRAPHIFY_VERSION')" 2>/dev/null
+    )
+}
+graphify_distribution_root() {
+    (
+        cd "$(dirname "$1")" || exit 1
+        PYTHONPATH= "$1" -c "from importlib.metadata import distribution; print(distribution('graphifyy').locate_file(''))"
+    )
+}
 PYTHON=""
-GRAPHIFY_BIN=$(which graphify 2>/dev/null)
+GRAPHIFY_BIN=$(command -v graphify 2>/dev/null || true)
 # 1. uv tool installs — most reliable on modern Mac/Linux
 if [ -z "$PYTHON" ] && command -v uv >/dev/null 2>&1; then
-    _UV_PY=$(uv tool run --from graphifyy python -c "import sys; print(sys.executable)" 2>/dev/null)
+    _UV_PY=$(uv tool run --from "$GRAPHIFY_PACKAGE" python -c "import sys; print(sys.executable)" 2>/dev/null || true)
     if [ -n "$_UV_PY" ]; then PYTHON="$_UV_PY"; fi
 fi
 # 2. Read shebang from graphify binary (pipx and direct pip installs)
@@ -78,31 +92,115 @@ if [ -z "$PYTHON" ] && [ -n "$GRAPHIFY_BIN" ]; then
     _SHEBANG=$(head -1 "$GRAPHIFY_BIN" | tr -d '#!')
     case "$_SHEBANG" in
         *[!a-zA-Z0-9/_.@-]*) ;;
-        *) "$_SHEBANG" -c "import graphify" 2>/dev/null && PYTHON="$_SHEBANG" ;;
+        *) graphify_version_matches "$_SHEBANG" && PYTHON="$_SHEBANG" ;;
     esac
 fi
 # 3. Fall back to python3
-if [ -z "$PYTHON" ]; then PYTHON="python3"; fi
-if ! "$PYTHON" -c "import graphify" 2>/dev/null; then
+if [ -z "$PYTHON" ]; then PYTHON=$(command -v python3 2>/dev/null || true); fi
+[ -n "$PYTHON" ] || {
+    echo "Python 3 is required to install Graphify." >&2
+    exit 1
+}
+if ! graphify_version_matches "$PYTHON"; then
     if command -v uv >/dev/null 2>&1; then
-        uv tool install --upgrade graphifyy -q 2>&1 | tail -3
-        _UV_PY=$(uv tool run --from graphifyy python -c "import sys; print(sys.executable)" 2>/dev/null)
+        uv tool install --upgrade "$GRAPHIFY_PACKAGE" -q 2>&1 | tail -3
+        _UV_PY=$(uv tool run --from "$GRAPHIFY_PACKAGE" python -c "import sys; print(sys.executable)" 2>/dev/null || true)
         if [ -n "$_UV_PY" ]; then PYTHON="$_UV_PY"; fi
     else
-        "$PYTHON" -m pip install graphifyy -q 2>/dev/null \
-          || "$PYTHON" -m pip install graphifyy -q --break-system-packages 2>&1 | tail -3
+        "$PYTHON" -m pip install "$GRAPHIFY_PACKAGE" -q 2>/dev/null \
+          || "$PYTHON" -m pip install "$GRAPHIFY_PACKAGE" -q --break-system-packages 2>&1 | tail -3
     fi
 fi
-# Write interpreter path for all subsequent steps (persists across invocations)
+graphify_version_matches "$PYTHON" || {
+    echo "Graphify $GRAPHIFY_VERSION is required but unavailable." >&2
+    exit 1
+}
+# Write the pinned runtime wrapper for all subsequent steps (persists across invocations)
 mkdir -p graphify-out
-"$PYTHON" -c "import sys; open('graphify-out/.graphify_python', 'w', encoding='utf-8').write(sys.executable)"
+graphify_distribution_root "$PYTHON" > graphify-out/.graphify_site
+"$PYTHON" -c "import sys; open('graphify-out/.graphify_interpreter', 'w', encoding='utf-8').write(sys.executable)"
+mkdir -p graphify-out/.graphify_bootstrap
+cat > graphify-out/.graphify_bootstrap/sitecustomize.py <<'PY'
+import os
+import sys
+from importlib.metadata import distribution
+from pathlib import Path
+
+bootstrap_dir = os.path.realpath(os.path.dirname(__file__))
+runtime_dir = os.path.realpath(os.path.dirname(bootstrap_dir))
+dist_root = os.path.realpath(
+    Path(runtime_dir, ".graphify_site").read_text(encoding="utf-8").strip()
+)
+blocked = {
+    os.path.realpath(os.getcwd()),
+    runtime_dir,
+    bootstrap_dir,
+}
+sys.path[:] = [dist_root] + [
+    path
+    for path in sys.path
+    if path
+    and os.path.realpath(path) != dist_root
+    and os.path.realpath(path) not in blocked
+]
+dist = distribution("graphifyy")
+if dist.version != "0.9.29" or os.path.realpath(dist.locate_file("")) != dist_root:
+    raise SystemExit("Graphify 0.9.29 runtime validation failed.")
+PY
+cat > graphify-out/.graphify_runner <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+runtime_dir=$(cd -- "$(dirname -- "$0")" >/dev/null 2>&1 && pwd)
+interpreter=$(cat "$runtime_dir/.graphify_interpreter")
+PYTHONPATH="$runtime_dir/.graphify_bootstrap" exec "$interpreter" "$@"
+SH
+chmod +x graphify-out/.graphify_runner
+printf '%s\n' "$(cd graphify-out && pwd)/.graphify_runner" > graphify-out/.graphify_python
+cat > graphify-out/.graphify_cli.py <<'PY'
+import os
+import sys
+from importlib.metadata import distribution
+from pathlib import Path
+
+runtime_dir = os.path.realpath(os.path.dirname(__file__))
+dist_root = os.path.realpath(
+    Path(runtime_dir, ".graphify_site").read_text(encoding="utf-8").strip()
+)
+blocked = {
+    os.path.realpath(os.getcwd()),
+    runtime_dir,
+}
+blocked.update(
+    os.path.realpath(path)
+    for path in os.environ.get("PYTHONPATH", "").split(os.pathsep)
+    if path
+)
+sys.path[:] = [dist_root] + [
+    path
+    for path in sys.path
+    if path
+    and os.path.realpath(path) != dist_root
+    and os.path.realpath(path) not in blocked
+]
+dist = distribution("graphifyy")
+if dist.version != "0.9.29" or os.path.realpath(dist.locate_file("")) != dist_root:
+    raise SystemExit("Graphify 0.9.29 runtime validation failed.")
+entry_points = [
+    entry_point
+    for entry_point in dist.entry_points
+    if entry_point.group == "console_scripts" and entry_point.name == "graphify"
+]
+if len(entry_points) != 1:
+    raise SystemExit("Graphify console entry point is unavailable.")
+raise SystemExit(entry_points[0].load()())
+PY
 # Save scan root so `graphify update` (no args) knows where to look next time
 echo "$(cd INPUT_PATH && pwd)" > graphify-out/.graphify_root
 ```
 
 If the import succeeds, print nothing and move straight to Step 2.
 
-**In every subsequent bash block, replace `python3` with `$(cat graphify-out/.graphify_python)` to use the correct interpreter.**
+**In every subsequent bash block, replace `python3` with `$(cat graphify-out/.graphify_python)` to use the pinned runtime wrapper.**
 
 ### Step 2 - Detect files
 
@@ -154,7 +252,7 @@ This step has two parts: **structural extraction** (deterministic, free) and **s
 > **graphify needs no API key. Never ask the user for one, and never block on one.** Code is extracted structurally (AST) with no LLM and no key at all — a code-only corpus (the common `/graphify .` on a repo) skips semantic extraction entirely, so it needs nothing here: go straight to Part A and skip Part B. Semantic extraction (only for docs, papers, and images) uses Gemini **only if** `GEMINI_API_KEY`/`GOOGLE_API_KEY` is already set; otherwise the host agent itself is the LLM. graphify does **not** read `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or any other provider key. If you catch yourself about to prompt for, wait on, or stop because of a missing API key, that is a misread of this skill — proceed without one.
 
 **Before semantic extraction:** check whether `GEMINI_API_KEY` or `GOOGLE_API_KEY` is set. If neither is set, print this one-liner to the user:
-> Tip: set `GEMINI_API_KEY` or `GOOGLE_API_KEY` to use Gemini for semantic extraction (`pip install 'graphifyy[gemini]'`).
+> Tip: set `GEMINI_API_KEY` or `GOOGLE_API_KEY` to use Gemini for semantic extraction (`pip install 'graphifyy[gemini]==0.9.29'`).
 
 Print it once, then continue — do not wait for the user to supply a key. If `GEMINI_API_KEY` or `GOOGLE_API_KEY` IS set, use `graphify.llm.extract_corpus_parallel(files, backend="gemini")` for semantic extraction instead of dispatching subagents. The default Gemini model is `gemini-3-flash-preview`; set `GRAPHIFY_GEMINI_MODEL` or pass `--model` in headless CLI flows to override it.
 
@@ -523,15 +621,15 @@ If `--obsidian` was given:
 - If `--obsidian-dir <path>` was also given, pass it via `--dir`. Otherwise defaults to `graphify-out/obsidian`.
 
 ```bash
-graphify export obsidian
-# or with custom dir: graphify export obsidian --dir ~/vaults/my-project
+"$(cat graphify-out/.graphify_python)" graphify-out/.graphify_cli.py export obsidian
+# or with custom dir: "$(cat graphify-out/.graphify_python)" graphify-out/.graphify_cli.py export obsidian --dir ~/vaults/my-project
 ```
 
 Generate the HTML graph (always, unless `--no-viz`):
 
 ```bash
-graphify export html  # auto-aggregates to community view if graph > 5000 nodes
-# or: graphify export html --no-viz
+"$(cat graphify-out/.graphify_python)" graphify-out/.graphify_cli.py export html  # auto-aggregates to community view if graph > 5000 nodes
+# or: "$(cat graphify-out/.graphify_python)" graphify-out/.graphify_cli.py export html --no-viz
 ```
 
 ### Steps 6b-8 - Wiki, Neo4j, FalkorDB, SVG, GraphML, MCP, benchmark (only on their flags)
@@ -644,20 +742,13 @@ The graph is the map. Your job after the pipeline is to be the guide.
 
 ## Interpreter guard for subcommands
 
-Before running any subcommand below (`--update`, `--cluster-only`, `query`, `path`, `explain`, `add`), check that `.graphify_python` exists. If it's missing (e.g. user deleted `graphify-out/`), re-resolve the interpreter first:
+Before running any subcommand below (`--update`, `--cluster-only`, `query`, `path`, `explain`, `add`), check that `.graphify_python` exists and still points to Graphify 0.9.29. If either check fails, rerun Step 1 with the current input path before continuing.
 
 ```bash
-if [ ! -f graphify-out/.graphify_python ]; then
-    GRAPHIFY_BIN=$(which graphify 2>/dev/null)
-    if [ -n "$GRAPHIFY_BIN" ]; then
-        PYTHON=$(head -1 "$GRAPHIFY_BIN" | tr -d '#!')
-        case "$PYTHON" in *[!a-zA-Z0-9/_.@-]*) PYTHON="python3" ;; esac
-    else
-        PYTHON="python3"
-    fi
-    mkdir -p graphify-out
-    "$PYTHON" -c "import sys; open('graphify-out/.graphify_python', 'w', encoding='utf-8').write(sys.executable)"
-fi
+test -f graphify-out/.graphify_python &&
+    test -f graphify-out/.graphify_cli.py &&
+    "$(cat graphify-out/.graphify_python)" -c \
+      "from importlib.metadata import version; raise SystemExit(version('graphifyy') != '0.9.29')"
 ```
 
 ## For --update and --cluster-only
@@ -671,7 +762,7 @@ Both are non-default subcommands. `--update` re-extracts only new or changed fil
 When `graphify-out/graph.json` already exists and the user asks a question about the corpus, answer from the graph rather than rebuilding it:
 
 ```bash
-graphify query "<question>"
+"$(cat graphify-out/.graphify_python)" graphify-out/.graphify_cli.py query "<question>"
 ```
 
 Before traversal, expand the question against the graph's own vocabulary so a wording mismatch does not collapse the answer to noise. If the `graphify query` CLI is unavailable, fall back to an inline NetworkX traversal of `graphify-out/graph.json`. Answer using only what the graph output contains, and quote `source_location` when citing a specific fact. For that vocab-expansion step, the BFS/DFS traversal modes, the `--budget` cap, the NetworkX fallback, `save-result` feedback, and the `/graphify path` and `/graphify explain` flows, see `references/query.md`.

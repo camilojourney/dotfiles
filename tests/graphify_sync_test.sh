@@ -168,6 +168,166 @@ if grep -qF "/Users/" "$REPO_ROOT/scripts/verify-graphify-sync.sh"; then
 fi
 echo "PASS: graphify sync verifier has no hardcoded /Users/ path"
 
+python3 - "$REPO_ROOT/files/skills/graphify" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+version = (root / ".graphify_version").read_text(encoding="utf-8").strip()
+files = [root / "SKILL.md", *sorted((root / "references").glob("*.md"))]
+unpinned = []
+for path in files:
+    text = path.read_text(encoding="utf-8")
+    for match in re.finditer(r"graphifyy(?:\[[^\]\s'\"]+\])?(?:==[0-9.]+)?", text):
+        package = match.group()
+        line = text.count("\n", 0, match.start()) + 1
+        source_line = text.splitlines()[line - 1]
+        context = text[max(0, match.start() - 20):match.end() + 20]
+        if package == "graphifyy" and (
+            "version('graphifyy')" in context
+            or 'distribution("graphifyy")' in context
+            or "distribution('graphifyy')" in context
+        ):
+            continue
+        if package == "graphifyy" and source_line.strip() == 'GRAPHIFY_PACKAGE="graphifyy==$GRAPHIFY_VERSION"':
+            continue
+        if package != "graphifyy" and package.endswith(f"=={version}"):
+            continue
+        unpinned.append(f"{path}:{line}: {package}")
+skill = (root / "SKILL.md").read_text(encoding="utf-8")
+if f'GRAPHIFY_VERSION="{version}"' not in skill:
+    unpinned.append("SKILL.md: missing Graphify runtime version assignment")
+if 'GRAPHIFY_PACKAGE="graphifyy==$GRAPHIFY_VERSION"' not in skill:
+    unpinned.append("SKILL.md: missing pinned Graphify package assignment")
+for path in files:
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        stripped = line.strip()
+        if stripped.startswith("graphify ") or "$(graphify " in stripped:
+            unpinned.append(f"{path}:{line_number}: direct Graphify CLI invocation")
+        if " -m graphify " in stripped:
+            unpinned.append(f"{path}:{line_number}: shadowable Graphify module CLI invocation")
+if unpinned:
+    print("FAIL: unpinned Graphify runtime references:", file=sys.stderr)
+    print("\n".join(unpinned), file=sys.stderr)
+    sys.exit(1)
+PY
+echo "PASS: Graphify runtime references match vendored version"
+
+GRAPHIFY_SYNC_HOME="$FAKE_HOME" \
+GRAPHIFY_SYNC_DOTFILES_DIR="$REPO_ROOT" \
+  bash "$REPO_ROOT/scripts/verify-graphify-sync.sh" >/dev/null
+echo "PASS: graphify sync verifier allows a fully absent pre-activation link set"
+
+RUNTIME_BIN="$SANDBOX/runtime-bin"
+RUNTIME_WORK="$SANDBOX/runtime-work"
+RUNTIME_STATE="$SANDBOX/runtime-version"
+RUNTIME_PYTHON="$RUNTIME_BIN/mismatch-python"
+TRUSTED_SITE="$SANDBOX/trusted-site"
+mkdir -p "$RUNTIME_BIN" "$RUNTIME_WORK"
+printf '0.9.30\n' > "$RUNTIME_STATE"
+
+cat > "$RUNTIME_PYTHON" <<'STUB'
+#!/usr/bin/env bash
+set -euo pipefail
+code="${2:-}"
+if [[ "${1:-}" == -c && "$code" == *"from importlib.metadata import version"* ]]; then
+  [[ "$(cat "$GRAPHIFY_RUNTIME_STATE")" == 0.9.29 ]]
+elif [[ "${1:-}" == -c && "$code" == *"locate_file"* ]]; then
+  printf '%s\n' "$GRAPHIFY_RUNTIME_SITE"
+elif [[ "${1:-}" == -m && "${2:-}" == pip && "${3:-}" == install ]]; then
+  [[ " $* " == *" graphifyy==0.9.29 "* ]]
+  printf '0.9.29\n' > "$GRAPHIFY_RUNTIME_STATE"
+elif [[ "${1:-}" == -c && "$code" == *".graphify_interpreter"* ]]; then
+  mkdir -p graphify-out
+  printf '%s\n' "$0" > graphify-out/.graphify_interpreter
+fi
+STUB
+chmod +x "$RUNTIME_PYTHON"
+ln -s "$RUNTIME_PYTHON" "$RUNTIME_BIN/python3"
+printf '#!%s\nexit 0\n' "$RUNTIME_PYTHON" > "$RUNTIME_BIN/graphify"
+chmod +x "$RUNTIME_BIN/graphify"
+
+awk '
+  /^### Step 1 - Ensure graphify is installed$/ { in_step = 1; next }
+  in_step && /^```bash$/ { in_block = 1; next }
+  in_block && /^```$/ { exit }
+  in_block { gsub(/INPUT_PATH/, "."); print }
+' "$REPO_ROOT/files/skills/graphify/SKILL.md" > "$SANDBOX/graphify-step1.sh"
+
+(
+  cd "$RUNTIME_WORK"
+  GRAPHIFY_RUNTIME_STATE="$RUNTIME_STATE" \
+  GRAPHIFY_RUNTIME_SITE="$TRUSTED_SITE" \
+  PATH="$RUNTIME_BIN:/usr/bin:/bin" \
+    bash "$SANDBOX/graphify-step1.sh"
+)
+
+if [ "$(cat "$RUNTIME_STATE")" != "0.9.29" ]; then
+  echo "FAIL: Step 1 accepted an installed mismatched Graphify runtime" >&2
+  exit 1
+fi
+echo "PASS: Step 1 replaces an installed mismatched Graphify runtime"
+
+ENTRYPOINT_MARKER="$SANDBOX/entrypoint-marker"
+mkdir -p "$TRUSTED_SITE/graphify" "$TRUSTED_SITE/graphifyy-0.9.29.dist-info"
+
+cat > "$TRUSTED_SITE/graphify/__init__.py" <<'PY'
+import os
+from pathlib import Path
+
+def main():
+    Path(os.environ["GRAPHIFY_ENTRYPOINT_MARKER"]).write_text("trusted", encoding="utf-8")
+PY
+
+cat > "$TRUSTED_SITE/graphifyy-0.9.29.dist-info/METADATA" <<'EOF'
+Metadata-Version: 2.1
+Name: graphifyy
+Version: 0.9.29
+EOF
+
+cat > "$TRUSTED_SITE/graphifyy-0.9.29.dist-info/entry_points.txt" <<'EOF'
+[console_scripts]
+graphify = graphify:main
+EOF
+
+cat > "$RUNTIME_WORK/graphify.py" <<'PY'
+import os
+from pathlib import Path
+
+def main():
+    Path(os.environ["GRAPHIFY_ENTRYPOINT_MARKER"]).write_text("shadowed", encoding="utf-8")
+PY
+
+mkdir -p "$RUNTIME_WORK/graphify-out/graphifyy-0.9.29.dist-info"
+cp "$TRUSTED_SITE/graphifyy-0.9.29.dist-info/METADATA" \
+  "$RUNTIME_WORK/graphify-out/graphifyy-0.9.29.dist-info/METADATA"
+cat > "$RUNTIME_WORK/graphify-out/graphifyy-0.9.29.dist-info/entry_points.txt" <<'EOF'
+[console_scripts]
+graphify = graphify:main
+EOF
+cat > "$RUNTIME_WORK/graphify-out/graphify.py" <<'PY'
+import os
+from pathlib import Path
+
+def main():
+    Path(os.environ["GRAPHIFY_ENTRYPOINT_MARKER"]).write_text("forged", encoding="utf-8")
+PY
+printf '%s\n' "/usr/bin/python3" > "$RUNTIME_WORK/graphify-out/.graphify_interpreter"
+
+(
+  cd "$RUNTIME_WORK"
+  GRAPHIFY_ENTRYPOINT_MARKER="$ENTRYPOINT_MARKER" \
+  PYTHONPATH="$TRUSTED_SITE" \
+    "$(cat graphify-out/.graphify_python)" graphify-out/.graphify_cli.py query
+)
+
+if [ "$(cat "$ENTRYPOINT_MARKER")" != "trusted" ]; then
+  echo "FAIL: pinned Graphify CLI wrapper loaded a repository shadow module" >&2
+  exit 1
+fi
+echo "PASS: pinned Graphify CLI wrapper rejects repository module shadowing"
+
 # 1. Positive case: all 8 symlink targets present under fake home
 for rel in "${links[@]}"; do
   mkdir -p "$FAKE_HOME/$(dirname "$rel")"
@@ -233,7 +393,31 @@ echo "PASS: graphify sync verifier rejects non-symlink installed path"
 rm -rf "$FAKE_HOME/.claude/skills/graphify"
 ln -s "$target" "$FAKE_HOME/.claude/skills/graphify"
 
-# 4. Portability checks: absolute Fleet checkout targets must not be whitelisted.
+# 4. Negative case: partially installed link set
+rm "$FAKE_HOME/.gemini/config/skills/graphify"
+
+set +e
+partial_output=$(
+  GRAPHIFY_SYNC_HOME="$FAKE_HOME" \
+  GRAPHIFY_SYNC_DOTFILES_DIR="$REPO_ROOT" \
+    bash "$REPO_ROOT/scripts/verify-graphify-sync.sh" 2>&1
+)
+status=$?
+set -e
+
+if [ "$status" -eq 0 ]; then
+  echo "FAIL: verifier accepted a partially installed Graphify link set" >&2
+  exit 1
+fi
+if ! grep -qF "installed Graphify path is missing: .gemini/config/skills/graphify" <<<"$partial_output"; then
+  echo "FAIL: verifier did not report the missing installed Graphify path" >&2
+  exit 1
+fi
+echo "PASS: graphify sync verifier rejects partially installed link set"
+
+ln -s "$target" "$FAKE_HOME/.gemini/config/skills/graphify"
+
+# 5. Portability checks: absolute Fleet checkout targets must not be whitelisted.
 assert_verifier_rejects_target \
   ".cursor/skills/graphify" \
   "/Users/camiloslaptop/github/fleet-system/system/skills/platform/graphify" \
@@ -244,7 +428,7 @@ assert_verifier_rejects_target \
   "/Users/mini/.openclaw/workspace/github/~fleet-system/system/skills/platform/graphify" \
   "Mini Fleet"
 
-# 5. Negative case in sandboxed repo: forbidden tracked Herdr runtime files
+# 6. Negative case in sandboxed repo: forbidden tracked Herdr runtime files
 SANDBOX_REPO=$(make_sandbox_repo "repo-forbidden-tracked")
 point_fake_home_at_repo "$SANDBOX_REPO"
 forbidden_paths=(
@@ -285,7 +469,7 @@ for rel in "${forbidden_paths[@]}"; do
 done
 echo "PASS: graphify sync verifier rejects forbidden tracked Herdr runtime paths"
 
-# 6. Negative case in sandboxed repo: version drift
+# 7. Negative case in sandboxed repo: version drift
 SANDBOX_REPO=$(make_sandbox_repo "repo-version-drift")
 point_fake_home_at_repo "$SANDBOX_REPO"
 
@@ -310,7 +494,7 @@ if ! grep -qF "Graphify version marker is 0.9.30, expected 0.9.29" <<<"$version_
 fi
 echo "PASS: graphify sync verifier rejects version drift"
 
-# 7. Negative case in sandboxed repo: file set drift (missing file)
+# 8. Negative case in sandboxed repo: file set drift (missing file)
 SANDBOX_REPO=$(make_sandbox_repo "repo-fileset-drift")
 point_fake_home_at_repo "$SANDBOX_REPO"
 rm "$SANDBOX_REPO/files/skills/graphify/SKILL.md"
@@ -334,7 +518,7 @@ if ! grep -qF "vendored Graphify file set differs from expected paths" <<<"$file
 fi
 echo "PASS: graphify sync verifier rejects file set drift"
 
-# 8. Negative case in sandboxed repo: missing Home Manager link declaration
+# 9. Negative case in sandboxed repo: missing Home Manager link declaration
 SANDBOX_REPO=$(make_sandbox_repo "repo-nix-drift")
 point_fake_home_at_repo "$SANDBOX_REPO"
 sed -i '' '/\.claude\/skills\/graphify/d' "$SANDBOX_REPO/nix/shared/user.nix" 2>/dev/null || sed -i '/\.claude\/skills\/graphify/d' "$SANDBOX_REPO/nix/shared/user.nix"

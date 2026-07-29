@@ -17,9 +17,6 @@ usage() {
   exit 2
 }
 
-[[ $# -eq 1 ]] || usage
-[[ -x "$cursor_bin" ]] || { echo "Cursor CLI not found: $cursor_bin" >&2; exit 1; }
-
 require_remote() {
   [[ -n "$remote_host" && -n "$remote_root" ]] || {
     echo "Remote launcher configuration is missing." >&2
@@ -63,15 +60,30 @@ remote_workspace() {
   exec "$cursor_bin" --remote "ssh-remote+$remote_host" "$remote_root/$1"
 }
 
-case "$1" in
-  invoz) exec "$cursor_bin" "$local_github/invoz" ;;
-  vault) exec "$cursor_bin" "$vault" ;;
-  fleet) remote_workspace fleet-system ;;
-  firstmate) remote_workspace firstmate ;;
-  pilaster|pythia|genpeli|holus) remote_workspace "$1" ;;
-  portfolio) remote_workspace camilomartinez-portfolio ;;
-  job-tracker) exec "$cursor_bin" --classic --new-window "$local_github/job-tracker" ;;
-  agents) exec "$cursor_bin" --chat ;;
-  agent-invoz) exec "$cursor_bin" agent --workspace "$local_github/invoz" ;;
-  *) usage ;;
-esac
+route_target() {
+  local mode="$1" target="$2"
+
+  case "$target" in
+    invoz) [[ "$mode" == validate ]] || exec "$cursor_bin" "$local_github/invoz" ;;
+    vault) [[ "$mode" == validate ]] || exec "$cursor_bin" "$vault" ;;
+    fleet) [[ "$mode" == validate ]] || remote_workspace fleet-system ;;
+    firstmate) [[ "$mode" == validate ]] || remote_workspace firstmate ;;
+    pilaster|pythia|genpeli|holus) [[ "$mode" == validate ]] || remote_workspace "$target" ;;
+    portfolio) [[ "$mode" == validate ]] || remote_workspace camilomartinez-portfolio ;;
+    job-tracker) [[ "$mode" == validate ]] || exec "$cursor_bin" --classic --new-window "$local_github/job-tracker" ;;
+    agents) [[ "$mode" == validate ]] || exec "$cursor_bin" --chat ;;
+    agent-invoz) [[ "$mode" == validate ]] || exec "$cursor_bin" agent --workspace "$local_github/invoz" ;;
+    *) return 1 ;;
+  esac
+}
+
+if [[ $# -eq 2 && "$1" == --validate-target ]]; then
+  route_target validate "$2" && exit 0
+  echo "Unsupported cursor-go target: $2" >&2
+  exit 2
+fi
+
+[[ $# -eq 1 ]] || usage
+[[ -x "$cursor_bin" ]] || { echo "Cursor CLI not found: $cursor_bin" >&2; exit 1; }
+route_target validate "$1" || usage
+route_target launch "$1"

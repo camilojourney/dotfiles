@@ -76,15 +76,15 @@ check_hash() {
 }
 
 check_hash "files/skills/graphify/.graphify_version" "ada87d4c0acb429c346b48b561a7ac328c236cd25f3fede18a6719215c4c601e"
-check_hash "files/skills/graphify/SKILL.md" "9024289348cceb6140af33e9875742dc55f55e5d574e44e5a21bb36239b1bcf4"
-check_hash "files/skills/graphify/references/add-watch.md" "b3f67570240582689c2834b4831917550c2d1aaf042148868c39dcbf387ce3fd"
-check_hash "files/skills/graphify/references/exports.md" "ee47fae477f106d8aed38798c58493b5a7f060a0d9d2581ce6132302827bc14b"
+check_hash "files/skills/graphify/SKILL.md" "e6b883eed16008ce23a47893aa1e27b12bd97d19614fe671aad31e73560d99f8"
+check_hash "files/skills/graphify/references/add-watch.md" "eda82f4c582580e40028778024a4002a9a1b906a2c74bcb664a4885ca3d5783c"
+check_hash "files/skills/graphify/references/exports.md" "9a188a5d5ff12c1630a6d1e3c434b9f18c9785c044da99f28927139233d2b37f"
 check_hash "files/skills/graphify/references/extraction-spec.md" "32d7decad42d58129c6694ea4e4ce1f72a531bc5161827d2095787e9448735e9"
-check_hash "files/skills/graphify/references/github-and-merge.md" "e5ebd90c7686f50363ff7a535556bc2f596d4c47ec1e6c8b95e11e36a0dfea2b"
-check_hash "files/skills/graphify/references/hooks.md" "b9a4e9f66813c6fc720589f1071d1a03c95756ab7101447e14e57291fe7844e5"
-check_hash "files/skills/graphify/references/query.md" "e563ddcb1e155aa230f107e5ef9380bc1249c5cd8241128de7ed8a7bd9c20cf5"
+check_hash "files/skills/graphify/references/github-and-merge.md" "df593874f7c61b770f21c62719072cb413aa908f9c0659a4371c0765eaa5e8be"
+check_hash "files/skills/graphify/references/hooks.md" "24a2561cd2b3172499dafcffe5344ac0304e9654a92faff82dbb55a582c5ce12"
+check_hash "files/skills/graphify/references/query.md" "5d8733dedc5d5fbb7887f852d0a9b55417a121c8381ce841957a70c1f94fb293"
 check_hash "files/skills/graphify/references/transcribe.md" "676a1e39aa6d43cdfcc416ec56616e36f7bad74066a82bd33a9485515b9a865c"
-check_hash "files/skills/graphify/references/update.md" "661f559b3ff4f3db7ba47bc2ba1c7e19f1c1d66a36f647e49221eecb174f2228"
+check_hash "files/skills/graphify/references/update.md" "8909c388a39417300751448a83c3473334f33bedbacb566770e17089993e6016"
 
 python3 - <<'PY' || failures=$((failures + 1))
 import re
@@ -139,23 +139,32 @@ installed_paths=(
 installed_checked=0
 for rel in "${installed_paths[@]}"; do
   path="$home_dir/$rel"
-  if [ ! -e "$path" ] && [ ! -L "$path" ]; then
-    continue
-  fi
-  installed_checked=$((installed_checked + 1))
-  if [ ! -L "$path" ]; then
-    fail "installed Graphify path is not a symlink: $rel"
-    continue
-  fi
-  target=$(readlink "$path")
-  if [ "$target" != "$installed_target" ]; then
-    fail "installed Graphify symlink target mismatch: $rel (target is $target)"
+  if [ -e "$path" ] || [ -L "$path" ]; then
+    installed_checked=1
+    break
   fi
 done
 if [ "$installed_checked" -eq 0 ]; then
   pass "installed Graphify symlinks skipped (none present under selected home)"
-elif [ "$failures" -eq 0 ]; then
-  pass "installed Graphify symlink targets"
+else
+  for rel in "${installed_paths[@]}"; do
+    path="$home_dir/$rel"
+    if [ ! -e "$path" ] && [ ! -L "$path" ]; then
+      fail "installed Graphify path is missing: $rel"
+      continue
+    fi
+    if [ ! -L "$path" ]; then
+      fail "installed Graphify path is not a symlink: $rel"
+      continue
+    fi
+    target=$(readlink "$path")
+    if [ "$target" != "$installed_target" ]; then
+      fail "installed Graphify symlink target mismatch: $rel (target is $target)"
+    fi
+  done
+  if [ "$failures" -eq 0 ]; then
+    pass "installed Graphify symlink targets"
+  fi
 fi
 
 require_gitignore_pattern() {

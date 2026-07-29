@@ -19,6 +19,7 @@ while IFS=$'\t' read -r name target || [[ -n "$name" ]]; do
     echo "Invalid launcher manifest entry: $name" >&2
     exit 1
   }
+  "$script_dir/cursor-go" --validate-target "$target"
 
   app="$destination/Cursor $name.app"
   source=$(printf '%s\n%s\n' \
