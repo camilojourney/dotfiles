@@ -15,20 +15,23 @@ It gives you a structured starting point for managing a Mac setup in code:
 - manage user packages and shell behavior with Home Manager
 - install GUI apps and macOS-native tools declaratively with Homebrew
 - keep selected app config in the repo and link it into place
+- share selected AI-agent settings and a pinned skill across supported clients
+- restore small, portable workflow helpers without committing machine-local data
 
-I include [WezTerm](https://wezfurlong.org/wezterm/) as the one concrete app-config example because it is real enough to demonstrate the pattern without dragging in the more personal parts of my workflow.
+The tracked app and agent configuration is limited to durable, reusable source.
+Machine-specific values and generated or runtime state stay outside the repo.
 
 ## What is intentionally not included
 
 This repo does **not** try to mirror my entire machine.
 
-I left out things that are too personal or too workflow-specific to make a good public starter repo, including:
+I leave out data that is private, machine-specific, generated, or volatile,
+including:
 
-- editor config
-- custom shell systems
-- personal scripts
-- AI tooling
 - secrets and tokens
+- the local Cursor launcher configuration
+- generated launcher app bundles
+- agent pipeline output and application runtime state
 - private automation
 
 The goal is to provide a reusable foundation that you can make your own.
@@ -41,11 +44,14 @@ The goal is to provide a reusable foundation that you can make your own.
 - `nix/shared/` - foundation host + user config shared by both machines
 - `nix/camilo/` - main laptop extras (Camo, Logi Options+, Stream Deck, OBS, Wispr) + `rebuild` alias
 - `nix/camilo-mini/` - Mini overlay (foundation only + `rebuild` alias)
-- `files/.config/` - live WezTerm / Neovim / herdr configs (symlinked by Home Manager)
+- `files/.config/` - live app config and portable machine-local config examples
+- `files/.claude/` - shared Claude settings
+- `files/skills/graphify/` - pinned Graphify skill shared across agent clients
 - `upstream/kunchenguid/` - decisions + snapshot for tracking [Kun's configs](https://github.com/kunchenguid/dotfiles)
 - `scripts/check-upstream-configs.sh` - check / safely adopt his updates
 - `scripts/cursor-launchers/` - portable source and generator for Cursor Finder launchers
-- `tests/` - regression tests for the bootstrap script
+- `scripts/verify-graphify-sync.sh` - verify the vendored skill, links, and repository hygiene
+- `tests/` - sandboxed bootstrap, Graphify sync, and Cursor launcher regression tests
 - `blog.md` - local copy of the [blog post](https://open.substack.com/pub/kunchenguid/p/how-i-built-a-reproducible-mac-setup?utm_campaign=post-expanded-share&utm_medium=web)
 
 ## Tracking Kun's config updates (wezterm / nvim / herdr)
@@ -101,6 +107,39 @@ diff -u files/.config/wezterm/wezterm.lua upstream/kunchenguid/snapshot/wezterm/
 
 Example: if you add WezTerm `Cmd+D` splits on top of his minimal config, mark `wezterm/wezterm.lua` as `extend` and put `"Cmd+D / Cmd+Shift+D pane splits"` in `our_additions`.
 
+## Managed AI tooling
+
+Home Manager links the checked-in Claude settings and shared agent instructions
+into the user environment. The Claude configuration selects `opus`, loads the
+installed GitHub, Chrome DevTools, and Lavish AXI summaries at session start,
+enables push notifications, and suppresses the extra dangerous-mode permission
+warning. Review those preferences before adopting the repository unchanged.
+
+Graphify `0.9.29` is vendored under `files/skills/graphify/`. Home Manager
+force-links that one pinned source into the skill directories used by Claude,
+Codex, Cursor, generic agents, Gemini, Antigravity, and Antigravity CLI:
+
+- `~/.claude/skills/graphify`
+- `~/.codex/skills/graphify`
+- `~/.cursor/skills/graphify`
+- `~/.agents/skills/graphify`
+- `~/.gemini/skills/graphify`
+- `~/.gemini/antigravity/skills/graphify`
+- `~/.gemini/antigravity-cli/skills/graphify`
+- `~/.gemini/config/skills/graphify`
+
+Verify its exact file set, hashes, Home Manager declarations, installed links
+when present, and volatile-file exclusions with:
+
+```bash
+bash scripts/verify-graphify-sync.sh
+```
+
+The verifier accepts `GRAPHIFY_SYNC_HOME` and `GRAPHIFY_SYNC_DOTFILES_DIR` for
+sandboxed checks. Normal use should leave them unset.
+
+The portable Cursor Finder and Stream Deck launchers are documented in
+[`scripts/cursor-launchers/README.md`](scripts/cursor-launchers/README.md).
 
 ## How to use it
 
@@ -180,14 +219,19 @@ This alias is included in the shell config and expands to the host-specific flak
 ## Testing
 
 Do not run `setup/mac.sh` against a development or CI machine just to test it.
-Run the sandboxed regression test instead:
+Run the sandboxed regression suites instead:
 
 ```bash
 bash tests/mac_setup_test.sh
+bash tests/graphify_sync_test.sh
+bash tests/cursor_launcher_test.sh
 ```
 
-It runs the real script logic with stub executables for `curl`, `sh`, `nix`, `darwin-rebuild`, `sudo`, and `bash`, covering both a fresh-machine single-pass bootstrap and the already-bootstrapped fast path.
+The bootstrap suite runs the real script logic with stub executables for `curl`, `sh`, `nix`, `darwin-rebuild`, `sudo`, and `bash`, covering both a fresh-machine single-pass bootstrap and the already-bootstrapped fast path.
 The harness also guards every harness/stub write against sandbox escapes, re-homes `NVM_DIR` under the sandboxed `HOME`, and unsets inherited `BASH_ENV`/`ENV` hooks before invoking the script under test.
+The other suites exercise Graphify synchronization and Cursor launcher
+generation without changing the real home directory or installed applications.
+See [`tests/README.md`](tests/README.md) for coverage details.
 
 ## Where to add new tools
 

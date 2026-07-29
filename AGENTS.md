@@ -19,6 +19,33 @@ Run `bash tests/mac_setup_test.sh`. It simulates a fresh Mac by copying the repo
 Each scenario sandboxes `HOME`, re-homes `NVM_DIR` under that temp root, and unsets inherited `BASH_ENV`/`ENV` before invoking `setup/mac.sh` (an inherited absolute `NVM_DIR` from hm-session-vars would otherwise leak stub writes).
 Harness and stub writes call `assert_path_under_sandbox` / `guard_write_path` so a future leak through parent traversal, symlink escape, or another absolute write path fails the test instead of mutating the host.
 
+## Vendored Graphify skill
+
+`files/skills/graphify/` is the trusted Graphify `0.9.29` vendor bundle. Treat
+its `SKILL.md` and `references/` files as pinned upstream content, not local
+documentation to edit independently. A future upgrade must replace the
+complete trusted bundle, update `.graphify_version` and every expected hash in
+`scripts/verify-graphify-sync.sh`, and keep all Home Manager skill links pointed
+at that single directory.
+
+Run both `bash scripts/verify-graphify-sync.sh` and
+`bash tests/graphify_sync_test.sh` after any related change. The regression
+test uses a fake home and isolated repositories. Do not create or repair the
+real home-directory links as part of test setup.
+
+## Cursor launcher sources
+
+`scripts/cursor-launchers/` is the portable source for Finder and Stream Deck
+launchers. Machine-specific SSH aliases and paths belong in
+`~/.config/cursor-launchers/config.sh`; the corresponding repository path is
+ignored and only `config.sh.example` is tracked. Generated `.app` bundles
+belong under `~/Applications/Cursor Launchers` and are never committed.
+
+Use `bash tests/cursor_launcher_test.sh` for routine verification. Do not run
+`make-launchers.sh` against its default destination during automated
+verification; pass an explicit sandbox destination when a generation check is
+needed.
+
 ## Adopting upstream expert patterns (kunchenguid/dotfiles)
 
 This repo tracks https://github.com/kunchenguid/dotfiles as the reference for WezTerm, Neovim, and herdr.

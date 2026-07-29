@@ -23,9 +23,12 @@ It covers two scenarios:
 See `AGENTS.md` for the fresh-machine single-pass contract these tests protect.
 
 `graphify_sync_test.sh` verifies the vendored Graphify skill and Home Manager
-link declarations through `scripts/verify-graphify-sync.sh`. It uses a fake
-home directory so installed symlink checks never read or write the real home.
+link declarations through `scripts/verify-graphify-sync.sh`. It covers the
+pinned version and hashes, exact vendor file set, runtime replacement and
+module-shadowing defenses, all eight link targets, and forbidden volatile
+artifacts. It uses isolated repositories and a fake home directory so installed
+symlink checks never read or write the real home.
 
 `cursor_launcher_test.sh` verifies the Cursor launcher scripts with stubbed
 macOS and Cursor commands, including the Job Tracker argv and no-newline
-manifest handling.
+manifest handling. It also rejects unsupported manifest targets.
