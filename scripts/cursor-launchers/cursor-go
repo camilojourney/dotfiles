@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Optional machine-specific settings belong here, not in this tracked file.
+config_file="${CURSOR_LAUNCHER_CONFIG:-$HOME/.config/cursor-launchers/config.sh}"
+[[ -r "$config_file" ]] && source "$config_file"
+
+cursor_bin="${CURSOR_BIN:-/Applications/Cursor.app/Contents/Resources/app/bin/cursor}"
+local_github="${CURSOR_LAUNCHER_LOCAL_GITHUB:-$HOME/github}"
+vault="${CURSOR_LAUNCHER_VAULT:-$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/My Vault}"
+remote_host="${CURSOR_LAUNCHER_REMOTE_HOST:-}"
+remote_root="${CURSOR_LAUNCHER_REMOTE_ROOT:-}"
+ssh_timeout_seconds="${CURSOR_LAUNCHER_SSH_TIMEOUT_SECONDS:-5}"
+
+usage() {
+  echo "Usage: cursor-go {invoz|vault|fleet|firstmate|pilaster|pythia|genpeli|holus|portfolio|job-tracker|agents|agent-invoz}" >&2
+  exit 2
+}
+
+[[ $# -eq 1 ]] || usage
+[[ -x "$cursor_bin" ]] || { echo "Cursor CLI not found: $cursor_bin" >&2; exit 1; }
+
+require_remote() {
+  [[ -n "$remote_host" && -n "$remote_root" ]] || {
+    echo "Remote launcher configuration is missing." >&2
+    echo "Set CURSOR_LAUNCHER_REMOTE_HOST and CURSOR_LAUNCHER_REMOTE_ROOT in $config_file." >&2
+    exit 1
+  }
+}
+
+preflight_remote() {
+  require_remote
+
+  [[ "$ssh_timeout_seconds" =~ ^[1-9][0-9]*$ ]] || {
+    echo "Set CURSOR_LAUNCHER_SSH_TIMEOUT_SECONDS to a positive integer." >&2
+    exit 1
+  }
+
+  command -v ssh >/dev/null || {
+    echo "SSH is required for Cursor remote launchers, but ssh was not found in PATH." >&2
+    exit 1
+  }
+
+  ssh -n \
+    -o BatchMode=yes \
+    -o ConnectTimeout="$ssh_timeout_seconds" \
+    -o ConnectionAttempts=1 \
+    -o NumberOfPasswordPrompts=0 \
+    "$remote_host" true >/dev/null 2>&1 || {
+      echo "Cannot reach Cursor remote '$remote_host' within ${ssh_timeout_seconds}s." >&2
+      echo "Check SSH access with: ssh $remote_host" >&2
+      exit 1
+    }
+}
+
+warm_ssh() {
+  command -v cursor-warm >/dev/null && cursor-warm >/dev/null 2>&1 || true
+}
+
+remote_workspace() {
+  preflight_remote
+  warm_ssh
+  exec "$cursor_bin" --remote "ssh-remote+$remote_host" "$remote_root/$1"
+}
+
+case "$1" in
+  invoz) exec "$cursor_bin" "$local_github/invoz" ;;
+  vault) exec "$cursor_bin" "$vault" ;;
+  fleet) remote_workspace fleet-system ;;
+  firstmate) remote_workspace firstmate ;;
+  pilaster|pythia|genpeli|holus) remote_workspace "$1" ;;
+  portfolio) remote_workspace camilomartinez-portfolio ;;
+  job-tracker) exec "$cursor_bin" editor --classic --new-window "$local_github/job-tracker" ;;
+  agents) exec "$cursor_bin" --chat ;;
+  agent-invoz) exec "$cursor_bin" agent --workspace "$local_github/invoz" ;;
+  *) usage ;;
+esac

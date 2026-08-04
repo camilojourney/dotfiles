@@ -21,7 +21,7 @@ Harness and stub writes call `assert_path_under_sandbox` / `guard_write_path` so
 
 ## Adopting upstream expert patterns (kunchenguid/dotfiles)
 
-This repo tracks https://github.com/kunchenguid/dotfiles as the reference for WezTerm, Neovim, and herdr.
+This repo tracks https://github.com/kunchenguid/dotfiles as the reference for WezTerm, Neovim, herdr, and Pi agent config.
 
 **Do not blind-copy.** Use the check script and decisions file:
 
@@ -29,6 +29,13 @@ This repo tracks https://github.com/kunchenguid/dotfiles as the reference for We
 2. Read `upstream/kunchenguid/decisions.json` - each file has policy `track` | `extend` | `fork` | `ignore`, plus `our_additions` and the last adopted upstream hash.
 3. Explain why a delta exists before adopting.
 4. `bash scripts/check-upstream-configs.sh --apply` only auto-updates clean `track` files (ours still matches last adopted hash). `extend` / `fork` / conflicts stay manual.
-5. Keep our multi-host Nix layout (`#camilo` / `#camilo-mini`); this tracker is only for `files/.config/{wezterm,nvim,herdr}`.
+5. Keep our multi-host Nix layout (`#camilo` / `#camilo-mini`); the check script tracker is for `files/.config/{wezterm,nvim,herdr}`. Pi lives under `files/.pi/agent/` (see below).
 
-Path mapping: his `home/.config/X` → our `files/.config/X`.
+Path mapping: his `home/.config/X` → our `files/.config/X`; his `home/.pi/agent/X` → our `files/.pi/agent/X`.
+
+## Pi (kunchenguid-aligned)
+
+- CLI: `npm install -g --ignore-scripts @earendil-works/pi-coding-agent` (Home Manager `home.activation.installPi` on rebuild; needs brew `node`).
+- Authored config only: `files/.pi/agent/{themes,extensions,models.json,settings.json}` symlinked into `~/.pi/agent/`.
+- Third-party Pi packages are pinned in `settings.json` `"packages"` (not vendored into the repo).
+- Do not manage `~/.pi/agent` wholesale; leave auth, sessions, `npm/`, and `git/` unmanaged.

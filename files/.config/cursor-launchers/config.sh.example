@@ -1,0 +1,10 @@
+# Copy to ~/.config/cursor-launchers/config.sh and customize this restored Mac.
+# This file is deliberately untracked so usernames, SSH aliases, and remote
+# filesystem paths do not become part of the portable launcher source.
+CURSOR_LAUNCHER_REMOTE_HOST="your-ssh-host"
+CURSOR_LAUNCHER_REMOTE_ROOT="/absolute/path/to/remote/github"
+
+# Optional overrides:
+# CURSOR_BIN="/Applications/Cursor.app/Contents/Resources/app/bin/cursor"
+# CURSOR_LAUNCHER_LOCAL_GITHUB="$HOME/github"
+# CURSOR_LAUNCHER_VAULT="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/My Vault"

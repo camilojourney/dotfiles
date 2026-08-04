@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Finder launches AppleScript applets without an interactive shell. Keep this
+# helper fast so Stream Deck and Finder return immediately while Cursor opens.
+target="${1:-}"
+[[ -n "$target" ]] || exit 0
+
+if pgrep -xq "Cursor"; then
+  osascript -e 'tell application "Cursor" to activate' >/dev/null 2>&1 || true
+fi
+
+nohup bash -c '
+set -u
+
+cursor_go="$1"
+target="$2"
+title="Cursor ${target} Launcher"
+
+output="$("$cursor_go" "$target" 2>&1)"
+status=$?
+
+if [[ "$status" -ne 0 ]]; then
+  [[ -n "$output" ]] || output="Cursor launcher $target failed with exit status $status."
+  osascript \
+    -e "on run argv" \
+    -e "display dialog (item 2 of argv) buttons {\"OK\"} default button \"OK\" with title (item 1 of argv)" \
+    -e "end run" \
+    "$title" "$output" >/dev/null 2>&1 || true
+fi
+
+exit "$status"
+' cursor-go-bg "$HOME/bin/cursor-go" "$target" </dev/null >/dev/null 2>&1 &
+exit 0

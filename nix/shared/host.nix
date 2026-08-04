@@ -9,7 +9,10 @@
   homebrew = {
     enable = true;
     enableZshIntegration = true; # puts /opt/homebrew/bin on PATH (claude, codex, etc.)
-    onActivation.cleanup = "uninstall";  # was "zap": remove unlisted apps but keep their user data
+    onActivation = {
+      cleanup = "uninstall"; # remove unlisted apps but keep their user data
+      upgrade = true; # brew upgrade + brew upgrade --cask on each rebuild
+    };
     taps = [ ];
     brews = [
       "herdr"
@@ -19,6 +22,7 @@
       "just" # invoz (and other) Justfiles
       "opencode"
       "mas" # Mac App Store CLI (Dato, etc.)
+      "node" # Node.js (formula, not cask)
       "starship" # brew binary; nixpkgs starship currently fails to link on Darwin
     ];
     casks = [
@@ -29,6 +33,7 @@
       "codex"
       "font-hack-nerd-font"
       "gcloud-cli"
+      "grok-build"
       "google-chrome"
       "chatgpt"
       "cursor"
