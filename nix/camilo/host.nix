@@ -6,14 +6,13 @@
     "elgato-stream-deck"
     "obs"
     "wispr-flow"
-    "whatsapp"
     "deepl"
     "notion"
-
   ];
 
   homebrew.masApps = {
     Dato = 1470584107;
+    WhatsApp = 310633997;
   };
 
   # Finder is always leftmost (macOS); Trash is always rightmost.

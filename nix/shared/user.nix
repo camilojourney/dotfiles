@@ -9,29 +9,15 @@ in
   home.stateVersion = "23.11";
   home.language.base = "en_US.UTF-8";
 
+  # Lean set (aligned with kunchenguid): only CLIs used constantly + Hack Nerd Font.
   home.packages = with pkgs; [
-    neovim
-    git
-    curl
-    wget
-    jq
+    ripgrep
     fd
     fzf
-    fastfetch
-    ripgrep
-    killall
+    jq
     lazygit
-    tree
-    bun
-    rustup
-    zip
-    unzip
+    neovim
     nerd-fonts.hack
-    roboto
-    noto-fonts
-    noto-fonts-cjk-sans
-    noto-fonts-color-emoji
-    font-awesome
   ];
 
   fonts.fontconfig.enable = true;
@@ -81,27 +67,17 @@ in
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
     shellAliases = {
+      # Same lean set as kunchenguid/home.nix
       ".." = "cd ..";
-      m = "git switch main";
-      mst = "git switch master";
-      pull = "git pull";
-      push = "git push";
-      pushf = "git push --force";
       add = "git add .";
-      amend = "git commit --amend";
-      reset = "git reset --soft HEAD^";
-      rebasem = "git rebase -i main";
-      rebasemst = "git rebase -i master";
-      # High-agency agent shortcuts (same idea as Kun's home.nix)
+      push = "git push";
+      pull = "git pull";
+      m = "git switch main";
       cc = "claude --dangerously-skip-permissions";
       co = "codex --full-auto";
     };
     initContent = ''
       bindkey '^f' autosuggest-accept
-      # Ensure Homebrew CLIs (claude, codex, brew) are on PATH in GUI terminals.
-      if [[ -x /opt/homebrew/bin/brew ]]; then
-        eval "$(/opt/homebrew/bin/brew shellenv zsh)"
-      fi
     '';
   };
 
@@ -117,6 +93,13 @@ in
     ".claude/CLAUDE.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
     ".codex/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
     ".config/opencode/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
+
+    # Baby Menu (kunchenguid): authored extensions + prefs only.
+    # Runtime (~/.baby-menu/{baby-menu.db*,cache,.cache}) stays unmanaged.
+    # Officially supports mkOutOfStoreSymlink for extensions/.
+    ".baby-menu/extensions".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.baby-menu/extensions";
+    ".baby-menu/agents.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.baby-menu/agents.json";
+    ".baby-menu/preferences.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.baby-menu/preferences.json";
 
     # Pi (kunchenguid-aligned): only authored config/theme/extensions.
     # Runtime (auth, sessions, ~/.pi/agent/npm|git) stays unmanaged.
@@ -136,23 +119,23 @@ in
     fi
   '';
 
-  # graphify: knowledge-graph skill, not Nix-packaged. pip-install it (Homebrew
-  # Python is externally-managed, hence --break-system-packages) then register
-  # its skill into every agent that should have it. Each `graphify <platform>
-  # install` is idempotent - safe to re-run on every rebuild.
+  # graphify: skill for the harnesses you use most. CLI via pipx (not brew Python).
+  # Platforms: claude, codex, pi, opencode. There is no "grok" target - Grok runs
+  # through Pi (default) and OpenCode, so those two cover it.
   home.activation.installGraphify = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     export PATH="/opt/homebrew/bin:$PATH"
-    if command -v pip3 >/dev/null 2>&1; then
-      pip3 install --quiet --upgrade --break-system-packages graphifyy
+    if command -v pipx >/dev/null 2>&1; then
+      pipx install --quiet graphifyy 2>/dev/null || pipx upgrade --quiet graphifyy 2>/dev/null || true
     else
-      echo "installGraphify: pip3 not found; skipping install, still trying to register skills"
+      echo "installGraphify: pipx not found (brew install pipx); skipping CLI install"
     fi
     if command -v graphify >/dev/null 2>&1; then
-      graphify claude install >/dev/null 2>&1 || true
-      graphify codex install >/dev/null 2>&1 || true
-      graphify pi install >/dev/null 2>&1 || true
+      graphify install --platform claude >/dev/null 2>&1 || true
+      graphify install --platform codex >/dev/null 2>&1 || true
+      graphify install --platform pi >/dev/null 2>&1 || true
+      graphify install --platform opencode >/dev/null 2>&1 || true
     else
-      echo "installGraphify: graphify CLI not found after install attempt; skipping skill registration"
+      echo "installGraphify: graphify CLI not on PATH; skipping skill registration"
     fi
   '';
 }

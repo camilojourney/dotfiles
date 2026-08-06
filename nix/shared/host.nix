@@ -13,7 +13,13 @@
       cleanup = "uninstall"; # remove unlisted apps but keep their user data
       upgrade = true; # brew upgrade + brew upgrade --cask on each rebuild
     };
-    taps = [ ];
+    # Non-official taps need trusted = true (Homebrew 6+ HOMEBREW_REQUIRE_TAP_TRUST).
+    taps = [
+      {
+        name = "kunchenguid/tap";
+        trusted = true;
+      }
+    ];
     brews = [
       "herdr"
       "espeak-ng"
@@ -23,6 +29,7 @@
       "opencode"
       "mas" # Mac App Store CLI (Dato, etc.)
       "node" # Node.js (formula, not cask)
+      "pipx" # isolated Python CLIs (graphifyy); preferred over pip --break-system-packages
       "starship" # brew binary; nixpkgs starship currently fails to link on Darwin
     ];
     casks = [
@@ -31,6 +38,7 @@
       "claude-code"
       "claude"
       "codex"
+      "baby-menu" # from trusted kunchenguid/tap
       "font-hack-nerd-font"
       "gcloud-cli"
       "grok-build"

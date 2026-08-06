@@ -12,6 +12,16 @@
           "contextWindow": 272000
         }
       }
+    },
+    "deepseek": {
+      "modelOverrides": {
+        "deepseek-v4-pro": {
+          "contextWindow": 272000
+        },
+        "deepseek-v4-flash": {
+          "contextWindow": 272000
+        }
+      }
     }
   }
 }
