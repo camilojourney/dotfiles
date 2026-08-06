@@ -30,3 +30,6 @@ navigate_pane_right = "l"
 mouse_capture = true
 prompt_new_tab_name = false
 agent_panel_sort = "spaces"
+
+[experimental]
+allow_nested = true

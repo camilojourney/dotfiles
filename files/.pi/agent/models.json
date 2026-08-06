@@ -12,49 +12,6 @@
           "contextWindow": 272000
         }
       }
-    },
-    "laguna": {
-      "baseUrl": "http://127.0.0.1:8080/v1",
-      "api": "openai-completions",
-      "apiKey": "sk-optiq-local",
-      "models": [
-        {
-          "id": "mlx-community/Laguna-XS-2.1-OptiQ-4bit",
-          "name": "Laguna XS 2.1",
-          "reasoning": false,
-          "input": ["text"],
-          "contextWindow": 32768,
-          "maxTokens": 8192,
-          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
-        },
-        {
-          "id": "mlx-community/Laguna-XS-2.1-OptiQ-4bit:think",
-          "name": "Laguna - think",
-          "reasoning": true,
-          "input": ["text"],
-          "contextWindow": 24576,
-          "maxTokens": 8192,
-          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
-        },
-        {
-          "id": "mlx-community/Laguna-XS-2.1-OptiQ-4bit:no-think",
-          "name": "Laguna - fast",
-          "reasoning": false,
-          "input": ["text"],
-          "contextWindow": 16384,
-          "maxTokens": 4096,
-          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
-        },
-        {
-          "id": "mlx-community/Laguna-XS-2.1-OptiQ-4bit:precise",
-          "name": "Laguna - precise",
-          "reasoning": false,
-          "input": ["text"],
-          "contextWindow": 24576,
-          "maxTokens": 8192,
-          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
-        }
-      ]
     }
   }
 }

@@ -17,6 +17,6 @@
     "git:github.com/algal/pi-openai-server-compaction@c6d593087709e9481223dc6c6c2269b371b5e055"
   ],
   "lastChangelogVersion": "0.83.0",
-  "defaultProvider": "laguna",
-  "defaultModel": "mlx-community/Laguna-XS-2.1-OptiQ-4bit"
+  "defaultProvider": "xai",
+  "defaultModel": "grok-4.5"
 }

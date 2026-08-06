@@ -135,4 +135,24 @@ in
       echo "installPi: npm not found (install brew node first); skipping"
     fi
   '';
+
+  # graphify: knowledge-graph skill, not Nix-packaged. pip-install it (Homebrew
+  # Python is externally-managed, hence --break-system-packages) then register
+  # its skill into every agent that should have it. Each `graphify <platform>
+  # install` is idempotent - safe to re-run on every rebuild.
+  home.activation.installGraphify = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    export PATH="/opt/homebrew/bin:$PATH"
+    if command -v pip3 >/dev/null 2>&1; then
+      pip3 install --quiet --upgrade --break-system-packages graphifyy
+    else
+      echo "installGraphify: pip3 not found; skipping install, still trying to register skills"
+    fi
+    if command -v graphify >/dev/null 2>&1; then
+      graphify claude install >/dev/null 2>&1 || true
+      graphify codex install >/dev/null 2>&1 || true
+      graphify pi install >/dev/null 2>&1 || true
+    else
+      echo "installGraphify: graphify CLI not found after install attempt; skipping skill registration"
+    fi
+  '';
 }
