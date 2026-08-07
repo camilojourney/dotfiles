@@ -1,4 +1,3 @@
-onboarding = false
 [keys]
 prefix = "ctrl+b"
 focus_pane_left  = "prefix+h"
@@ -14,8 +13,5 @@ goto             = "prefix+g"
 copy_mode  = "prefix+y"  # herdr's copy-mode entry key; copy-mode's own internal keys (v/space select, y/Enter copy, q/Esc cancel) aren't configurable
 
 [ui]
-# Enable Herdr's mouse-first UI: sidebar clicks, pane focus, drag resize, and
-# context menus. Set false only if pane apps need normal terminal mouse handling.
 mouse_capture = true
-prompt_new_tab_name = false
 agent_panel_sort = "spaces"

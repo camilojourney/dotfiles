@@ -19,5 +19,6 @@
   "lastChangelogVersion": "0.84.0",
   "defaultProvider": "deepseek",
   "defaultModel": "deepseek-v4-flash",
-  "defaultThinkingLevel": "high"
+  "defaultThinkingLevel": "high",
+  "defaultProjectTrust": "always"
 }

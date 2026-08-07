@@ -2,7 +2,7 @@ return {
   {
     'stevearc/oil.nvim',
     opts = { view_options = { show_hidden = true } },
-    keys = { { '<leader>e', '<cmd>Oil<cr>', desc = 'File Browser' } },
+    keys = { { '<leader>o', '<cmd>Oil<cr>', desc = 'Oil File Browser' } },
   },
   {
     'folke/snacks.nvim',
@@ -10,10 +10,12 @@ return {
     lazy = false,
     opts = {
       picker = { enabled = true },
+      explorer = { enabled = true, replace_netrw = true },
       notifier = { enabled = true },
       input = { enabled = true },
     },
     keys = {
+      { '<leader>e', function() Snacks.explorer() end, desc = 'File Explorer' },
       { '<leader>f', function() Snacks.picker.files() end, desc = 'Find Files' },
       { '<leader>s', function() Snacks.picker.grep() end,  desc = 'Search Text' },
       { '<leader>b', function() Snacks.picker.buffers() end, desc = 'Buffers' },
@@ -21,4 +23,3 @@ return {
     },
   },
 }
-
