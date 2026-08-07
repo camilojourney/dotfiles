@@ -1,7 +1,13 @@
 # no-mistakes pipeline evidence should never be committed to this public repo
 .no-mistakes/
 
+# macOS metadata junk
+.DS_Store
+
 # Herdr runtime state (lives under files/.config/herdr via HM symlink)
 files/.config/herdr/*.log
 files/.config/herdr/*.sock
 files/.config/herdr/session.json
+files/.config/herdr/.plugins.lock
+files/.config/herdr/release-notes.json
+files/.config/herdr/sessions/
