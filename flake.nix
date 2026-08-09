@@ -15,11 +15,11 @@
 
   outputs = { nixpkgs, nix-darwin, home-manager, ... }:
   let
-    mkDarwin = { hostModule, userModule, userName, homeDirectory }:
+    mkDarwin = { hostProfile, hostModule, userModule, userName, homeDirectory }:
       nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
         specialArgs = {
-          inherit userName homeDirectory;
+          inherit hostProfile userName homeDirectory;
         };
         modules = [
           ./nix/shared/host.nix
@@ -30,7 +30,7 @@
             home-manager.useUserPackages = true;
             home-manager.backupFileExtension = "backup";
             home-manager.extraSpecialArgs = {
-              inherit userName homeDirectory;
+              inherit hostProfile userName homeDirectory;
             };
             home-manager.users = {
               ${userName} = {
@@ -42,12 +42,14 @@
       };
   in {
     darwinConfigurations.camilo = mkDarwin {
+      hostProfile = "camilo";
       hostModule = ./nix/camilo/host.nix;
       userModule = ./nix/camilo/user.nix;
       userName = "camiloslaptop";
       homeDirectory = "/Users/camiloslaptop";
     };
     darwinConfigurations.camilo-mini = mkDarwin {
+      hostProfile = "camilo-mini";
       hostModule = ./nix/camilo-mini/host.nix;
       userModule = ./nix/camilo-mini/user.nix;
       userName = "mini";

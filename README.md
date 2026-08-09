@@ -194,8 +194,10 @@ The harness also guards every harness/stub write against sandbox escapes, re-hom
 My rough rule of thumb:
 
 - use **Home Manager / Nix** for reproducible baseline CLI tools, fonts, shell utilities, and user environment packages
-- use **Homebrew** for GUI apps and macOS-native tools that fit naturally there
-- use **ecosystem-specific package managers** like `npm` when that is the right abstraction for the tool
+- use **Homebrew** for GUI apps and macOS-native tools that fit naturally there (declared in `nix/shared/host.nix` and host overlays)
+- use **`nix/shared/agent-tools/manifest.lock.json`** for required agent/developer CLIs installed via npm, pipx, or pinned external release archives
+
+Agent npm globals, pipx apps, and external tools (`no-mistakes`, `treehouse`) reconcile together on every `rebuild` via `scripts/agent-tools/reconcile.sh`. Add new entries to the manifest instead of ad hoc activation blocks. Run `bash scripts/agent-tools/audit.sh` to see unmanaged top-level tools without deleting anything.
 
 A good setup does not force every tool through one package manager. It just makes the ownership of each layer clear.
 
