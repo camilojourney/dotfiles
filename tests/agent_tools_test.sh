@@ -106,7 +106,7 @@ case "${1:-}" in
     version="${pkg##*==}"
     tmp=$(mktemp)
     jq --arg n "$name" --arg v "$version" \
-      '.venvs[$n] = {metadata: {main_package: {package: $v}}}' \
+      '.venvs[$n] = {metadata: {main_package: {package: $n, package_version: $v}}}' \
       "${AGENT_TOOLS_STUB_PIPX_LIST:?}" >"$tmp" && mv "$tmp" "${AGENT_TOOLS_STUB_PIPX_LIST:?}"
     mkdir -p "$HOME/.local/bin"
     case "$name" in
@@ -197,7 +197,7 @@ test_idempotent_repeat() {
     echo "first reconcile failed" >&2; cat "$log/first/stderr.log" >&2 || true
     fail "first reconcile exited $rc"; rm -rf "$sandbox"; return 0
   fi
-  jq '.venvs.graphifyy = {metadata: {main_package: {package: "0.9.34"}}}' \
+  jq '.venvs.graphifyy = {metadata: {main_package: {package: "graphifyy", package_version: "0.9.34"}}}' \
     "$sandbox/pipx-list.json" >"$sandbox/pipx-list.tmp" && mv "$sandbox/pipx-list.tmp" "$sandbox/pipx-list.json"
 
   run_reconcile camilo "$log/second" "$sandbox" || rc=$?

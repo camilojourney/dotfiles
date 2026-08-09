@@ -47,7 +47,7 @@ pipx_list_json() {
 
 pipx_installed_version() {
   local name=$1
-  pipx_list_json | jq -r --arg n "$name" '.venvs[$n].metadata.main_package.package // empty'
+  pipx_list_json | jq -r --arg n "$name" '.venvs[$n].metadata.main_package.package_version // empty'
 }
 
 install_pipx_packages() {
