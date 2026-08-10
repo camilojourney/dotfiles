@@ -30,7 +30,7 @@ in
         echo "installAgentTools: reconcile script missing at ${reconcileScript}" >&2
         exit 1
       fi
-      "${reconcileScript}" "${config.agentTools.hostProfile}"
+      AGENT_TOOLS_MANIFEST="${config.agentTools.manifestPath}" "${reconcileScript}" "${config.agentTools.hostProfile}"
     '';
   };
 }

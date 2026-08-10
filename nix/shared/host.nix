@@ -31,7 +31,7 @@
       "node" # Node.js (formula, not cask) - owns npm; never install global npm override
       "pipx" # isolated Python CLIs (graphifyy, mlx-* on laptop)
       "starship" # brew binary; nixpkgs starship currently fails to link on Darwin
-      "tmux" # Firstmate default runtime backend (docs/tmux-backend.md)
+      "tmux" # required runtime backend for terminal-multiplexed agent sessions
     ];
     casks = [
       "wezterm"
