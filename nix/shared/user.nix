@@ -1,4 +1,4 @@
-{ config, pkgs, lib, userName, homeDirectory, ... }:
+{ config, pkgs, lib, userName, homeDirectory, hostProfile, ... }:
 
 let
   dotfilesDir = "${config.home.homeDirectory}/github/dotfiles";
@@ -109,33 +109,10 @@ in
     ".pi/agent/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.pi/agent/settings.json";
   };
 
-  # Pi CLI itself is npm-global (same as Kun), not Homebrew. Needs brew `node`.
-  home.activation.installPi = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    export PATH="/opt/homebrew/bin:$PATH"
-    if command -v npm >/dev/null 2>&1; then
-      npm install -g --ignore-scripts @earendil-works/pi-coding-agent
-    else
-      echo "installPi: npm not found (install brew node first); skipping"
-    fi
-  '';
+  imports = [ ./agent-tools ];
 
-  # graphify: skill for the harnesses you use most. CLI via pipx (not brew Python).
-  # Platforms: claude, codex, pi, opencode. There is no "grok" target - Grok runs
-  # through Pi (default) and OpenCode, so those two cover it.
-  home.activation.installGraphify = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    export PATH="/opt/homebrew/bin:$PATH"
-    if command -v pipx >/dev/null 2>&1; then
-      pipx install --quiet graphifyy 2>/dev/null || pipx upgrade --quiet graphifyy 2>/dev/null || true
-    else
-      echo "installGraphify: pipx not found (brew install pipx); skipping CLI install"
-    fi
-    if command -v graphify >/dev/null 2>&1; then
-      graphify install --platform claude >/dev/null 2>&1 || true
-      graphify install --platform codex >/dev/null 2>&1 || true
-      graphify install --platform pi >/dev/null 2>&1 || true
-      graphify install --platform opencode >/dev/null 2>&1 || true
-    else
-      echo "installGraphify: graphify CLI not on PATH; skipping skill registration"
-    fi
-  '';
+  agentTools = {
+    enable = true;
+    inherit hostProfile;
+  };
 }

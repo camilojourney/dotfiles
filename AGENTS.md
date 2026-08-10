@@ -35,7 +35,26 @@ Path mapping: his `home/.config/X` → our `files/.config/X`; his `home/.pi/agen
 
 ## Pi (kunchenguid-aligned)
 
-- CLI: `npm install -g --ignore-scripts @earendil-works/pi-coding-agent` (Home Manager `home.activation.installPi` on rebuild; needs brew `node`).
+- CLI: declared in `nix/shared/agent-tools/manifest.lock.json` and reconciled by `scripts/agent-tools/reconcile.sh` on rebuild (Home Manager `installAgentTools` activation; needs brew `node`).
 - Authored config only: `files/.pi/agent/{themes,extensions,models.json,settings.json}` symlinked into `~/.pi/agent/`.
 - Third-party Pi packages are pinned in `settings.json` `"packages"` (not vendored into the repo).
 - Do not manage `~/.pi/agent` wholesale; leave auth, sessions, `npm/`, and `git/` unmanaged.
+
+## Agent/developer CLI inventory
+
+Required agent CLIs (npm globals, pipx apps, external release binaries) are owned by `nix/shared/agent-tools/manifest.lock.json`.
+
+- **Add or bump a tool:** edit the manifest, then rebuild. Do not add one-off `home.activation` blocks.
+- **npm globals:** reconciled together via `scripts/agent-tools/reconcile.sh` using brew node `npm install -g --ignore-scripts <pkg>@<pin>`. Never declare a global `npm` package.
+- **pipx:** shared packages apply to both hosts; laptop-only MLX tooling lives under `pipx.camilo`.
+- **External** (`no-mistakes`, `treehouse`): pinned GitHub release archives with sha256 in the manifest; installed by `scripts/agent-tools/install-external.sh`.
+- **Update policy:** ordinary `rebuild` reconciles to manifest pins (not floating latest). Bump pins explicitly.
+- **Audit unmanaged tools:** `bash scripts/agent-tools/audit.sh [camilo|camilo-mini]` (reports only; never deletes).
+- **Tests:** `bash tests/agent_tools_test.sh` (stubbed package managers; no network or host mutation).
+
+## Maintaining this file
+
+Keep this file for knowledge useful to almost every future agent session in this project.
+Do not repeat what the codebase already shows; point to the authoritative file or command instead.
+Prefer rewriting or pruning existing entries over appending new ones.
+When updating this file, preserve this bar for all agents and keep entries concise.

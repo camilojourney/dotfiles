@@ -1,0 +1,80 @@
+{
+  "policy": {
+    "update": "Pinned versions are reconciled on every rebuild. Bump pins in this manifest explicitly; rebuild never floats to unpinned latest.",
+    "npm": "Global npm CLIs install via brew node npm with --ignore-scripts. The global npm package itself is never managed here so brew node owns npm.",
+    "pipx": "Isolated Python CLIs install via brew pipx with ==version pins.",
+    "external": "Release archives download from official GitHub releases with sha256 verification (see scripts/agent-tools/install-external.sh).",
+    "reproducibility": "npm/pipx pins are auditable in this file. External binaries add content-addressed sha256 per platform. Bumping a pin is an intentional manifest edit."
+  },
+  "npm": [
+  { "name": "@earendil-works/pi-coding-agent", "version": "0.84.1" },
+  { "name": "acpx", "version": "0.13.0" },
+  { "name": "chrome-devtools-axi", "version": "0.1.28" },
+  { "name": "gh-axi", "version": "0.1.30" },
+  { "name": "gnhf", "version": "0.1.43" },
+  { "name": "lavish-axi", "version": "0.1.47" },
+  { "name": "pnpm", "version": "11.1.1" },
+  { "name": "quota-axi", "version": "0.1.20" },
+  { "name": "tasks-axi", "version": "0.2.5" }
+  ],
+  "pipx": {
+    "shared": [
+      { "name": "graphifyy", "version": "0.9.34" }
+    ],
+    "camilo": [
+      { "name": "mlx-lm", "version": "0.31.3" },
+      { "name": "mlx-optiq", "version": "0.4.7" }
+    ]
+  },
+  "external": {
+    "no-mistakes": {
+      "version": "1.45.4",
+      "repo": "kunchenguid/no-mistakes",
+      "installSubdir": ".no-mistakes/bin",
+      "binary": "no-mistakes",
+      "archivePattern": "no-mistakes-v{version}-{os}-{arch}.tar.gz",
+      "sha256": {
+        "darwin-arm64": "7978b68c931207088d9ff7c6255685f60ae6b240ca15228f053d674ed94af8e5",
+        "darwin-amd64": "2596aa20a2c3373b8bc28260e7fe3ad31a32e7c9c0b94dae0c79d805ac039936"
+      }
+    },
+    "treehouse": {
+      "version": "2.0.1",
+      "repo": "kunchenguid/treehouse",
+      "installSubdir": ".local/bin",
+      "binary": "treehouse",
+      "archivePattern": "treehouse-v{version}-{os}-{arch}.tar.gz",
+      "sha256": {
+        "darwin-arm64": "7ee5078f3d1f33c01196548797fce65408e459d53530b77d4ba56e074fa1c1a2",
+        "darwin-amd64": "1cf44580a5837f995e1d3bb74f4fbd3112b642acd20406087d9735a8106112fd"
+      }
+    }
+  },
+  "setupHooks": {
+    "npm": ["gh-axi", "lavish-axi", "chrome-devtools-axi", "tasks-axi"],
+    "graphify": {
+      "command": "graphify",
+      "platforms": ["claude", "codex", "pi", "opencode"]
+    }
+  },
+  "verify": {
+    "bins": [
+      "pi",
+      "acpx",
+      "chrome-devtools-axi",
+      "gh-axi",
+      "gnhf",
+      "lavish-axi",
+      "pnpm",
+      "quota-axi",
+      "tasks-axi",
+      "graphify",
+      "no-mistakes",
+      "treehouse",
+      "tmux"
+    ],
+    "hostBins": {
+      "camilo": ["mlx_lm", "optiq"]
+    }
+  }
+}
