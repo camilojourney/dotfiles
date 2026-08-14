@@ -93,6 +93,14 @@ if [ "${1:-}" = list ] && [ "${2:-}" = --formula ]; then
 fi
 STUB
 
+  cat >"$sandbox/stubs/uname" <<'STUB'
+#!/usr/bin/env bash
+case "${1:-}" in
+  -s) echo Linux ;;
+  -m) echo x86_64 ;;
+esac
+STUB
+
   cat >"$sandbox/stubs/pipx" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
