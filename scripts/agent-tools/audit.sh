@@ -31,7 +31,6 @@ collect_brew_formulas() {
     | sort -u || true
 }
 
-declared_npm=$(jq -r '.npm[].name' "$MANIFEST" | sort -u)
 declared_pipx=$(jq -r '.pipx.shared[].name' "$MANIFEST")
 if [ "$HOST_PROFILE" = camilo ]; then
   declared_pipx=$(printf '%s\n%s\n' "$declared_pipx" "$(jq -r '.pipx.camilo[]?.name // empty' "$MANIFEST")")

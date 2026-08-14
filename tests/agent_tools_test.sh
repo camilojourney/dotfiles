@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Regression tests for scripts/agent-tools/reconcile.sh
+# Regression tests for agent-tool reconciliation and audit scripts
 #
-# Runs reconcile with stub package managers so no real network or system mutation
-# occurs. Proves fresh activation installs the declared set, repeat activation is
-# idempotent, setup hooks run, host-specific pipx packages stay scoped, and missing
-# package managers fail according to policy.
+# Runs reconciliation and audit checks with stub package managers so no real
+# network or system mutation occurs. Proves fresh activation installs the declared
+# set, repeat activation is idempotent, setup hooks run, host-specific pipx
+# packages stay scoped, missing package managers fail according to policy, and
+# shared Homebrew formulas are recognized by the audit for both host profiles.
 #
 # Run: bash tests/agent_tools_test.sh
 
