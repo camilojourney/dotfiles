@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  shell-tests:
+    name: Shell tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run agent-tool tests
+        run: bash tests/agent_tools_test.sh
+      - name: Run mac setup tests
+        run: bash tests/mac_setup_test.sh
