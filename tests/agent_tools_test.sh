@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Regression tests for scripts/agent-tools/reconcile.sh
+# Regression tests for agent-tool reconciliation and audit scripts
 #
-# Runs reconcile with stub package managers so no real network or system mutation
-# occurs. Proves fresh activation installs the declared set, repeat activation is
-# idempotent, setup hooks run, host-specific pipx packages stay scoped, and missing
-# package managers fail according to policy.
+# Runs reconciliation and audit checks with stub package managers so no real
+# network or system mutation occurs. Proves fresh activation installs the declared
+# set, repeat activation is idempotent, setup hooks run, host-specific pipx
+# packages stay scoped, missing package managers fail according to policy, and
+# shared Homebrew formulas are recognized by the audit for both host profiles.
 #
 # Run: bash tests/agent_tools_test.sh
 
@@ -82,6 +83,22 @@ case "${1:-}" in
     ;;
 esac
 exit 0
+STUB
+
+  cat >"$sandbox/stubs/brew" <<'STUB'
+#!/usr/bin/env bash
+set -euo pipefail
+if [ "${1:-}" = list ] && [ "${2:-}" = --formula ]; then
+  echo uv
+fi
+STUB
+
+  cat >"$sandbox/stubs/uname" <<'STUB'
+#!/usr/bin/env bash
+case "${1:-}" in
+  -s) echo Linux ;;
+  -m) echo x86_64 ;;
+esac
 STUB
 
   cat >"$sandbox/stubs/pipx" <<'STUB'
@@ -258,11 +275,36 @@ test_manifest_json_valid() {
   pass "manifest.lock.json parses and has required sections"
 }
 
+test_audit_recognizes_shared_uv_for_both_hosts() {
+  local sandbox profile out unmanaged
+  sandbox=$(setup_sandbox)
+
+  for profile in camilo camilo-mini; do
+    out=$(env -i \
+      HOME="$sandbox/home" \
+      AGENT_TOOLS_BREW_BIN="$sandbox/stubs" \
+      PATH="$sandbox/stubs:/usr/bin:/bin" \
+      "$REAL_BASH" "$sandbox/repo/scripts/agent-tools/audit.sh" "$profile")
+    assert_contains "$out" "--- Unmanaged Homebrew formulas (not in declared brew set) ---" \
+      "audit reports Homebrew formula status for $profile"
+    unmanaged=$(printf '%s\n' "$out" | awk '
+      /^--- Unmanaged Homebrew formulas/{in_section=1; next}
+      /^--- /{in_section=0}
+      in_section {print}
+    ')
+    assert_not_contains "$unmanaged" "uv" "audit recognizes shared uv for $profile"
+  done
+
+  rm -rf "$sandbox"
+  pass "audit recognizes shared uv for both host profiles"
+}
+
 test_fresh_install_shared
 test_idempotent_repeat
 test_host_scoped_pipx
 test_missing_npm_fails
 test_manifest_json_valid
+test_audit_recognizes_shared_uv_for_both_hosts
 
 if [ "$FAILURES" -gt 0 ]; then
   echo "$FAILURES test(s) failed" >&2

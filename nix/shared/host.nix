@@ -32,6 +32,7 @@
       "pipx" # isolated Python CLIs (graphifyy, mlx-* on laptop)
       "starship" # brew binary; nixpkgs starship currently fails to link on Darwin
       "tmux" # required runtime backend for terminal-multiplexed agent sessions
+      "uv"
     ];
     casks = [
       "wezterm"

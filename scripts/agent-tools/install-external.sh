@@ -41,6 +41,17 @@ install_subdir=$(jq -r '.installSubdir' <<<"$entry")
 binary=$(jq -r '.binary' <<<"$entry")
 pattern=$(jq -r '.archivePattern' <<<"$entry")
 
+install_dir="${HOME}/${install_subdir}"
+dest="${install_dir}/${binary}"
+
+if [ "${AGENT_TOOLS_TEST_MODE:-}" = 1 ]; then
+  mkdir -p "$install_dir"
+  printf '#!/usr/bin/env bash\necho v%s\n' "$version" >"$dest"
+  chmod +x "$dest"
+  info "test-mode installed $TOOL ${version} to $dest"
+  exit 0
+fi
+
 os=$(uname -s | tr '[:upper:]' '[:lower:]')
 arch=$(uname -m)
 case "$arch" in
@@ -63,17 +74,6 @@ archive=${archive//\{arch\}/$arch}
 tag="v${version}"
 tag=${tag/vv/v}
 url="https://github.com/${repo}/releases/download/${tag}/${archive}"
-
-install_dir="${HOME}/${install_subdir}"
-dest="${install_dir}/${binary}"
-
-if [ "${AGENT_TOOLS_TEST_MODE:-}" = 1 ]; then
-  mkdir -p "$install_dir"
-  printf '#!/usr/bin/env bash\necho v%s\n' "$version" >"$dest"
-  chmod +x "$dest"
-  info "test-mode installed $TOOL ${version} to $dest"
-  exit 0
-fi
 
 if [ -x "$dest" ]; then
   installed=$("$dest" --version 2>/dev/null | tr -d '[:space:]' || true)

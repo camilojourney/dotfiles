@@ -7,7 +7,7 @@ bash tests/mac_setup_test.sh
 bash tests/agent_tools_test.sh
 ```
 
-`agent_tools_test.sh` exercises `scripts/agent-tools/reconcile.sh` with stubbed `npm`, `pipx`, and external installers. It proves fresh activation installs the declared inventory, repeat activation is idempotent, setup hooks run, host-specific pipx packages stay scoped, and missing package managers fail clearly. It never touches the real network or host package state.
+`agent_tools_test.sh` exercises the agent-tool reconciliation and audit scripts with stubbed `npm`, `pipx`, external installers, and Homebrew. It proves fresh activation installs the declared inventory, repeat activation is idempotent, setup hooks run, host-specific pipx packages stay scoped, missing package managers fail clearly, and shared Homebrew formulas are recognized for both host profiles. It never touches the real network or host package state.
 
 `mac_setup_test.sh` is a regression test for `setup/mac.sh`.
 It never runs the script against the real machine, since that script installs Nix and activates a real `nix-darwin` system.

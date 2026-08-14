@@ -8,7 +8,7 @@ set -euo pipefail
 HOST_PROFILE=${1:-camilo}
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 MANIFEST="$REPO_ROOT/nix/shared/agent-tools/manifest.lock.json"
-BREW_BIN=/opt/homebrew/bin
+BREW_BIN=${AGENT_TOOLS_BREW_BIN:-/opt/homebrew/bin}
 
 export PATH="${BREW_BIN}:${HOME}/.local/bin:${HOME}/.no-mistakes/bin:${PATH:-}"
 
@@ -31,7 +31,6 @@ collect_brew_formulas() {
     | sort -u || true
 }
 
-declared_npm=$(jq -r '.npm[].name' "$MANIFEST" | sort -u)
 declared_pipx=$(jq -r '.pipx.shared[].name' "$MANIFEST")
 if [ "$HOST_PROFILE" = camilo ]; then
   declared_pipx=$(printf '%s\n%s\n' "$declared_pipx" "$(jq -r '.pipx.camilo[]?.name // empty' "$MANIFEST")")

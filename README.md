@@ -45,7 +45,7 @@ The goal is to provide a reusable foundation that you can make your own.
 - `upstream/kunchenguid/` - decisions + snapshot for tracking [Kun's configs](https://github.com/kunchenguid/dotfiles)
 - `scripts/check-upstream-configs.sh` - check / safely adopt his updates
 - `scripts/cursor-launchers/` - portable source and generator for Cursor Finder launchers
-- `tests/` - regression tests for the bootstrap script
+- `tests/` - safe shell regression tests for bootstrap and agent tools
 - `blog.md` - local copy of the [blog post](https://open.substack.com/pub/kunchenguid/p/how-i-built-a-reproducible-mac-setup?utm_campaign=post-expanded-share&utm_medium=web)
 
 ## Tracking Kun's config updates (wezterm / nvim / herdr)
