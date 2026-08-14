@@ -8,7 +8,7 @@ set -euo pipefail
 HOST_PROFILE=${1:-camilo}
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 MANIFEST="$REPO_ROOT/nix/shared/agent-tools/manifest.lock.json"
-BREW_BIN=/opt/homebrew/bin
+BREW_BIN=${AGENT_TOOLS_BREW_BIN:-/opt/homebrew/bin}
 
 export PATH="${BREW_BIN}:${HOME}/.local/bin:${HOME}/.no-mistakes/bin:${PATH:-}"
 
