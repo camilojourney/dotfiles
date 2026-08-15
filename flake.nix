@@ -48,10 +48,10 @@
       userName = "camiloslaptop";
       homeDirectory = "/Users/camiloslaptop";
     };
-    darwinConfigurations.camilo-mini = mkDarwin {
-      hostProfile = "camilo-mini";
-      hostModule = ./nix/camilo-mini/host.nix;
-      userModule = ./nix/camilo-mini/user.nix;
+    darwinConfigurations.camilo-remote = mkDarwin {
+      hostProfile = "camilo-remote";
+      hostModule = ./nix/camilo-remote/host.nix;
+      userModule = ./nix/camilo-remote/user.nix;
       userName = "mini";
       homeDirectory = "/Users/mini";
     };

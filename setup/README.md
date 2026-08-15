@@ -16,10 +16,10 @@ Typical flow:
 bash setup/mac.sh
 ```
 
-On the Mac Mini:
+On the remote Mac:
 
 ```bash
-DARWIN_FLAKE_ATTR=camilo-mini bash setup/mac.sh
+DARWIN_FLAKE_ATTR=camilo-remote bash setup/mac.sh
 ```
 
 What the script does:
@@ -27,15 +27,15 @@ What the script does:
 - checks that you replaced the placeholder values first
 - installs Determinate Nix Installer if needed
 - installs Homebrew if needed
-- applies the `nix-darwin` + Home Manager configuration (`#camilo` by default, or `#camilo-mini` when `DARWIN_FLAKE_ATTR=camilo-mini`)
+- applies the `nix-darwin` + Home Manager configuration (`#camilo` by default, or `#camilo-remote` when `DARWIN_FLAKE_ATTR=camilo-remote`)
 - installs `nvm` and a default Node.js version if needed
 
-This script is meant for the **first bootstrap on a new Mac**. After that, most ongoing changes should happen by editing the Nix config and running `darwin-rebuild switch --flake ~/github/dotfiles#camilo` (or `#camilo-mini` on the Mini).
+This script is meant for the **first bootstrap on a new Mac**. After that, most ongoing changes should happen by editing the Nix config and running `./rebuild.sh` on the laptop or `./rebuild-remote.sh` on the remote host.
 
 It's designed to complete in a single run: right after installing Nix it sources the daemon profile into the current shell, and the first `nix-darwin` activation resolves `nix` by absolute path with the experimental features it needs, so you should **not** need to run it twice or open a new shell partway through.
 
 `NIX_DAEMON_PROFILE` and `DARWIN_REBUILD_BIN` are overridable only so the regression test can point the script at sandboxed paths.
-`DARWIN_FLAKE_ATTR` selects the flake output (`camilo` or `camilo-mini`).
+`DARWIN_FLAKE_ATTR` selects the flake output (`camilo` or `camilo-remote`).
 For normal bootstrap usage, leave the first two unset.
 
 ## Testing

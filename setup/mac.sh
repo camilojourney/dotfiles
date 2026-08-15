@@ -40,7 +40,7 @@ fi
 # Apply the Nix configuration. (DARWIN_REBUILD_BIN is overridable so tests
 # can point at a sandboxed binary instead of the real one.)
 # DARWIN_FLAKE_ATTR selects which darwinConfigurations.* to build
-# (default: camilo; use camilo-mini on the Mac Mini).
+# (default: camilo; use camilo-remote on the remote Mac).
 : "${DARWIN_REBUILD_BIN:=/run/current-system/sw/bin/darwin-rebuild}"
 : "${DARWIN_FLAKE_ATTR:=camilo}"
 if [ -x "$DARWIN_REBUILD_BIN" ]; then

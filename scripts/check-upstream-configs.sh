@@ -1,28 +1,35 @@
 #!/usr/bin/env bash
-# Compare our files/.config/{wezterm,nvim,herdr} against kunchenguid/dotfiles.
-# Uses upstream/kunchenguid/decisions.json so we can adopt his updates without
+# Mirror the complete kunchenguid/dotfiles repository and compare our selected
+# live configs against its home/.config/{wezterm,nvim,herdr} files. Uses
+# upstream/kunchenguid/decisions.json so we can adopt updates without
 # blind-overwriting intentional local changes.
 #
 # Usage:
 #   bash scripts/check-upstream-configs.sh           # report only
 #   bash scripts/check-upstream-configs.sh --apply   # safe-apply track files only
 #   bash scripts/check-upstream-configs.sh --refresh-snapshot
+#   bash scripts/check-upstream-configs.sh --refresh-repository
 #
 set -euo pipefail
 
 REPO_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 DECISIONS="$REPO_ROOT/upstream/kunchenguid/decisions.json"
 SNAP="$REPO_ROOT/upstream/kunchenguid/snapshot"
+MIRROR="$REPO_ROOT/upstream/kunchenguid/repository"
+MIRROR_COMMIT="$REPO_ROOT/upstream/kunchenguid/repository.commit"
 OURS="$REPO_ROOT/files/.config"
+PI_OURS="$REPO_ROOT/files/.pi/agent"
 UPSTREAM_REPO="${UPSTREAM_REPO:-kunchenguid/dotfiles}"
 UPSTREAM_REF="${UPSTREAM_REF:-main}"
 
 APPLY=0
 REFRESH_ONLY=0
+REPOSITORY_ONLY=0
 for arg in "$@"; do
   case "$arg" in
     --apply) APPLY=1 ;;
     --refresh-snapshot) REFRESH_ONLY=1 ;;
+    --refresh-repository) REPOSITORY_ONLY=1 ;;
     -h|--help)
       sed -n '2,12p' "$0"
       exit 0
@@ -54,6 +61,51 @@ fetch_commit() {
   else
     curl -fsSL "https://api.github.com/repos/${UPSTREAM_REPO}/commits/${UPSTREAM_REF}" \
       | python3 -c 'import sys,json; print(json.load(sys.stdin)["sha"])'
+  fi
+}
+
+refresh_repository() {
+  local commit="$1"
+  local tmp repo staged mirror_commit
+
+  tmp=$(mktemp -d)
+  repo="$tmp/repository"
+  staged="$tmp/staged"
+  git clone --quiet --depth 1 --branch "$UPSTREAM_REF" "https://github.com/${UPSTREAM_REPO}.git" "$repo"
+  mirror_commit=$(git -C "$repo" rev-parse HEAD)
+  if [ "$mirror_commit" != "$commit" ]; then
+    echo "Warning: API commit changed during clone; mirroring $mirror_commit" >&2
+  fi
+
+  mkdir -p "$staged"
+  git -C "$repo" archive --format=tar HEAD | tar -xf - -C "$staged"
+  rm -rf "$MIRROR"
+  mv "$staged" "$MIRROR"
+  printf '%s\n' "$mirror_commit" >"$MIRROR_COMMIT"
+  rm -rf "$tmp"
+}
+
+import_missing_authored_configs() {
+  local source rel dest
+
+  # Import only files that do not exist locally. Existing files may contain
+  # intentional additions and must go through the decisions workflow instead.
+  if [ -d "$MIRROR/home/.pi/agent" ]; then
+    while IFS= read -r -d '' source; do
+      rel="${source#"$MIRROR/home/.pi/agent/"}"
+      dest="$PI_OURS/$rel"
+      if [ ! -e "$dest" ]; then
+        mkdir -p "$(dirname "$dest")"
+        cp -p "$source" "$dest"
+        echo "Imported missing upstream Pi config: home/.pi/agent/$rel"
+      fi
+    done < <(find "$MIRROR/home/.pi/agent" -type f -print0)
+  fi
+
+  if [ ! -e "$REPO_ROOT/files/.claude/settings.json" ] && [ -f "$MIRROR/home/.claude/settings.json" ]; then
+    mkdir -p "$REPO_ROOT/files/.claude"
+    cp -p "$MIRROR/home/.claude/settings.json" "$REPO_ROOT/files/.claude/settings.json"
+    echo "Imported missing upstream Claude config: home/.claude/settings.json"
   fi
 }
 
@@ -95,6 +147,14 @@ PY
 
 COMMIT=$(fetch_commit)
 echo "Upstream ${UPSTREAM_REPO}@${UPSTREAM_REF} -> ${COMMIT}"
+refresh_repository "$COMMIT"
+import_missing_authored_configs
+
+if [ "$REPOSITORY_ONLY" -eq 1 ]; then
+  echo "Complete repository mirrored at $MIRROR"
+  exit 0
+fi
+
 refresh_snapshot "$COMMIT"
 
 if [ "$REFRESH_ONLY" -eq 1 ]; then

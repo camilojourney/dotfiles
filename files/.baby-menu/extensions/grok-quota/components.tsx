@@ -2,9 +2,6 @@ import { Badge, StatusDot } from "@babymenu/ui";
 import type { QuotaFailure, QuotaWindow } from "./store";
 import { useGrokQuota } from "./store";
 
-const RADIUS = 15.9155;
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-
 // Reverse of server.ts PRODUCT_NAMES, used only to recover the numeric product
 // enum for the data-grok-products observability attribute.
 const PRODUCT_IDS: Record<string, number> = { API: 1, "Grok Build": 2, "Grok Plugins": 3, Chat: 4, Imagine: 5, Voice: 6 };
@@ -21,59 +18,26 @@ function toneFor(percentUsed: number) {
   return "live" as const;
 }
 
-function toneClass(tone: "live" | "warn" | "danger") {
-  if (tone === "danger") return "text-signal-danger";
-  if (tone === "warn") return "text-signal-warn";
-  return "text-signal-live";
-}
-
-function bgToneClass(tone: "live" | "warn" | "danger") {
-  if (tone === "danger") return "bg-signal-danger";
-  if (tone === "warn") return "bg-signal-warn";
-  return "bg-signal-live";
-}
-
-function UsageBar({ label, percentUsed }: { label: string; percentUsed: number }) {
+function fillClassName(percentUsed: number) {
   const clamped = Math.max(0, Math.min(100, percentUsed));
   const tone = toneFor(clamped);
-  return (
-    <div className="flex flex-col gap-0.5">
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-ink-muted">{label}</span>
-        <span className="tracking-value text-ink-strong">{Math.round(clamped)}%</span>
-      </div>
-      <div className="relative h-1 w-full overflow-hidden rounded-full bg-ink-soft/20">
-        <div className={`absolute inset-y-0 left-0 rounded-full ${bgToneClass(tone)}`} style={{ width: `${clamped}%` }} />
-      </div>
-    </div>
-  );
+  if (tone === "danger") return "h-full rounded-[1px] bg-[rgb(255,106,122)] shadow-[0_0_9px_rgba(255,106,122,.32)]";
+  if (tone === "warn") return "h-full rounded-[1px] bg-[rgb(255,216,107)] shadow-[0_0_9px_rgba(255,216,107,.30)]";
+  return "h-full rounded-[1px] bg-signal-live shadow-[0_0_9px_rgba(106,227,182,.38)]";
 }
 
-function RadialGauge({ value, size }: { value: number; size: number }) {
-  const clamped = Math.max(0, Math.min(100, value));
-  const dash = (clamped / 100) * CIRCUMFERENCE;
-  const tone = toneFor(clamped);
-  const fontSize = size >= 80 ? "text-xl" : "text-sm";
+function remainingClassName(percentUsed: number) {
+  const tone = toneFor(percentUsed);
+  if (tone === "danger") return "text-signal-danger";
+  if (tone === "warn") return "text-signal-warn";
+  return "text-ink-strong";
+}
 
+function UsageBar({ value }: { value: number }) {
+  const clamped = Math.max(0, Math.min(100, value));
   return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
-      <svg viewBox="0 0 36 36" className="-rotate-90" style={{ width: size, height: size }}>
-        <circle cx="18" cy="18" r={RADIUS} fill="none" stroke="currentColor" strokeWidth="3" className="text-ink-soft opacity-20" />
-        <circle
-          cx="18"
-          cy="18"
-          r={RADIUS}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeDasharray={`${dash} ${CIRCUMFERENCE - dash}`}
-          className={toneClass(tone)}
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className={`${fontSize} font-light tracking-value text-ink-strong`}>{Math.round(clamped)}</span>
-      </div>
+    <div className="h-[7px] overflow-hidden rounded-[2px] border border-[rgba(255,255,255,.08)] bg-[repeating-linear-gradient(90deg,transparent_0,transparent_9px,rgba(255,255,255,.08)_10px),rgba(255,255,255,.035)] shadow-[inset_0_1px_2px_rgba(0,0,0,.55)]">
+      <div className={fillClassName(clamped)} style={{ width: `${clamped}%` }} />
     </div>
   );
 }
@@ -222,25 +186,22 @@ export function GrokQuotaView() {
 
   if (state.status === "waiting") {
     return (
-      <div className="flex flex-col gap-2" {...waitingAttrs()}>
-        <span className="text-xxs uppercase tracking-caps text-ink-label">grok</span>
+      <article className="grid grid-cols-[86px_minmax(0,1fr)_72px] items-center gap-3 py-3" {...waitingAttrs()}>
+        <span className="text-xs uppercase tracking-caps text-ink-strong">grok</span>
         <span className="text-sm text-ink-muted">checking usage...</span>
-      </div>
+      </article>
     );
   }
 
   if (state.status === "failure") {
     return (
-      <div className="flex flex-col gap-2" {...failureAttrs(state.failure, state.checkedAt, state.completedAcquisitions)}>
-        <div className="flex items-center justify-between text-xxs uppercase tracking-caps text-ink-label">
-          <span>grok</span>
-          <span className="flex items-center gap-1.5">
-            {state.pending && <span className="normal-case text-ink-muted">updating…</span>}
-            <StatusDot tone="danger" />
-          </span>
-        </div>
+      <article className="grid grid-cols-[86px_minmax(0,1fr)_72px] items-center gap-3 py-3" {...failureAttrs(state.failure, state.checkedAt, state.completedAcquisitions)}>
+        <span className="flex items-center gap-1.5 text-xs uppercase tracking-caps text-ink-strong">
+          grok <StatusDot tone="danger" />
+        </span>
         <span className="text-sm text-ink-muted">{failureCopy(state.failure)}</span>
-      </div>
+        {state.pending && <span className="text-right text-xxs text-ink-muted">updating...</span>}
+      </article>
     );
   }
 
@@ -248,51 +209,50 @@ export function GrokQuotaView() {
   const creditsWindow = data.windows.find((w) => w.id === "credits");
   const displayPrimary = creditsWindow ?? data.windows[0];
   const productWindows = data.windows.filter((w) => w !== displayPrimary).sort((a, b) => b.percentUsed - a.percentUsed);
+  const secondary = productWindows[0];
   const resetInfo = formatReset(displayPrimary?.resetAt);
 
   return (
-    <div className="flex flex-col gap-3" {...successAttrs(data, state.checkedAt, state.warning, state.completedAcquisitions)}>
-      <div className="flex items-center justify-between text-xxs uppercase tracking-caps text-ink-label">
-        <span>grok</span>
-        <span className="flex items-center gap-1.5">
-          {state.pending && <span className="normal-case text-ink-muted">updating…</span>}
+    <article className="grid grid-cols-[86px_minmax(0,1fr)_72px] items-center gap-3 py-3" {...successAttrs(data, state.checkedAt, state.warning, state.completedAcquisitions)}>
+      <div className="min-w-0">
+        <div className="truncate text-xs uppercase tracking-caps text-ink-strong">grok</div>
+        <div className="mt-1 flex items-center gap-1.5 text-xxs text-ink-label">
           <Badge tone="neutral">{periodLabel(data.period.type)}</Badge>
           {data.stale ? <StatusDot tone="warn" /> : <StatusDot tone="live" />}
-        </span>
+        </div>
       </div>
 
-      {displayPrimary ? (
-        <div className="flex items-center gap-4">
-          <RadialGauge value={displayPrimary.percentUsed} size={88} />
-          <div className="flex min-w-0 flex-col gap-1">
-            <span className="text-xxs uppercase tracking-caps text-ink-label">{displayPrimary.label} used</span>
-            <span className="text-xs tracking-value text-ink-strong">{Math.round(displayPrimary.percentRemaining)}% remaining</span>
-            {resetInfo && (
-              <span className="text-xs text-ink-muted">
-                {resetInfo.relative} <span className="text-ink-label">· {resetInfo.absolute}</span>
-              </span>
-            )}
+      <div className="flex min-w-0 flex-col gap-1.5">
+        {displayPrimary ? (
+          <div>
+            <div className="mb-1 flex justify-between gap-2 text-xxs text-ink-soft">
+              <span className="truncate">{displayPrimary.label}</span>
+              <span className="whitespace-nowrap text-ink-label">{resetInfo ? resetInfo.relative : "active"}</span>
+            </div>
+            <UsageBar value={displayPrimary.percentUsed} />
           </div>
-        </div>
-      ) : (
-        <span className="text-sm text-ink-muted">no metered usage reported for this account</span>
-      )}
+        ) : (
+          <span className="text-sm text-ink-muted">no metered usage reported</span>
+        )}
+        {secondary && (
+          <div>
+            <div className="mb-1 flex justify-between gap-2 text-xxs text-ink-soft">
+              <span className="truncate">{secondary.label}</span>
+              <span className="whitespace-nowrap text-ink-label">{secondary.resetAt ? "same reset" : "active"}</span>
+            </div>
+            <UsageBar value={secondary.percentUsed} />
+          </div>
+        )}
+        {data.credits && <span className="text-xxs text-ink-muted">prepaid credits {data.credits.remaining}</span>}
+      </div>
 
-      {productWindows.length > 0 && (
-        <div className="flex flex-col gap-2 border-t border-line-faint pt-2">
-          <span className="text-xxs uppercase tracking-caps text-ink-label">product usage</span>
-          {productWindows.map((w) => (
-            <UsageBar key={w.id} label={w.label} percentUsed={w.percentUsed} />
-          ))}
-        </div>
-      )}
-
-      {data.credits && (
-        <div className="flex items-center justify-between border-t border-line-faint pt-2 text-xs text-ink-muted">
-          <span>prepaid credits</span>
-          <span className="tracking-value text-ink-strong">{data.credits.remaining}</span>
-        </div>
-      )}
-    </div>
+      <div className="min-w-0 text-right">
+        <strong className={`flex justify-end font-mono text-2xl font-normal leading-none tracking-value ${displayPrimary ? remainingClassName(displayPrimary.percentUsed) : "text-ink-strong"}`}>
+          {displayPrimary ? Math.round(displayPrimary.percentRemaining) : "--"}
+          {displayPrimary && <span className="ml-0.5 mt-0.5 text-xs opacity-45">%</span>}
+        </strong>
+        <span className="mt-1 block text-[9px] uppercase tracking-caps text-ink-label">{displayPrimary?.label === "Grok Build" ? "build left" : "left"}</span>
+      </div>
+    </article>
   );
 }

@@ -2,12 +2,12 @@
 # reconcile.sh - idempotently install/reconcile declared agent tool inventory
 #
 # Usage: reconcile.sh <host-profile>
-#   host-profile: camilo | camilo-mini
+#   host-profile: camilo | camilo-remote
 #
 # Called from Home Manager activation on rebuild. Reads nix/shared/agent-tools/manifest.lock.json.
 set -euo pipefail
 
-HOST_PROFILE=${1:?usage: reconcile.sh <camilo|camilo-mini>}
+HOST_PROFILE=${1:?usage: reconcile.sh <camilo|camilo-remote>}
 REPO_ROOT=${AGENT_TOOLS_REPO_ROOT:-"$(cd "$(dirname "$0")/../.." && pwd)"}
 MANIFEST="${AGENT_TOOLS_MANIFEST:-$REPO_ROOT/nix/shared/agent-tools/manifest.lock.json}"
 BREW_BIN=${AGENT_TOOLS_BREW_BIN:-/opt/homebrew/bin}
@@ -130,7 +130,7 @@ main() {
   require_cmd jq
   [ -f "$MANIFEST" ] || die "manifest not found: $MANIFEST"
   case "$HOST_PROFILE" in
-    camilo | camilo-mini) ;;
+    camilo | camilo-remote) ;;
     *) die "unknown host profile: $HOST_PROFILE" ;;
   esac
 
