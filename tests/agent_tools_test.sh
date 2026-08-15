@@ -54,7 +54,9 @@ setup_sandbox() {
   chmod +x "$sandbox/repo/scripts/agent-tools/"*.sh
 
   printf '{}' >"$sandbox/pipx-list.json"
-  cp "$(command -v jq)" "$sandbox/stubs/jq"
+  # Copying Apple's signed jq binary causes macOS to kill the copied executable.
+  # A symlink retains the original executable while keeping the test PATH-masked.
+  ln -s "$(command -v jq)" "$sandbox/stubs/jq"
 
   cat >"$sandbox/stubs/npm" <<'STUB'
 #!/usr/bin/env bash

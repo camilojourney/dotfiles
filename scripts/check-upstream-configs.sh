@@ -162,7 +162,7 @@ refresh_snapshot() {
   local commit="$1" staged_root="$2"
   local snap="$staged_root/snapshot"
   local base="https://raw.githubusercontent.com/${UPSTREAM_REPO}/${commit}/home/.config"
-  local rel path dest
+  local rel dest
 
   mkdir -p "$snap"
   python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print("\n".join(d["files"].keys()))' "$DECISIONS" \

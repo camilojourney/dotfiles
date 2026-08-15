@@ -56,8 +56,8 @@ We treat [kunchenguid/dotfiles](https://github.com/kunchenguid/dotfiles) as the 
 
 | Piece | Role |
 |-------|------|
-| `upstream/kunchenguid/repository/` | Complete tracked upstream repository at the recorded commit |
-| `upstream/kunchenguid/repository.commit` | Commit represented by the complete mirror |
+| `upstream/kunchenguid/repository/` | Complete local upstream mirror at the recorded commit (ignored, not versioned) |
+| `upstream/kunchenguid/repository.commit` | Commit represented by the local mirror (ignored, not versioned) |
 | `files/.config/` and `files/.pi/agent/` | What our machines actually use |
 | `upstream/kunchenguid/snapshot/` | Selected config copy used by the adoption checker for diffs |
 | `upstream/kunchenguid/decisions.json` | Per-file policy, adopted hashes, mirror metadata, and local additions |
