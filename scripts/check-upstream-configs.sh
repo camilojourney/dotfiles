@@ -71,17 +71,30 @@ refresh_repository() {
   tmp=$(mktemp -d)
   repo="$tmp/repository"
   staged="$tmp/staged"
-  git clone --quiet --depth 1 --branch "$UPSTREAM_REF" "https://github.com/${UPSTREAM_REPO}.git" "$repo"
-  mirror_commit=$(git -C "$repo" rev-parse HEAD)
+  git init --quiet "$repo"
+  git -C "$repo" remote add origin "https://github.com/${UPSTREAM_REPO}.git"
+  git -C "$repo" fetch --quiet --depth 1 origin "$commit"
+  mirror_commit=$(git -C "$repo" rev-parse FETCH_HEAD)
   if [ "$mirror_commit" != "$commit" ]; then
-    echo "Warning: API commit changed during clone; mirroring $mirror_commit" >&2
+    echo "Fetched commit $mirror_commit does not match requested commit $commit" >&2
+    rm -rf "$tmp"
+    exit 1
   fi
 
   mkdir -p "$staged"
-  git -C "$repo" archive --format=tar HEAD | tar -xf - -C "$staged"
+  git -C "$repo" archive --format=tar "$commit" | tar -xf - -C "$staged"
   rm -rf "$MIRROR"
   mv "$staged" "$MIRROR"
   printf '%s\n' "$mirror_commit" >"$MIRROR_COMMIT"
+
+  python3 - "$DECISIONS" "$mirror_commit" <<'PY'
+import json, pathlib, sys
+dec_path, commit = sys.argv[1], sys.argv[2]
+data = json.loads(pathlib.Path(dec_path).read_text())
+data["upstream"]["mirror_commit"] = commit
+pathlib.Path(dec_path).write_text(json.dumps(data, indent=2) + "\n")
+PY
+
   rm -rf "$tmp"
 }
 
