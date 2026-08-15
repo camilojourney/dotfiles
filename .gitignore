@@ -1,6 +1,9 @@
 # no-mistakes pipeline evidence should never be committed to this public repo
 .no-mistakes/
 
+# Ignore fetched upstream artifacts; tracked baseline files remain versioned.
+/upstream/
+
 # macOS metadata junk
 .DS_Store
 
