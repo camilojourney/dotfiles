@@ -59,36 +59,7 @@ in
   # Homebrew Bundle does not remove MAS apps that disappear from masApps.
   # Run the cleanup as the primary user after Bundle has installed declared apps.
   system.activationScripts.postActivation.text = lib.mkAfter ''
-    mas_bin="/opt/homebrew/bin/mas"
-    if [ -x "$mas_bin" ]; then
-      run_as_primary_user() {
-        if [ "$(/usr/bin/id -u)" -eq 0 ]; then
-          /usr/bin/sudo -u "${userName}" -H "$@"
-        else
-          "$@"
-        fi
-      }
-
-      # Keep the Nix-generated IDs behind a shell variable. Inlining them in
-      # the case subject makes nix-darwin's ShellCheck gate fail with SC2194.
-      declared_mas_ids=" ${declaredMasAppIds} "
-      if installed_mas_ids="$(run_as_primary_user "$mas_bin" list | /usr/bin/awk '{print $1}')"; then
-        while IFS= read -r app_id; do
-          [ -n "$app_id" ] || continue
-          case "$declared_mas_ids" in
-            *" $app_id "*) ;;
-            *)
-              echo "Removing undeclared Mac App Store app: $app_id"
-              run_as_primary_user "$mas_bin" uninstall "$app_id" || true
-              ;;
-          esac
-        done <<EOF
-$installed_mas_ids
-EOF
-      else
-        echo "homebrewMasCleanup: unable to list Mac App Store apps; skipping"
-      fi
-    fi
+    ${pkgs.bash}/bin/bash ${../../scripts/mas-cleanup.sh} /opt/homebrew/bin/mas ${userName} ${declaredMasAppIds}
   '';
 
   # starship comes from Home Manager (programs.starship in shared/user.nix)

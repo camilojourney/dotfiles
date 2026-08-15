@@ -142,6 +142,23 @@ cp "$source/home/.config/$rel" "$out"
 EOF
 chmod +x "$STUB_BIN/curl"
 
+cat >"$STUB_BIN/mv" <<'EOF'
+#!/bin/bash
+set -euo pipefail
+
+if [[ "${INTERRUPT_PUBLISH:-}" != "" && "$1" == */upstream/kunchenguid && "$2" == */upstream/.kunchenguid-previous.* ]]; then
+  /bin/mv "$@"
+  case "$INTERRUPT_PUBLISH" in
+    term) kill -TERM "$PPID" ;;
+    kill) kill -KILL "$PPID" ;;
+  esac
+  exit 0
+fi
+
+exec /bin/mv "$@"
+EOF
+chmod +x "$STUB_BIN/mv"
+
 set +e
 PATH="$STUB_BIN:/usr/bin:/bin" \
 EXPECTED_COMMIT="$EXPECTED_COMMIT" \
@@ -169,6 +186,45 @@ assert upstream["mirror_commit"] == expected
 assert upstream["last_checked_commit"] == expected
 assert upstream["last_checked_at"] == "2020-01-01"
 PY
+
+set +e
+PATH="$STUB_BIN:/usr/bin:/bin" \
+EXPECTED_COMMIT="$EXPECTED_COMMIT" \
+INTERRUPT_PUBLISH=term \
+UPSTREAM_SOURCE="$UPSTREAM_SOURCE" \
+bash "$FIXTURE/scripts/check-upstream-configs.sh" >/dev/null 2>&1
+term_status=$?
+set -e
+[ "$term_status" -ne 0 ] || fail "checker completed after publication interruption"
+[ "$(tr -d '\n' <"$FIXTURE/upstream/kunchenguid/repository.commit")" = "$OLD_COMMIT" ] \
+  || fail "interrupted refresh did not restore the old commit marker"
+[ "$(tr -d '\n' <"$FIXTURE/upstream/kunchenguid/repository/home/.config/wezterm/wezterm.lua")" = "old mirror config" ] \
+  || fail "interrupted refresh did not restore the old mirror"
+
+set +e
+PATH="$STUB_BIN:/usr/bin:/bin" \
+EXPECTED_COMMIT="$EXPECTED_COMMIT" \
+INTERRUPT_PUBLISH=kill \
+UPSTREAM_SOURCE="$UPSTREAM_SOURCE" \
+bash "$FIXTURE/scripts/check-upstream-configs.sh" >/dev/null 2>&1
+kill_status=$?
+set -e
+[ "$kill_status" -ne 0 ] || fail "checker completed after process death"
+[ ! -e "$FIXTURE/upstream/kunchenguid" ] || fail "process death did not interrupt publication"
+
+set +e
+PATH="$STUB_BIN:/usr/bin:/bin" \
+EXPECTED_COMMIT="$EXPECTED_COMMIT" \
+FAIL_SNAPSHOT=1 \
+UPSTREAM_SOURCE="$UPSTREAM_SOURCE" \
+bash "$FIXTURE/scripts/check-upstream-configs.sh" >/dev/null 2>&1
+recovery_status=$?
+set -e
+[ "$recovery_status" -ne 0 ] || fail "recovery run succeeded after a snapshot download failed"
+[ "$(tr -d '\n' <"$FIXTURE/upstream/kunchenguid/repository.commit")" = "$OLD_COMMIT" ] \
+  || fail "recovery run did not restore the old commit marker"
+[ "$(tr -d '\n' <"$FIXTURE/upstream/kunchenguid/repository/home/.config/wezterm/wezterm.lua")" = "old mirror config" ] \
+  || fail "recovery run did not restore the old mirror"
 
 PATH="$STUB_BIN:/usr/bin:/bin" \
 EXPECTED_COMMIT="$EXPECTED_COMMIT" \

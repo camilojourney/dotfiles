@@ -14,6 +14,7 @@ set -euo pipefail
 
 REPO_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 UPSTREAM_ROOT="$REPO_ROOT/upstream/kunchenguid"
+UPSTREAM_PARENT=$(dirname "$UPSTREAM_ROOT")
 DECISIONS="$UPSTREAM_ROOT/decisions.json"
 SNAP="$UPSTREAM_ROOT/snapshot"
 MIRROR="$UPSTREAM_ROOT/repository"
@@ -21,6 +22,9 @@ OURS="$REPO_ROOT/files/.config"
 PI_OURS="$REPO_ROOT/files/.pi/agent"
 UPSTREAM_REPO="${UPSTREAM_REPO:-kunchenguid/dotfiles}"
 UPSTREAM_REF="${UPSTREAM_REF:-main}"
+STAGE_DIR=""
+PREVIOUS_ROOT=""
+PUBLISHED=0
 
 APPLY=0
 REFRESH_ONLY=0
@@ -44,6 +48,49 @@ need() { command -v "$1" >/dev/null 2>&1 || { echo "need $1" >&2; exit 1; }; }
 need curl
 need python3
 need git
+
+recover_interrupted_publish() {
+  local backup recovered=""
+
+  for backup in "$UPSTREAM_PARENT"/.kunchenguid-previous.*; do
+    [ -d "$backup" ] || continue
+    if [ -e "$UPSTREAM_ROOT" ]; then
+      rm -rf "$backup"
+      continue
+    fi
+    if [ -n "$recovered" ]; then
+      echo "Multiple interrupted upstream refreshes need manual recovery" >&2
+      exit 1
+    fi
+    recovered="$backup"
+  done
+
+  if [ -n "$recovered" ]; then
+    mv "$recovered" "$UPSTREAM_ROOT"
+  fi
+}
+
+cleanup_refresh() {
+  local status=$?
+
+  trap - EXIT INT TERM
+  if [ "$PUBLISHED" -ne 1 ] && [ -n "$PREVIOUS_ROOT" ] && [ -d "$PREVIOUS_ROOT" ] \
+    && [ ! -e "$UPSTREAM_ROOT" ]; then
+    if ! mv "$PREVIOUS_ROOT" "$UPSTREAM_ROOT"; then
+      echo "Unable to restore interrupted upstream refresh" >&2
+      status=1
+    fi
+  fi
+  if [ -n "$STAGE_DIR" ] && [ -d "$STAGE_DIR" ]; then
+    rm -rf "$STAGE_DIR" || status=1
+  fi
+  if [ "$PUBLISHED" -eq 1 ] && [ -n "$PREVIOUS_ROOT" ] && [ -d "$PREVIOUS_ROOT" ]; then
+    rm -rf "$PREVIOUS_ROOT" || status=1
+  fi
+  exit "$status"
+}
+
+recover_interrupted_publish
 
 if [ ! -f "$DECISIONS" ]; then
   echo "Missing $DECISIONS" >&2
@@ -154,29 +201,32 @@ PY
 }
 
 publish_refresh() {
-  local staged_root="$1" stage_dir="$2" previous
+  local staged_root="$1"
 
-  previous="$stage_dir/previous"
-
-  mv "$UPSTREAM_ROOT" "$previous"
+  PREVIOUS_ROOT=$(mktemp -d "$UPSTREAM_PARENT/.kunchenguid-previous.XXXXXX")
+  rmdir "$PREVIOUS_ROOT"
+  mv "$UPSTREAM_ROOT" "$PREVIOUS_ROOT"
   if ! mv "$staged_root" "$UPSTREAM_ROOT"; then
-    mv "$previous" "$UPSTREAM_ROOT" || true
     echo "Unable to publish refreshed upstream state" >&2
-    exit 1
+    return 1
   fi
+
+  PUBLISHED=1
 }
 
 COMMIT=$(fetch_commit)
 echo "Upstream ${UPSTREAM_REPO}@${UPSTREAM_REF} -> ${COMMIT}"
 STAGE_DIR=$(mktemp -d "$REPO_ROOT/upstream/.kunchenguid-refresh.XXXXXX")
 STAGED_ROOT="$STAGE_DIR/kunchenguid"
-trap 'rm -rf "$STAGE_DIR"' EXIT
+trap cleanup_refresh EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 mkdir -p "$STAGED_ROOT"
 cp -R "$UPSTREAM_ROOT/." "$STAGED_ROOT"
 refresh_repository "$COMMIT" "$STAGED_ROOT"
 refresh_snapshot "$COMMIT" "$STAGED_ROOT"
 record_refresh_metadata "$STAGED_ROOT" "$COMMIT"
-publish_refresh "$STAGED_ROOT" "$STAGE_DIR"
+publish_refresh "$STAGED_ROOT"
 import_missing_authored_configs
 
 if [ "$REFRESH_ONLY" -eq 1 ]; then
