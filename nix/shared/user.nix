@@ -22,9 +22,17 @@ in
 
   fonts.fontconfig.enable = true;
 
+  # Home Manager's generated configuration man page currently creates an
+  # options.json derivation with a context-free nixpkgs store reference.
+  # Disable that optional artifact until upstream's generator is corrected.
+  manual.manpages.enable = false;
+
   home.sessionVariables = {
     EDITOR = "nvim";
   };
+
+  # uv installs user-scoped CLI entry points, including graphify, here.
+  home.sessionPath = [ "${homeDirectory}/.local/bin" ];
 
   programs.git = {
     enable = true;
@@ -74,7 +82,9 @@ in
       pull = "git pull";
       m = "git switch main";
       cc = "claude --dangerously-skip-permissions";
-      co = "codex --full-auto";
+      co = "codex";
+      # NOTE: codex runs full-auto via ~/.codex/config.toml (approval_policy="never",
+      # sandbox_mode="danger-full-access"); the old --full-auto flag was removed.
     };
     initContent = ''
       bindkey '^f' autosuggest-accept
@@ -86,20 +96,17 @@ in
     ".config/wezterm".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/wezterm";
     ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/nvim";
     ".config/herdr".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/herdr";
-    ".config/cursor-launchers/config.sh.example".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/cursor-launchers/config.sh.example";
-    "bin/cursor-go".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/scripts/cursor-launchers/cursor-go";
-    "bin/cursor-go-bg".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/scripts/cursor-launchers/cursor-go-bg";
     ".claude/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.claude/settings.json";
     ".claude/CLAUDE.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
     ".codex/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
-    ".config/opencode/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
 
-    # Baby Menu (kunchenguid): authored extensions + prefs only.
-    # Runtime (~/.baby-menu/{baby-menu.db*,cache,.cache}) stays unmanaged.
-    # Officially supports mkOutOfStoreSymlink for extensions/.
-    ".baby-menu/extensions".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.baby-menu/extensions";
-    ".baby-menu/agents.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.baby-menu/agents.json";
-    ".baby-menu/preferences.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.baby-menu/preferences.json";
+    # GPG uses the Homebrew macOS Pinentry dialog. Keep this config declarative,
+    # while leaving ~/.gnupg keys, sockets, and trust data unmanaged.
+    ".gnupg/gpg-agent.conf" = {
+      text = ''
+        pinentry-program /opt/homebrew/bin/pinentry-mac
+      '';
+    };
 
     # Pi (kunchenguid-aligned): only authored config/theme/extensions.
     # Runtime (auth, sessions, ~/.pi/agent/npm|git) stays unmanaged.

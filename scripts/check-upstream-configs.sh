@@ -1,21 +1,30 @@
 #!/usr/bin/env bash
-# Compare our files/.config/{wezterm,nvim,herdr} against kunchenguid/dotfiles.
-# Uses upstream/kunchenguid/decisions.json so we can adopt his updates without
+# Mirror the complete kunchenguid/dotfiles repository and compare our selected
+# live configs against its home/.config/{wezterm,nvim,herdr} files. Uses
+# upstream/kunchenguid/decisions.json so we can adopt updates without
 # blind-overwriting intentional local changes.
 #
 # Usage:
 #   bash scripts/check-upstream-configs.sh           # report only
 #   bash scripts/check-upstream-configs.sh --apply   # safe-apply track files only
 #   bash scripts/check-upstream-configs.sh --refresh-snapshot
+#   bash scripts/check-upstream-configs.sh --refresh-repository  # compatibility alias
 #
 set -euo pipefail
 
 REPO_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-DECISIONS="$REPO_ROOT/upstream/kunchenguid/decisions.json"
-SNAP="$REPO_ROOT/upstream/kunchenguid/snapshot"
+UPSTREAM_ROOT="$REPO_ROOT/upstream/kunchenguid"
+UPSTREAM_PARENT=$(dirname "$UPSTREAM_ROOT")
+DECISIONS="$UPSTREAM_ROOT/decisions.json"
+SNAP="$UPSTREAM_ROOT/snapshot"
+MIRROR="$UPSTREAM_ROOT/repository"
 OURS="$REPO_ROOT/files/.config"
+PI_OURS="$REPO_ROOT/files/.pi/agent"
 UPSTREAM_REPO="${UPSTREAM_REPO:-kunchenguid/dotfiles}"
 UPSTREAM_REF="${UPSTREAM_REF:-main}"
+STAGE_DIR=""
+PREVIOUS_ROOT=""
+PUBLISHED=0
 
 APPLY=0
 REFRESH_ONLY=0
@@ -23,6 +32,7 @@ for arg in "$@"; do
   case "$arg" in
     --apply) APPLY=1 ;;
     --refresh-snapshot) REFRESH_ONLY=1 ;;
+    --refresh-repository) REFRESH_ONLY=1 ;;
     -h|--help)
       sed -n '2,12p' "$0"
       exit 0
@@ -38,6 +48,49 @@ need() { command -v "$1" >/dev/null 2>&1 || { echo "need $1" >&2; exit 1; }; }
 need curl
 need python3
 need git
+
+recover_interrupted_publish() {
+  local backup recovered=""
+
+  for backup in "$UPSTREAM_PARENT"/.kunchenguid-previous.*; do
+    [ -d "$backup" ] || continue
+    if [ -e "$UPSTREAM_ROOT" ]; then
+      rm -rf "$backup"
+      continue
+    fi
+    if [ -n "$recovered" ]; then
+      echo "Multiple interrupted upstream refreshes need manual recovery" >&2
+      exit 1
+    fi
+    recovered="$backup"
+  done
+
+  if [ -n "$recovered" ]; then
+    mv "$recovered" "$UPSTREAM_ROOT"
+  fi
+}
+
+cleanup_refresh() {
+  local status=$?
+
+  trap - EXIT INT TERM
+  if [ "$PUBLISHED" -ne 1 ] && [ -n "$PREVIOUS_ROOT" ] && [ -d "$PREVIOUS_ROOT" ] \
+    && [ ! -e "$UPSTREAM_ROOT" ]; then
+    if ! mv "$PREVIOUS_ROOT" "$UPSTREAM_ROOT"; then
+      echo "Unable to restore interrupted upstream refresh" >&2
+      status=1
+    fi
+  fi
+  if [ -n "$STAGE_DIR" ] && [ -d "$STAGE_DIR" ]; then
+    rm -rf "$STAGE_DIR" || status=1
+  fi
+  if [ "$PUBLISHED" -eq 1 ] && [ -n "$PREVIOUS_ROOT" ] && [ -d "$PREVIOUS_ROOT" ]; then
+    rm -rf "$PREVIOUS_ROOT" || status=1
+  fi
+  exit "$status"
+}
+
+recover_interrupted_publish
 
 if [ ! -f "$DECISIONS" ]; then
   echo "Missing $DECISIONS" >&2
@@ -57,16 +110,65 @@ fetch_commit() {
   fi
 }
 
-refresh_snapshot() {
-  local commit="$1"
-  local base="https://raw.githubusercontent.com/${UPSTREAM_REPO}/${commit}/home/.config"
-  local rel path dest
+refresh_repository() {
+  local commit="$1" staged_root="$2"
+  local tmp repo mirror mirror_commit
 
-  mkdir -p "$SNAP"
+  tmp=$(mktemp -d)
+  repo="$tmp/repository"
+  mirror="$staged_root/repository"
+  git init --quiet "$repo"
+  git -C "$repo" remote add origin "https://github.com/${UPSTREAM_REPO}.git"
+  git -C "$repo" fetch --quiet --depth 1 origin "$commit"
+  mirror_commit=$(git -C "$repo" rev-parse FETCH_HEAD)
+  if [ "$mirror_commit" != "$commit" ]; then
+    echo "Fetched commit $mirror_commit does not match requested commit $commit" >&2
+    rm -rf "$tmp"
+    exit 1
+  fi
+
+  rm -rf "$mirror"
+  mkdir -p "$mirror"
+  git -C "$repo" archive --format=tar "$commit" | tar -xf - -C "$mirror"
+  printf '%s\n' "$mirror_commit" >"$staged_root/repository.commit"
+  rm -rf "$tmp"
+}
+
+import_missing_authored_configs() {
+  local source rel dest
+
+  # Import only files that do not exist locally. Existing files may contain
+  # intentional additions and must go through the decisions workflow instead.
+  if [ -d "$MIRROR/home/.pi/agent" ]; then
+    while IFS= read -r -d '' source; do
+      rel="${source#"$MIRROR/home/.pi/agent/"}"
+      dest="$PI_OURS/$rel"
+      if [ ! -e "$dest" ]; then
+        mkdir -p "$(dirname "$dest")"
+        cp -p "$source" "$dest"
+        echo "Imported missing upstream Pi config: home/.pi/agent/$rel"
+      fi
+    done < <(find "$MIRROR/home/.pi/agent" -type f -print0)
+  fi
+
+  if [ ! -e "$REPO_ROOT/files/.claude/settings.json" ] && [ -f "$MIRROR/home/.claude/settings.json" ]; then
+    mkdir -p "$REPO_ROOT/files/.claude"
+    cp -p "$MIRROR/home/.claude/settings.json" "$REPO_ROOT/files/.claude/settings.json"
+    echo "Imported missing upstream Claude config: home/.claude/settings.json"
+  fi
+}
+
+refresh_snapshot() {
+  local commit="$1" staged_root="$2"
+  local snap="$staged_root/snapshot"
+  local base="https://raw.githubusercontent.com/${UPSTREAM_REPO}/${commit}/home/.config"
+  local rel dest
+
+  mkdir -p "$snap"
   python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print("\n".join(d["files"].keys()))' "$DECISIONS" \
     | while IFS= read -r rel; do
         [ -n "$rel" ] || continue
-        dest="$SNAP/$rel"
+        dest="$snap/$rel"
         mkdir -p "$(dirname "$dest")"
         curl -fsSL "$base/$rel" -o "$dest"
       done
@@ -80,25 +182,55 @@ refresh_snapshot() {
             or startswith("home/.config/nvim/")
             or startswith("home/.config/herdr/"))
       | sub("^home/.config/"; "")
-    ' >"$SNAP/.upstream_file_list" || true
+    ' >"$snap/.upstream_file_list" || true
   fi
+}
 
-  python3 - "$DECISIONS" "$commit" <<'PY'
+record_refresh_metadata() {
+  local staged_root="$1" commit="$2"
+
+  python3 - "$staged_root/decisions.json" "$commit" <<'PY'
 import json, pathlib, sys, datetime
 dec_path, commit = sys.argv[1], sys.argv[2]
 data = json.loads(pathlib.Path(dec_path).read_text())
+data["upstream"]["mirror_commit"] = commit
 data["upstream"]["last_checked_commit"] = commit
 data["upstream"]["last_checked_at"] = datetime.date.today().isoformat()
 pathlib.Path(dec_path).write_text(json.dumps(data, indent=2) + "\n")
 PY
 }
 
+publish_refresh() {
+  local staged_root="$1"
+
+  PREVIOUS_ROOT=$(mktemp -d "$UPSTREAM_PARENT/.kunchenguid-previous.XXXXXX")
+  rmdir "$PREVIOUS_ROOT"
+  mv "$UPSTREAM_ROOT" "$PREVIOUS_ROOT"
+  if ! mv "$staged_root" "$UPSTREAM_ROOT"; then
+    echo "Unable to publish refreshed upstream state" >&2
+    return 1
+  fi
+
+  PUBLISHED=1
+}
+
 COMMIT=$(fetch_commit)
 echo "Upstream ${UPSTREAM_REPO}@${UPSTREAM_REF} -> ${COMMIT}"
-refresh_snapshot "$COMMIT"
+STAGE_DIR=$(mktemp -d "$REPO_ROOT/upstream/.kunchenguid-refresh.XXXXXX")
+STAGED_ROOT="$STAGE_DIR/kunchenguid"
+trap cleanup_refresh EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+mkdir -p "$STAGED_ROOT"
+cp -R "$UPSTREAM_ROOT/." "$STAGED_ROOT"
+refresh_repository "$COMMIT" "$STAGED_ROOT"
+refresh_snapshot "$COMMIT" "$STAGED_ROOT"
+record_refresh_metadata "$STAGED_ROOT" "$COMMIT"
+publish_refresh "$STAGED_ROOT"
+import_missing_authored_configs
 
 if [ "$REFRESH_ONLY" -eq 1 ]; then
-  echo "Snapshot refreshed at $SNAP"
+  echo "Upstream mirror and snapshot refreshed"
   exit 0
 fi
 

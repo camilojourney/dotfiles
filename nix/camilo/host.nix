@@ -1,17 +1,31 @@
 {
-  # Laptop-only peripherals / desk gear (not on the Mini).
+  # Baby Menu comes from the author's non-official Homebrew tap. Keep this
+  # tap local because the remote host does not install Baby Menu.
+  homebrew.taps = [
+    {
+      name = "kunchenguid/tap";
+      trusted = true;
+    }
+  ];
+
+  # Local workstation apps. The remote host receives the shared baseline only.
   homebrew.casks = [
+    "baby-menu"
     "camo-studio"
-    "logi-options+"
-    "elgato-stream-deck"
-    "obs"
-    "wispr-flow"
+    "cursor"
     "deepl"
+    "elgato-stream-deck"
+    "grammarly-desktop"
+    "logi-options+"
     "notion"
+    "obs"
+    "obsidian"
+    "wispr-flow"
   ];
 
   homebrew.masApps = {
     Dato = 1470584107;
+    Goodnotes = 1444383602;
     WhatsApp = 310633997;
   };
 

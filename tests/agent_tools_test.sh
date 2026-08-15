@@ -54,7 +54,9 @@ setup_sandbox() {
   chmod +x "$sandbox/repo/scripts/agent-tools/"*.sh
 
   printf '{}' >"$sandbox/pipx-list.json"
-  cp "$(command -v jq)" "$sandbox/stubs/jq"
+  # Copying Apple's signed jq binary causes macOS to kill the copied executable.
+  # A symlink retains the original executable while keeping the test PATH-masked.
+  ln -s "$(command -v jq)" "$sandbox/stubs/jq"
 
   cat >"$sandbox/stubs/npm" <<'STUB'
 #!/usr/bin/env bash
@@ -183,7 +185,7 @@ test_fresh_install_shared() {
   sandbox=$(setup_sandbox)
   log="$sandbox/log/fresh"
 
-  run_reconcile camilo-mini "$log" "$sandbox" || rc=$?
+  run_reconcile camilo-remote "$log" "$sandbox" || rc=$?
   if [ "$rc" -ne 0 ]; then
     echo "reconcile failed (rc=$rc)" >&2
     cat "$log/stderr.log" >&2 || true
@@ -193,15 +195,15 @@ test_fresh_install_shared() {
   fi
   out=$(cat "$log/stdout.log" "$log/stderr.log" "$log/npm.log" "$log/pipx.log" "$log/hooks.log")
 
-  assert_contains "$out" "npm: reconciling @earendil-works/pi-coding-agent@0.84.1" "fresh mini installs pi"
-  assert_contains "$out" "pipx: reconciling graphifyy==0.9.34" "fresh mini installs graphifyy"
-  assert_not_contains "$out" "mlx-lm" "mini skips laptop mlx"
+  assert_contains "$out" "npm: reconciling @earendil-works/pi-coding-agent@0.84.1" "fresh remote installs pi"
+  assert_contains "$out" "pipx: reconciling graphifyy==0.9.34" "fresh remote installs graphifyy"
+  assert_not_contains "$out" "mlx-lm" "remote skips local MLX tools"
   assert_contains "$out" "gh-axi setup hooks" "setup hooks run"
   assert_contains "$out" "graphify install --platform pi" "graphify platform hook"
-  assert_contains "$out" "reconcile complete" "fresh mini completes"
+  assert_contains "$out" "reconcile complete" "fresh remote completes"
 
   rm -rf "$sandbox"
-  pass "fresh activation installs shared inventory for camilo-mini"
+  pass "fresh activation installs shared inventory for camilo-remote"
 }
 
 test_idempotent_repeat() {
@@ -259,7 +261,7 @@ test_missing_npm_fails() {
     AGENT_TOOLS_TEST_MODE=1 \
     AGENT_TOOLS_NPM_LOG="$log/npm.log" \
     PATH="$sandbox/stubs:$sandbox/home/.local/bin:/usr/bin:/bin" \
-    "$REAL_BASH" "$sandbox/repo/scripts/agent-tools/reconcile.sh" camilo-mini \
+    "$REAL_BASH" "$sandbox/repo/scripts/agent-tools/reconcile.sh" camilo-remote \
     >"$log/stdout.log" 2>"$log/stderr.log" || rc=$?
 
   [ "$rc" -ne 0 ] || fail "missing npm should fail"
@@ -279,7 +281,7 @@ test_audit_recognizes_shared_uv_for_both_hosts() {
   local sandbox profile out unmanaged
   sandbox=$(setup_sandbox)
 
-  for profile in camilo camilo-mini; do
+  for profile in camilo camilo-remote; do
     out=$(env -i \
       HOME="$sandbox/home" \
       AGENT_TOOLS_BREW_BIN="$sandbox/stubs" \

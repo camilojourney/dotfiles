@@ -1,8 +1,6 @@
 import { Badge, StatusDot } from "@babymenu/ui";
 import { useDeepseekQuota } from "./store";
 
-const RADIUS = 15.9155;
-
 function toneClass(tone: "live" | "warn" | "danger") {
   if (tone === "danger") return "text-signal-danger";
   if (tone === "warn") return "text-signal-warn";
@@ -20,16 +18,12 @@ function formatUsd(amount: number, currency: string) {
   return `${symbol}${amount.toFixed(2)}`;
 }
 
-function ValueRing({ text, size, tone }: { text: string; size: number; tone: "live" | "warn" | "danger" }) {
-  const fontSize = size >= 80 ? "text-lg" : "text-xs";
+function CreditBar({ totalBalance, toppedUpBalance }: { totalBalance: number; toppedUpBalance: number }) {
+  const denominator = Math.max(totalBalance, toppedUpBalance, 1);
+  const percent = Math.max(0, Math.min(100, (totalBalance / denominator) * 100));
   return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
-      <svg viewBox="0 0 36 36" style={{ width: size, height: size }}>
-        <circle cx="18" cy="18" r={RADIUS} fill="none" stroke="currentColor" strokeWidth="3" className={`${toneClass(tone)} opacity-70`} />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center px-1">
-        <span className={`${fontSize} font-light tracking-value text-ink-strong text-center leading-none`}>{text}</span>
-      </div>
+    <div className="h-[7px] overflow-hidden rounded-[2px] border border-[rgba(255,255,255,.08)] bg-[repeating-linear-gradient(90deg,transparent_0,transparent_9px,rgba(255,255,255,.08)_10px),rgba(255,255,255,.035)] shadow-[inset_0_1px_2px_rgba(0,0,0,.55)]">
+      <div className="h-full rounded-[1px] bg-signal-live shadow-[0_0_9px_rgba(106,227,182,.38)]" style={{ width: `${percent}%` }} />
     </div>
   );
 }
@@ -39,22 +33,19 @@ export function DeepseekQuotaView() {
 
   if (state.status === "loading") {
     return (
-      <div className="flex flex-col gap-2">
-        <span className="text-xxs uppercase tracking-caps text-ink-label">deepseek</span>
+      <article className="grid grid-cols-[86px_minmax(0,1fr)_72px] items-center gap-3 py-3">
+        <span className="text-xs uppercase tracking-caps text-ink-strong">deepseek</span>
         <span className="text-sm text-ink-muted">checking usage...</span>
-      </div>
+      </article>
     );
   }
 
   if (state.status === "error") {
     return (
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between text-xxs uppercase tracking-caps text-ink-label">
-          <span>deepseek</span>
-          <StatusDot tone="danger" />
-        </div>
+      <article className="grid grid-cols-[86px_minmax(0,1fr)_72px] items-center gap-3 py-3">
+        <span className="flex items-center gap-1.5 text-xs uppercase tracking-caps text-ink-strong">deepseek <StatusDot tone="danger" /></span>
         <span className="text-sm text-ink-muted">{state.error}</span>
-      </div>
+      </article>
     );
   }
 
@@ -63,46 +54,44 @@ export function DeepseekQuotaView() {
 
   if (!primary) {
     return (
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between text-xxs uppercase tracking-caps text-ink-label">
-          <span>deepseek</span>
-          <StatusDot tone="warn" />
-        </div>
+      <article className="grid grid-cols-[86px_minmax(0,1fr)_72px] items-center gap-3 py-3">
+        <span className="flex items-center gap-1.5 text-xs uppercase tracking-caps text-ink-strong">deepseek <StatusDot tone="warn" /></span>
         <span className="text-sm text-ink-muted">no balance reported</span>
-      </div>
+      </article>
     );
   }
 
   const totalTone = toneForBalance(primary.totalBalance);
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between text-xxs uppercase tracking-caps text-ink-label">
-        <span>deepseek</span>
-        <span className="flex items-center gap-1.5">
+    <article className="grid grid-cols-[86px_minmax(0,1fr)_72px] items-center gap-3 py-3">
+      <div className="min-w-0">
+        <div className="truncate text-xs uppercase tracking-caps text-ink-strong">deepseek</div>
+        <div className="mt-1 flex items-center gap-1.5 text-xxs text-ink-label">
           {!data.available && <Badge tone="danger">unavailable</Badge>}
           {data.stale ? <StatusDot tone="warn" /> : <StatusDot tone="live" />}
-        </span>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <ValueRing text={formatUsd(primary.totalBalance, primary.currency)} size={88} tone={totalTone} />
-        <div className="flex flex-col gap-1">
-          <span className="text-xxs uppercase tracking-caps text-ink-label">balance</span>
-          <span className="text-xs text-ink-muted">available to spend</span>
-        </div>
-        <div className="ml-auto flex flex-col items-center gap-1.5">
-          <ValueRing text={formatUsd(primary.toppedUpBalance, primary.currency)} size={56} tone="live" />
-          <span className="text-xxs uppercase tracking-caps text-ink-label">topped up</span>
         </div>
       </div>
 
-      {primary.grantedBalance > 0 && (
-        <div className="flex items-center justify-between text-xs text-ink-muted">
-          <span>granted (free)</span>
-          <span className="tracking-value text-ink-strong">{formatUsd(primary.grantedBalance, primary.currency)}</span>
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <div>
+          <div className="mb-1 flex justify-between gap-2 text-xxs text-ink-soft">
+            <span className="truncate">credit balance</span>
+            <span className="whitespace-nowrap text-ink-label">no scheduled reset</span>
+          </div>
+          <CreditBar totalBalance={primary.totalBalance} toppedUpBalance={primary.toppedUpBalance} />
         </div>
-      )}
-    </div>
+        {primary.grantedBalance > 0 && (
+          <span className="text-xxs text-ink-muted">granted {formatUsd(primary.grantedBalance, primary.currency)}</span>
+        )}
+      </div>
+
+      <div className="min-w-0 text-right">
+        <strong className={`font-mono text-xl font-normal leading-none tracking-value ${toneClass(totalTone)}`}>
+          {formatUsd(primary.totalBalance, primary.currency)}
+        </strong>
+        <span className="mt-1 block text-[9px] uppercase tracking-caps text-ink-label">left</span>
+      </div>
+    </article>
   );
 }

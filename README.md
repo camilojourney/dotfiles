@@ -37,28 +37,30 @@ The goal is to provide a reusable foundation that you can make your own.
 
 - `setup/mac.sh` - bootstrap a fresh Mac
 - `setup/README.md` - bootstrap usage and testing notes
-- `flake.nix` - top-level Nix wiring (`#camilo` and `#camilo-mini`)
+- `flake.nix` - top-level Nix wiring (`#camilo` and `#camilo-remote`)
 - `nix/shared/` - foundation host + user config shared by both machines
-- `nix/camilo/` - main laptop extras (Camo, Logi Options+, Stream Deck, OBS, Wispr) + `rebuild` alias
-- `nix/camilo-mini/` - Mini overlay (foundation only + `rebuild` alias)
+- `nix/camilo/` - local workstation apps (Baby Menu, Camo, Cursor, DeepL, Grammarly, Notion, Obsidian, and peripherals) + `rebuild` alias
+- `nix/camilo-remote/` - remote-work overlay (shared foundation only + `rebuild` alias)
 - `files/.config/` - live WezTerm / Neovim / herdr configs (symlinked by Home Manager)
-- `upstream/kunchenguid/` - decisions + snapshot for tracking [Kun's configs](https://github.com/kunchenguid/dotfiles)
+- `upstream/kunchenguid/` - complete upstream mirror, selected config snapshot, and adoption decisions for [Kun's configs](https://github.com/kunchenguid/dotfiles)
 - `scripts/check-upstream-configs.sh` - check / safely adopt his updates
-- `scripts/cursor-launchers/` - portable source and generator for Cursor Finder launchers
+- `rebuild.sh` / `rebuild-remote.sh` - host-specific nix-darwin rebuild helpers
 - `tests/` - safe shell regression tests for bootstrap and agent tools
 - `blog.md` - local copy of the [blog post](https://open.substack.com/pub/kunchenguid/p/how-i-built-a-reproducible-mac-setup?utm_campaign=post-expanded-share&utm_medium=web)
 
-## Tracking Kun's config updates (wezterm / nvim / herdr)
+## Tracking Kun's complete repository and config updates
 
-We treat [kunchenguid/dotfiles](https://github.com/kunchenguid/dotfiles) as the expert baseline for terminal, editor, and agent multiplexer configs. Our live copies live under `files/.config/`. We keep the freedom to add our own changes without losing the ability to pull his next improvements.
+We treat [kunchenguid/dotfiles](https://github.com/kunchenguid/dotfiles) as the expert baseline for terminal, editor, agent, and Pi configuration. The complete upstream repository is mirrored locally so root files and configurations outside the original three config folders are not lost. Selected upstream files are merged into our live `files/` tree while preserving our local additions and multi-host Nix layout.
 
 ### How it works
 
 | Piece | Role |
 |-------|------|
-| `files/.config/{wezterm,nvim,herdr}` | What the machine actually uses |
-| `upstream/kunchenguid/snapshot/` | Last fetched copy of his files (for diffs) |
-| `upstream/kunchenguid/decisions.json` | Per-file policy + hash of the upstream version we last adopted + notes about our additions |
+| `upstream/kunchenguid/repository/` | Complete local upstream mirror at the recorded commit (ignored, not versioned) |
+| `upstream/kunchenguid/repository.commit` | Commit represented by the local mirror (ignored, not versioned) |
+| `files/.config/` and `files/.pi/agent/` | What our machines actually use |
+| `upstream/kunchenguid/snapshot/` | Selected config copy used by the adoption checker for diffs |
+| `upstream/kunchenguid/decisions.json` | Per-file policy, adopted hashes, mirror metadata, and local additions |
 
 Policies in `decisions.json`:
 
@@ -72,6 +74,14 @@ Policies in `decisions.json`:
 ```bash
 bash scripts/check-upstream-configs.sh
 ```
+
+This refreshes both the complete repository mirror and the selected comparison snapshot. To refresh those upstream artifacts without printing the status report, use:
+
+```bash
+bash scripts/check-upstream-configs.sh --refresh-repository
+```
+
+`--refresh-repository` remains available for compatibility, but it refreshes the snapshot too so the published upstream state always represents one commit.
 
 Read the STATUS column:
 
@@ -140,10 +150,10 @@ This repo is primarily set up for Apple Silicon Macs. If you are on Intel, make 
 bash setup/mac.sh
 ```
 
-On the Mac Mini, select that host instead:
+On the remote Mac, select that host instead:
 
 ```bash
-DARWIN_FLAKE_ATTR=camilo-mini bash setup/mac.sh
+DARWIN_FLAKE_ATTR=camilo-remote bash setup/mac.sh
 ```
 
 The script will:
@@ -157,7 +167,7 @@ On a fresh machine, the bootstrap is designed to complete in one run.
 After the Determinate installer runs, the script sources the Nix daemon profile into the current shell and uses an absolute `nix` path for the first `nix-darwin` activation, so you should not need a second shell or a second setup run.
 
 The `NIX_DAEMON_PROFILE` and `DARWIN_REBUILD_BIN` environment variables are only there so the regression test can point the script at sandboxed paths.
-`DARWIN_FLAKE_ATTR` selects which flake output to apply (`camilo` by default, or `camilo-mini`).
+`DARWIN_FLAKE_ATTR` selects which flake output to apply (`camilo` by default, or `camilo-remote`).
 Normal use should leave the first two unset.
 
 ## How I manage changes later
@@ -171,10 +181,20 @@ After the initial bootstrap, the usual workflow is:
 rebuild
 ```
 
-This alias is included in the shell config and expands to the host-specific flake attr (`#camilo` on the laptop, `#camilo-mini` on the Mini):
+The laptop helper and alias target `#camilo`:
 
 ```bash
-/run/current-system/sw/bin/darwin-rebuild switch --flake ~/github/dotfiles#camilo
+./rebuild.sh
+# or:
+rebuild
+```
+
+On the remote machine, use the matching helper and alias, which target `#camilo-remote`:
+
+```bash
+./rebuild-remote.sh
+# or:
+rebuild
 ```
 
 ## Testing

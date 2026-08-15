@@ -25,13 +25,87 @@ This repo tracks https://github.com/kunchenguid/dotfiles as the reference for We
 
 **Do not blind-copy.** Use the check script and decisions file:
 
-1. `bash scripts/check-upstream-configs.sh` - fetch his latest into `upstream/kunchenguid/snapshot/` and report status vs `files/.config/`.
-2. Read `upstream/kunchenguid/decisions.json` - each file has policy `track` | `extend` | `fork` | `ignore`, plus `our_additions` and the last adopted upstream hash.
+1. `bash scripts/check-upstream-configs.sh` - fetch his latest complete repository into `upstream/kunchenguid/repository/`, refresh the selected comparison snapshot, and report status vs `files/.config/`.
+2. Read `upstream/kunchenguid/decisions.json` - each file has policy `track` | `extend` | `fork` | `ignore`, plus `our_additions`, the last adopted upstream hash, and complete-mirror metadata.
 3. Explain why a delta exists before adopting.
 4. `bash scripts/check-upstream-configs.sh --apply` only auto-updates clean `track` files (ours still matches last adopted hash). `extend` / `fork` / conflicts stay manual.
-5. Keep our multi-host Nix layout (`#camilo` / `#camilo-mini`); the check script tracker is for `files/.config/{wezterm,nvim,herdr}`. Pi lives under `files/.pi/agent/` (see below).
+5. Keep our multi-host Nix layout (`#camilo` / `#camilo-remote`); the check script tracker is for `files/.config/{wezterm,nvim,herdr}`. Pi lives under `files/.pi/agent/` (see below).
 
-Path mapping: his `home/.config/X` → our `files/.config/X`; his `home/.pi/agent/X` → our `files/.pi/agent/X`.
+### Upstream review protocol
+
+Never run `--apply` as the first update command.
+Before refreshing, copy `upstream/kunchenguid/snapshot/` to a temporary directory, then run `bash scripts/check-upstream-configs.sh` to fetch and classify the latest upstream state without applying it. The full repository mirror is reference material and includes files outside the selected snapshot.
+Review the old and refreshed snapshots, plus the complete mirror when needed, to understand the upstream change. Then compare our file with the refreshed snapshot to identify our retained additions.
+For every changed file, record an explicit adopt, retain, merge, or reject decision and its short rationale in `upstream/kunchenguid/decisions.json` before changing the file.
+Only clean `track` files may be auto-applied after that review; merge `extend` and `fork` files manually.
+After a manual merge, update that file's `adopted_upstream_sha256` to the refreshed upstream file hash and retain every local difference in `our_additions` so the next review has an honest baseline.
+
+### Repeatable upstream update workflow
+
+Use this workflow whenever Kun publishes changes. The goal is to refresh first, inspect the complete diff, record decisions, and only then change live configuration.
+
+1. **Check local state before starting.**
+   ```bash
+   git status --short
+   git diff -- files/.config files/.pi/agent upstream/kunchenguid/decisions.json
+   ```
+   Do not mix unrelated local work into an upstream adoption.
+
+2. **Preserve the old reference.**
+   ```bash
+   REVIEW_DIR=$(mktemp -d)
+   cp -R upstream/kunchenguid/snapshot "$REVIEW_DIR/snapshot-before"
+   cp -R upstream/kunchenguid/repository "$REVIEW_DIR/repository-before"
+   ```
+
+3. **Refresh without applying anything.**
+   ```bash
+   bash scripts/check-upstream-configs.sh
+   ```
+   This refreshes the complete repository mirror and the selected comparison snapshot. To refresh them without printing the status report, use:
+   ```bash
+   bash scripts/check-upstream-configs.sh --refresh-repository
+   ```
+   This compatibility alias refreshes the snapshot too so the published upstream state stays at one commit.
+   Never start with `--apply`.
+
+4. **Inspect the changes.**
+   ```bash
+   diff -ru "$REVIEW_DIR/snapshot-before" upstream/kunchenguid/snapshot || true
+   diff -ru "$REVIEW_DIR/repository-before" upstream/kunchenguid/repository || true
+   bash scripts/check-upstream-configs.sh
+   ```
+   Review both the checker status and the full mirror. Then compare each changed upstream file with its mapped live file under `files/`.
+
+5. **Make and record one decision per changed file before editing live files.**
+   Record the decision in `upstream/kunchenguid/decisions.json`:
+   - **adopt**: upstream is better and replaces our version.
+   - **retain**: our version is intentional; keep the upstream change only in the mirror.
+   - **merge**: combine upstream improvements with our local additions.
+   - **reject**: do not use the upstream change, with a short reason.
+
+6. **Apply only the recorded decisions.**
+   - Clean `track` files with an adopt decision may use `bash scripts/check-upstream-configs.sh --apply`.
+   - `extend`, `fork`, and conflict files must be merged manually.
+   - New authored Pi or Claude files may be imported when they do not already exist locally. Never overwrite an existing local file automatically.
+   - Keep Kun's root Nix/bootstrap files as reference only. Preserve the repository's declared multi-host Nix layout.
+
+7. **Update the adoption baseline.**
+   After adopting or merging, set `adopted_upstream_sha256` to the refreshed upstream file hash and list every retained local difference in `our_additions`. Do not claim `IN_SYNC` when our file intentionally differs.
+
+8. **Verify and review the final diff.**
+   ```bash
+   bash -n scripts/check-upstream-configs.sh
+   jq empty upstream/kunchenguid/decisions.json
+   git diff --check
+   bash tests/mac_setup_test.sh
+   graphify update .
+   git diff --stat
+   git status --short
+   ```
+   Leave the temporary review directory available until the adoption is reviewed, then remove it.
+
+Path mapping: his `home/.config/X` → our `files/.config/X`; his `home/.pi/agent/X` → our `files/.pi/agent/X`. His root Nix/bootstrap files remain in the complete mirror for reference because our repository has a deliberate multi-host Nix layout.
 
 ## Pi (kunchenguid-aligned)
 
@@ -49,7 +123,7 @@ Required agent CLIs (npm globals, pipx apps, external release binaries) are owne
 - **pipx:** shared packages apply to both hosts; laptop-only MLX tooling lives under `pipx.camilo`.
 - **External** (`no-mistakes`, `treehouse`): pinned GitHub release archives with sha256 in the manifest; installed by `scripts/agent-tools/install-external.sh`.
 - **Update policy:** ordinary `rebuild` reconciles to manifest pins (not floating latest). Bump pins explicitly.
-- **Audit unmanaged tools:** `bash scripts/agent-tools/audit.sh [camilo|camilo-mini]` (reports only; never deletes).
+- **Audit unmanaged tools:** `bash scripts/agent-tools/audit.sh [camilo|camilo-remote]` (reports only; never deletes).
 - **Tests:** `bash tests/agent_tools_test.sh` (stubbed package managers; no network or host mutation).
 
 ## Maintaining this file

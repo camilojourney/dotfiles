@@ -4,8 +4,12 @@
     "repo": "https://github.com/kunchenguid/dotfiles",
     "ref": "main",
     "config_root": "home/.config",
-    "last_checked_commit": "207ffe8d7f45baa4e8c20c16f77244d8eeb74b08",
-    "last_checked_at": "2026-07-11"
+    "full_repository_mirror": "upstream/kunchenguid/repository",
+    "mirror_commit": "7505ed63a26272dfa682b19d45e6384f8ffea004",
+    "last_checked_commit": "7505ed63a26272dfa682b19d45e6384f8ffea004",
+    "last_checked_at": "2026-08-15",
+    "mirror_decision": "adopt-complete-reference",
+    "mirror_notes": "Keep the entire upstream repository available for review. Merge only selected authored configurations into files/; retain our multi-host Nix layout and local additions instead of replacing them."
   },
   "policies": {
     "track": "Stay aligned with upstream. Safe auto-apply when our file still matches the last adopted upstream hash.",
@@ -15,16 +19,26 @@
   },
   "files": {
     "wezterm/wezterm.lua": {
-      "policy": "track",
-      "adopted_upstream_sha256": "e22f021600bd0db5f1d971dd886dbdc1f01d6db32f5dbf9e99d7385a7fe376a5",
-      "our_additions": [],
+      "policy": "extend",
+      "adopted_upstream_sha256": "bdd437c0944b6f9ae36419bf5b77112c8402a585a5ef986454e2e4c8695afd4b",
+      "our_additions": [
+        "High-contrast copy-mode selection colors",
+        "Ctrl+Shift+A copy-mode entry and scrollback navigation",
+        "Cmd+D / Cmd+Shift+D pane splits",
+        "Gentle inactive-pane HSB dimming for multi-pane focus clarity"
+      ],
       "notes": "Minimal WezTerm: rose-pine-moon, Hack Nerd Font, blur, hide tab bar when one tab, RESIZE. No tmux - use WezTerm panes/tabs + herdr for agents."
     },
     "herdr/config.toml": {
-      "policy": "track",
-      "adopted_upstream_sha256": "810ff65ff9c109b5a9d9c817ca9eec15d51da29a5af371e2db7a184e13923009",
-      "our_additions": [],
-      "notes": "Agent multiplexer with tmux-like Ctrl+B prefix. mouse_capture=false pairs with nvim mouse=''."
+      "policy": "extend",
+      "adopted_upstream_sha256": "66e8620ce7c3260d7860970cfcf9c02775e79c037c967f71a1330eedb9ae862f",
+      "our_additions": [
+        "onboarding = false to suppress the first-run prompt",
+        "mouse_capture = true for the local trackpad and pane interaction behavior",
+        "show_agent_labels_on_pane_borders = false for quieter pane borders",
+        "ui.sound.enabled = false to keep the multiplexer silent"
+      ],
+      "notes": "Retain Kun's agent_panel_sort = spaces and the rest of his config. The local mouse_capture choice is intentionally different from upstream."
     },
     "nvim/init.lua": {
       "policy": "track",
@@ -33,10 +47,12 @@
       "notes": ""
     },
     "nvim/lazy-lock.json": {
-      "policy": "track",
+      "policy": "extend",
       "adopted_upstream_sha256": "dd6ec032b40e6e9889c9f8164a04d7f9dc1ed83347be78b39906c6e9b907e82c",
-      "our_additions": [],
-      "notes": "Pin plugin commits to his lockfile when adopting nvim plugin changes."
+      "our_additions": [
+        "markdown-table-wrap.nvim, mini.icons, nvim-treesitter, obsidian.nvim, real-icons.nvim, and render-markdown.nvim pins"
+      ],
+      "notes": "Pin upstream plugin commits while retaining our additional plugin pins."
     },
     "nvim/lua/keys.lua": {
       "policy": "track",
@@ -69,10 +85,14 @@
       "notes": ""
     },
     "nvim/lua/plugins/navigation.lua": {
-      "policy": "track",
+      "policy": "extend",
       "adopted_upstream_sha256": "c2c637abd0391f3b4bd8b6b373d77c5e8edcb81f3ded1374bd16a9a6ec5a0dd3",
-      "our_additions": [],
-      "notes": ""
+      "our_additions": [
+        "mini.icons and real-icons integration",
+        "Snacks explorer sidebar and Skim PDF action",
+        "Local leader key changes and navigation behavior"
+      ],
+      "notes": "Kun's navigation base is retained; local explorer, icon, and PDF workflow additions are intentionally preserved."
     },
     "nvim/lua/plugins/ui.lua": {
       "policy": "track",

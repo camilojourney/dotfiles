@@ -8,7 +8,7 @@ in
   options.agentTools = {
     enable = lib.mkEnableOption "declarative agent/developer CLI inventory";
     hostProfile = lib.mkOption {
-      type = lib.types.enum [ "camilo" "camilo-mini" ];
+      type = lib.types.enum [ "camilo" "camilo-remote" ];
       description = "Host overlay profile controlling host-specific inventory slices.";
     };
     manifestPath = lib.mkOption {
