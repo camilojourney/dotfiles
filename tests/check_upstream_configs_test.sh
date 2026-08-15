@@ -14,6 +14,7 @@ set -euo pipefail
 REPO_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 REAL_PYTHON=$(command -v python3)
 EXPECTED_COMMIT=1111111111111111111111111111111111111111
+OLD_COMMIT=0000000000000000000000000000000000000000
 ROOT=$(mktemp -d "${TMPDIR:-/tmp}/check-upstream-configs.XXXXXX")
 FIXTURE="$ROOT/fixture"
 UPSTREAM_SOURCE="$ROOT/upstream"
@@ -29,22 +30,28 @@ fail() {
   exit 1
 }
 
-mkdir -p "$FIXTURE/scripts" "$FIXTURE/upstream/kunchenguid/snapshot" \
+mkdir -p "$FIXTURE/scripts" "$FIXTURE/upstream/kunchenguid/snapshot/wezterm" \
+  "$FIXTURE/upstream/kunchenguid/repository/home/.config/wezterm" \
   "$FIXTURE/files/.config/wezterm" "$UPSTREAM_SOURCE/home/.config/wezterm" "$STUB_BIN"
 cp "$REPO_ROOT/scripts/check-upstream-configs.sh" "$FIXTURE/scripts/"
 printf 'resolved upstream config\n' >"$UPSTREAM_SOURCE/home/.config/wezterm/wezterm.lua"
 printf 'local config\n' >"$FIXTURE/files/.config/wezterm/wezterm.lua"
+printf 'old snapshot config\n' >"$FIXTURE/upstream/kunchenguid/snapshot/wezterm/wezterm.lua"
+printf 'old mirror config\n' >"$FIXTURE/upstream/kunchenguid/repository/home/.config/wezterm/wezterm.lua"
+printf 'obsolete mirror file\n' >"$FIXTURE/upstream/kunchenguid/repository/obsolete"
+printf '%s\n' "$OLD_COMMIT" >"$FIXTURE/upstream/kunchenguid/repository.commit"
 
-"$REAL_PYTHON" - "$FIXTURE/upstream/kunchenguid/decisions.json" <<'PY'
+"$REAL_PYTHON" - "$FIXTURE/upstream/kunchenguid/decisions.json" "$OLD_COMMIT" <<'PY'
 import json, pathlib, sys
 
 path = pathlib.Path(sys.argv[1])
+old_commit = sys.argv[2]
 path.write_text(json.dumps({
     "upstream": {
         "repo": "https://github.com/test/repo",
         "ref": "main",
-        "mirror_commit": "old-mirror",
-        "last_checked_commit": "old-snapshot",
+        "mirror_commit": old_commit,
+        "last_checked_commit": old_commit,
         "last_checked_at": "2020-01-01",
     },
     "files": {
@@ -125,11 +132,43 @@ if [[ "$url" == *"/commits/"* ]]; then
   exit 0
 fi
 
+if [ "${FAIL_SNAPSHOT:-0}" = "1" ]; then
+  exit 22
+fi
+
 rel=${url#*/home/.config/}
 mkdir -p "$(dirname "$out")"
 cp "$source/home/.config/$rel" "$out"
 EOF
 chmod +x "$STUB_BIN/curl"
+
+set +e
+PATH="$STUB_BIN:/usr/bin:/bin" \
+EXPECTED_COMMIT="$EXPECTED_COMMIT" \
+FAIL_SNAPSHOT=1 \
+UPSTREAM_SOURCE="$UPSTREAM_SOURCE" \
+bash "$FIXTURE/scripts/check-upstream-configs.sh" >/dev/null 2>&1
+failure_status=$?
+set -e
+[ "$failure_status" -ne 0 ] || fail "checker succeeded after a snapshot download failed"
+[ "$(tr -d '\n' <"$FIXTURE/upstream/kunchenguid/repository.commit")" = "$OLD_COMMIT" ] \
+  || fail "failed refresh changed the mirror commit marker"
+[ "$(tr -d '\n' <"$FIXTURE/upstream/kunchenguid/repository/home/.config/wezterm/wezterm.lua")" = "old mirror config" ] \
+  || fail "failed refresh changed the mirror"
+[ -f "$FIXTURE/upstream/kunchenguid/repository/obsolete" ] \
+  || fail "failed refresh changed the complete mirror"
+[ "$(tr -d '\n' <"$FIXTURE/upstream/kunchenguid/snapshot/wezterm/wezterm.lua")" = "old snapshot config" ] \
+  || fail "failed refresh changed the snapshot"
+
+"$REAL_PYTHON" - "$FIXTURE/upstream/kunchenguid/decisions.json" "$OLD_COMMIT" <<'PY'
+import json, pathlib, sys
+
+upstream = json.loads(pathlib.Path(sys.argv[1]).read_text())["upstream"]
+expected = sys.argv[2]
+assert upstream["mirror_commit"] == expected
+assert upstream["last_checked_commit"] == expected
+assert upstream["last_checked_at"] == "2020-01-01"
+PY
 
 PATH="$STUB_BIN:/usr/bin:/bin" \
 EXPECTED_COMMIT="$EXPECTED_COMMIT" \
@@ -140,6 +179,10 @@ actual_mirror=$(tr -d '\n' <"$FIXTURE/upstream/kunchenguid/repository.commit")
 [ "$actual_mirror" = "$EXPECTED_COMMIT" ] || fail "mirror commit did not use the resolved commit"
 [ "$(tr -d '\n' <"$FIXTURE/upstream/kunchenguid/repository/home/.config/wezterm/wezterm.lua")" = "resolved upstream config" ] \
   || fail "mirror contents did not come from the resolved commit"
+[ "$(tr -d '\n' <"$FIXTURE/upstream/kunchenguid/snapshot/wezterm/wezterm.lua")" = "resolved upstream config" ] \
+  || fail "snapshot contents did not come from the resolved commit"
+[ ! -e "$FIXTURE/upstream/kunchenguid/repository/obsolete" ] \
+  || fail "mirror retained a file absent from the resolved commit"
 
 "$REAL_PYTHON" - "$FIXTURE/upstream/kunchenguid/decisions.json" "$EXPECTED_COMMIT" <<'PY'
 import json, pathlib, sys

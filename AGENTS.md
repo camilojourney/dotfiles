@@ -62,10 +62,11 @@ Use this workflow whenever Kun publishes changes. The goal is to refresh first, 
    ```bash
    bash scripts/check-upstream-configs.sh
    ```
-   This refreshes the complete repository mirror and the selected comparison snapshot. If only the complete mirror is needed, use:
+   This refreshes the complete repository mirror and the selected comparison snapshot. To refresh them without printing the status report, use:
    ```bash
    bash scripts/check-upstream-configs.sh --refresh-repository
    ```
+   This compatibility alias refreshes the snapshot too so the published upstream state stays at one commit.
    Never start with `--apply`.
 
 4. **Inspect the changes.**

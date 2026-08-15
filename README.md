@@ -75,11 +75,13 @@ Policies in `decisions.json`:
 bash scripts/check-upstream-configs.sh
 ```
 
-This refreshes both the complete repository mirror and the selected comparison snapshot. To refresh only the complete mirror without touching the snapshot, use:
+This refreshes both the complete repository mirror and the selected comparison snapshot. To refresh those upstream artifacts without printing the status report, use:
 
 ```bash
 bash scripts/check-upstream-configs.sh --refresh-repository
 ```
+
+`--refresh-repository` remains available for compatibility, but it refreshes the snapshot too so the published upstream state always represents one commit.
 
 Read the STATUS column:
 

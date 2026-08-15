@@ -8,15 +8,15 @@
 #   bash scripts/check-upstream-configs.sh           # report only
 #   bash scripts/check-upstream-configs.sh --apply   # safe-apply track files only
 #   bash scripts/check-upstream-configs.sh --refresh-snapshot
-#   bash scripts/check-upstream-configs.sh --refresh-repository
+#   bash scripts/check-upstream-configs.sh --refresh-repository  # compatibility alias
 #
 set -euo pipefail
 
 REPO_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-DECISIONS="$REPO_ROOT/upstream/kunchenguid/decisions.json"
-SNAP="$REPO_ROOT/upstream/kunchenguid/snapshot"
-MIRROR="$REPO_ROOT/upstream/kunchenguid/repository"
-MIRROR_COMMIT="$REPO_ROOT/upstream/kunchenguid/repository.commit"
+UPSTREAM_ROOT="$REPO_ROOT/upstream/kunchenguid"
+DECISIONS="$UPSTREAM_ROOT/decisions.json"
+SNAP="$UPSTREAM_ROOT/snapshot"
+MIRROR="$UPSTREAM_ROOT/repository"
 OURS="$REPO_ROOT/files/.config"
 PI_OURS="$REPO_ROOT/files/.pi/agent"
 UPSTREAM_REPO="${UPSTREAM_REPO:-kunchenguid/dotfiles}"
@@ -24,12 +24,11 @@ UPSTREAM_REF="${UPSTREAM_REF:-main}"
 
 APPLY=0
 REFRESH_ONLY=0
-REPOSITORY_ONLY=0
 for arg in "$@"; do
   case "$arg" in
     --apply) APPLY=1 ;;
     --refresh-snapshot) REFRESH_ONLY=1 ;;
-    --refresh-repository) REPOSITORY_ONLY=1 ;;
+    --refresh-repository) REFRESH_ONLY=1 ;;
     -h|--help)
       sed -n '2,12p' "$0"
       exit 0
@@ -65,12 +64,12 @@ fetch_commit() {
 }
 
 refresh_repository() {
-  local commit="$1"
-  local tmp repo staged mirror_commit
+  local commit="$1" staged_root="$2"
+  local tmp repo mirror mirror_commit
 
   tmp=$(mktemp -d)
   repo="$tmp/repository"
-  staged="$tmp/staged"
+  mirror="$staged_root/repository"
   git init --quiet "$repo"
   git -C "$repo" remote add origin "https://github.com/${UPSTREAM_REPO}.git"
   git -C "$repo" fetch --quiet --depth 1 origin "$commit"
@@ -81,20 +80,10 @@ refresh_repository() {
     exit 1
   fi
 
-  mkdir -p "$staged"
-  git -C "$repo" archive --format=tar "$commit" | tar -xf - -C "$staged"
-  rm -rf "$MIRROR"
-  mv "$staged" "$MIRROR"
-  printf '%s\n' "$mirror_commit" >"$MIRROR_COMMIT"
-
-  python3 - "$DECISIONS" "$mirror_commit" <<'PY'
-import json, pathlib, sys
-dec_path, commit = sys.argv[1], sys.argv[2]
-data = json.loads(pathlib.Path(dec_path).read_text())
-data["upstream"]["mirror_commit"] = commit
-pathlib.Path(dec_path).write_text(json.dumps(data, indent=2) + "\n")
-PY
-
+  rm -rf "$mirror"
+  mkdir -p "$mirror"
+  git -C "$repo" archive --format=tar "$commit" | tar -xf - -C "$mirror"
+  printf '%s\n' "$mirror_commit" >"$staged_root/repository.commit"
   rm -rf "$tmp"
 }
 
@@ -123,15 +112,16 @@ import_missing_authored_configs() {
 }
 
 refresh_snapshot() {
-  local commit="$1"
+  local commit="$1" staged_root="$2"
+  local snap="$staged_root/snapshot"
   local base="https://raw.githubusercontent.com/${UPSTREAM_REPO}/${commit}/home/.config"
   local rel path dest
 
-  mkdir -p "$SNAP"
+  mkdir -p "$snap"
   python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print("\n".join(d["files"].keys()))' "$DECISIONS" \
     | while IFS= read -r rel; do
         [ -n "$rel" ] || continue
-        dest="$SNAP/$rel"
+        dest="$snap/$rel"
         mkdir -p "$(dirname "$dest")"
         curl -fsSL "$base/$rel" -o "$dest"
       done
@@ -145,33 +135,52 @@ refresh_snapshot() {
             or startswith("home/.config/nvim/")
             or startswith("home/.config/herdr/"))
       | sub("^home/.config/"; "")
-    ' >"$SNAP/.upstream_file_list" || true
+    ' >"$snap/.upstream_file_list" || true
   fi
+}
 
-  python3 - "$DECISIONS" "$commit" <<'PY'
+record_refresh_metadata() {
+  local staged_root="$1" commit="$2"
+
+  python3 - "$staged_root/decisions.json" "$commit" <<'PY'
 import json, pathlib, sys, datetime
 dec_path, commit = sys.argv[1], sys.argv[2]
 data = json.loads(pathlib.Path(dec_path).read_text())
+data["upstream"]["mirror_commit"] = commit
 data["upstream"]["last_checked_commit"] = commit
 data["upstream"]["last_checked_at"] = datetime.date.today().isoformat()
 pathlib.Path(dec_path).write_text(json.dumps(data, indent=2) + "\n")
 PY
 }
 
+publish_refresh() {
+  local staged_root="$1" stage_dir="$2" previous
+
+  previous="$stage_dir/previous"
+
+  mv "$UPSTREAM_ROOT" "$previous"
+  if ! mv "$staged_root" "$UPSTREAM_ROOT"; then
+    mv "$previous" "$UPSTREAM_ROOT" || true
+    echo "Unable to publish refreshed upstream state" >&2
+    exit 1
+  fi
+}
+
 COMMIT=$(fetch_commit)
 echo "Upstream ${UPSTREAM_REPO}@${UPSTREAM_REF} -> ${COMMIT}"
-refresh_repository "$COMMIT"
+STAGE_DIR=$(mktemp -d "$REPO_ROOT/upstream/.kunchenguid-refresh.XXXXXX")
+STAGED_ROOT="$STAGE_DIR/kunchenguid"
+trap 'rm -rf "$STAGE_DIR"' EXIT
+mkdir -p "$STAGED_ROOT"
+cp -R "$UPSTREAM_ROOT/." "$STAGED_ROOT"
+refresh_repository "$COMMIT" "$STAGED_ROOT"
+refresh_snapshot "$COMMIT" "$STAGED_ROOT"
+record_refresh_metadata "$STAGED_ROOT" "$COMMIT"
+publish_refresh "$STAGED_ROOT" "$STAGE_DIR"
 import_missing_authored_configs
 
-if [ "$REPOSITORY_ONLY" -eq 1 ]; then
-  echo "Complete repository mirrored at $MIRROR"
-  exit 0
-fi
-
-refresh_snapshot "$COMMIT"
-
 if [ "$REFRESH_ONLY" -eq 1 ]; then
-  echo "Snapshot refreshed at $SNAP"
+  echo "Upstream mirror and snapshot refreshed"
   exit 0
 fi
 
