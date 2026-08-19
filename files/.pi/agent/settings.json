@@ -17,7 +17,8 @@
     "git:github.com/algal/pi-openai-server-compaction@c6d593087709e9481223dc6c6c2269b371b5e055",
     "npm:pi-antigravity",
     "npm:pi-claude-bridge",
-    "git:github.com/camilojourney/pi-cursor-provider@73fd2d75c58bfe1757a124e407fbc72f89642826"
+    "git:github.com/camilojourney/pi-cursor-provider@73fd2d75c58bfe1757a124e407fbc72f89642826",
+    "npm:pi-cursor-sdk"
   ],
   "lastChangelogVersion": "0.84.2",
   "defaultProvider": "openai-codex",
