@@ -29,7 +29,12 @@ return {
   },
   {
     'stevearc/oil.nvim',
-    opts = { view_options = { show_hidden = true } },
+    opts = {
+      view_options = { show_hidden = true },
+      keymaps = {
+        ['y.'] = 'actions.copy_to_system_clipboard',
+      },
+    },
     keys = { { '<leader>o', '<cmd>Oil<cr>', desc = 'Oil File Browser' } },
   },
   {
@@ -39,6 +44,7 @@ return {
     opts = {
       picker = {
         enabled = true,
+        ui_select = true,
         sources = {
           explorer = {
             -- Keep the explorer focused while the selected text file renders in

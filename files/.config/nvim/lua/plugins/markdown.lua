@@ -39,6 +39,36 @@ return {
     },
   },
 
+  -- Browser preview for Mermaid flowcharts and full-note HTML.
+  -- This is a Neovim plugin (not an Obsidian community plugin). It starts a
+  -- local preview server and opens the current note in a browser, where
+  -- mermaid.js draws ```mermaid fences. WezTerm + Herdr cannot reliably show
+  -- inline images, so diagrams stay in the browser instead of the buffer.
+  {
+    'iamcco/markdown-preview.nvim',
+    ft = { 'markdown' },
+    cmd = { 'MarkdownPreview', 'MarkdownPreviewStop', 'MarkdownPreviewToggle' },
+    build = 'cd app && npm install',
+    init = function()
+      vim.g.mkdp_auto_start = 0
+      vim.g.mkdp_auto_close = 0
+      vim.g.mkdp_echo_preview_url = 1
+      vim.g.mkdp_page_title = '${name}'
+      vim.g.mkdp_theme = 'dark'
+      vim.g.mkdp_filetypes = { 'markdown' }
+      -- Replaces the plugin default stylesheet. Keep github-like rules and
+      -- wrap table cells so wide vault tables stay readable.
+      vim.g.mkdp_markdown_css = vim.fn.expand('~/.config/nvim/markdown-preview.css')
+      vim.g.mkdp_preview_options = {
+        mkit = { html = true, linkify = true, breaks = false },
+        hide_yaml_meta = 1,
+      }
+    end,
+    keys = {
+      { '<leader>mp', '<cmd>MarkdownPreviewToggle<cr>', desc = 'Preview Markdown + Mermaid' },
+    },
+  },
+
   -- Wrapped pipe tables. Reader mode renders tables into a protected view,
   -- while keeping the Markdown source intact and editable with `e`.
   {
@@ -70,14 +100,17 @@ return {
   {
     'obsidian-nvim/obsidian.nvim',
     ft = { 'markdown' },
-    dependencies = { 'nvim-lua/plenary.nvim' },
+    dependencies = { 'nvim-lua/plenary.nvim', 'folke/snacks.nvim' },
     opts = {
       workspaces = {
         {
           name = 'vault',
-          path = '/Users/camiloslaptop/Library/Mobile Documents/iCloud~md~obsidian/Documents/My Vault',
+          path = vim.fn.expand('~/github/vault'),
         },
       },
+      -- Pin the Snacks adapter. Auto-detect can require a missing
+      -- obsidian.picker._snacks module depending on plugin/cache version.
+      picker = { name = 'snacks.picker' },
       -- render-markdown.nvim already owns the visuals; don't let obsidian.nvim
       -- fight it over conceal/extmarks
       ui = { enable = false },
