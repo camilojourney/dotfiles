@@ -11,7 +11,7 @@ in
 
   homebrew = {
     enable = true;
-    enableZshIntegration = true; # puts /opt/homebrew/bin on PATH (claude, codex, etc.)
+    enableZshIntegration = true; # puts /opt/homebrew/bin on PATH for Homebrew CLIs.
     onActivation = {
       # Removes undeclared Homebrew formulae, casks, and taps while preserving
       # their user data. Mac App Store apps need the cleanup script below.

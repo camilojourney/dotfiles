@@ -81,13 +81,13 @@ in
       push = "git push";
       pull = "git pull";
       m = "git switch main";
-      cc = "claude --dangerously-skip-permissions";
       co = "codex";
       # NOTE: codex runs full-auto via ~/.codex/config.toml (approval_policy="never",
       # sandbox_mode="danger-full-access"); the old --full-auto flag was removed.
     };
     initContent = ''
       bindkey '^f' autosuggest-accept
+      cc() { local c; c="$(command -v claude || true)"; if [[ -z "$c" ]]; then c="$HOME/.local/bin/claude"; fi; [[ -x "$c" ]] || { print -u2 "cc: cannot find claude executable. Run 'rebuild' and try again"; return 1; }; "$c" --dangerously-skip-permissions "$@"; }
     '';
   };
 
