@@ -3,6 +3,7 @@ import type { BabyMenuLayoutProps } from "@babymenu/contracts";
 const quotaWidgetIds = [
   "codex-quota",
   "claude-code-quota",
+  "cursor-quota",
   "deepseek-quota",
   "grok-quota",
   "antigravity-quota",
