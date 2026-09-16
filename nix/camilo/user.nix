@@ -6,6 +6,7 @@ in
 {
   programs.zsh.shellAliases = {
     rebuild = "sudo /run/current-system/sw/bin/darwin-rebuild switch --flake ~/github/dotfiles#camilo";
+    safe-maintenance = "~/github/dotfiles/scripts/safe-maintenance.sh --profile camilo";
   };
 
   home.file = {
