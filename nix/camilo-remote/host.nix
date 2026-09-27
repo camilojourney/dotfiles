@@ -6,7 +6,10 @@
 
   # Installing the remote profile must not delete unrelated existing apps.
   homebrew.onActivation.cleanup = lib.mkForce "none";
-  homebrew.onActivation.upgrade = lib.mkForce false;
+  # Auto-upgrade on every rebuild (inherits shared's `upgrade = true`), so
+  # herdr and everything else stay current here the same way they do on
+  # the laptop. Homebrew has no per-formula upgrade toggle, so this applies
+  # to all brews/casks on this host, not just herdr.
 
   homebrew.taps = [
     {
@@ -26,6 +29,13 @@
     # checksum and blocking the entire activation. Leave it unmanaged until
     # a working cask is available; cleanup=none preserves existing installs.
     "tailscale-app"
+    "google-chrome"
+    # chrome-devtools-axi is pointed at the canary channel (see shared
+    # user.nix) so its automated sessions never collide with this browser.
+    "google-chrome@canary"
+    "antigravity-cli"
+    "grok-build"
+    "mullvad-vpn"
   ];
   homebrew.masApps = lib.mkForce { };
 

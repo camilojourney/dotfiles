@@ -1,13 +1,13 @@
 {
   "policy": {
-    "update": "Pinned versions are reconciled on every rebuild. Bump pins in this manifest explicitly; rebuild never floats to unpinned latest. Run scripts/agent-tools/check-pins.sh periodically to report registry drift; it never edits or installs anything.",
+    "update": "Pinned versions are reconciled on every rebuild. Bump pins in this manifest explicitly; rebuild never floats to unpinned latest. Run scripts/agent-tools/check-pins.sh periodically to report registry drift; it never edits or installs anything. Exception: @earendil-works/pi-coding-agent is intentionally pinned to \"latest\" (not a version) on both hosts, by explicit request, trading reproducibility for always-current Pi.",
     "npm": "Global npm CLIs install via brew node npm with --ignore-scripts. The global npm package itself is never managed here so brew node owns npm.",
     "pipx": "Isolated Python CLIs install via brew pipx with ==version pins.",
     "external": "Release archives download from official GitHub releases with sha256 verification (see scripts/agent-tools/install-external.sh).",
     "reproducibility": "npm/pipx pins are auditable in this file. External binaries add content-addressed sha256 per platform. Bumping a pin is an intentional manifest edit; check-pins.sh is advisory only and rebuilds remain fully pinned."
   },
   "npm": [
-  { "name": "@earendil-works/pi-coding-agent", "version": "0.87.1" },
+  { "name": "@earendil-works/pi-coding-agent", "version": "latest" },
   { "name": "acpx", "version": "0.19.3" },
   { "name": "chrome-devtools-axi", "version": "0.1.35" },
   { "name": "gh-axi", "version": "0.1.35" },
@@ -19,8 +19,8 @@
   ],
   "profiles": {
     "camilo-remote": {
-      "npm": ["@earendil-works/pi-coding-agent", "acpx", "gh-axi", "pnpm", "quota-axi", "tasks-axi"],
-      "external": []
+      "npm": ["@earendil-works/pi-coding-agent", "acpx", "chrome-devtools-axi", "gh-axi", "gnhf", "lavish-axi", "pnpm", "quota-axi", "tasks-axi"],
+      "external": ["no-mistakes", "treehouse"]
     },
     "camilo": {
       "npm": ["@earendil-works/pi-coding-agent", "acpx", "chrome-devtools-axi", "gh-axi", "gnhf", "lavish-axi", "pnpm", "quota-axi", "tasks-axi"],
@@ -63,8 +63,8 @@
   "setupHooks": {
     "npm": [
       {"name": "gh-axi"},
-      {"name": "lavish-axi", "profiles": ["camilo"]},
-      {"name": "chrome-devtools-axi", "profiles": ["camilo"]},
+      {"name": "lavish-axi"},
+      {"name": "chrome-devtools-axi"},
       {"name": "tasks-axi"}
     ],
     "graphify": {
@@ -75,7 +75,8 @@
   "verify": {
     "bins": ["pi", "acpx", "gh-axi", "pnpm", "quota-axi", "tasks-axi", "graphify", "tmux"],
     "hostBins": {
-      "camilo": ["chrome-devtools-axi", "gnhf", "lavish-axi", "no-mistakes", "treehouse", "mlx_lm", "optiq"]
+      "camilo": ["chrome-devtools-axi", "gnhf", "lavish-axi", "no-mistakes", "treehouse", "mlx_lm", "optiq"],
+      "camilo-remote": ["chrome-devtools-axi", "gnhf", "lavish-axi", "no-mistakes", "treehouse"]
     }
   }
 }

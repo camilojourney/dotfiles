@@ -29,6 +29,15 @@ in
 
   home.sessionVariables = {
     EDITOR = "nvim";
+    # Point chrome-devtools-axi's default headless launches at Chrome Canary
+    # instead of stable Chrome, so they never collide with the daily-driver
+    # browser (same app bundle = macOS Launch Services treats a headless
+    # ghost process as "Chrome is already open" and blocks a real window).
+    CHROME_DEVTOOLS_AXI_CHANNEL = "canary";
+    # Fixed profile dir so a login (e.g. the first `open` of a login tab)
+    # persists across every later invocation instead of starting from a
+    # fresh, signed-out profile each time.
+    CHROME_DEVTOOLS_AXI_USER_DATA_DIR = "${homeDirectory}/.local/state/chrome-devtools-axi-profile";
   };
 
   # uv installs user-scoped CLI entry points, including graphify, here.
@@ -83,20 +92,41 @@ in
       push = "git push";
       pull = "git pull";
       m = "git switch main";
-      co = "codex";
-      # NOTE: codex runs full-auto via ~/.codex/config.toml (approval_policy="never",
-      # sandbox_mode="danger-full-access"); the old --full-auto flag was removed.
+      # Matches Kun's alias: explicitly bypasses Claude Code permission prompts.
+      cc = "claude --dangerously-skip-permissions";
+      # --profile nix layers ~/.codex/nix.config.toml (nix-managed) on top of
+      # the base ~/.codex/config.toml, which stays live/unmanaged since it's
+      # mostly generated per-project trust and plugin state. A bare `codex`
+      # invocation still falls back to the base file's own copies of these
+      # same values, kept in sync by hand.
+      co = "codex --profile nix";
+      # Same persistent profile as chrome-devtools-axi's default, but with a
+      # visible window so a running automation can be watched/debugged live.
+      axi-watch = "CHROME_DEVTOOLS_AXI_HEADED=1 chrome-devtools-axi";
     };
     initContent = ''
       bindkey '^f' autosuggest-accept
     '';
   };
 
-  # Edit-in-place: repo files stay canonical; home paths are symlinks.
+  # Shared authored config is symlinked from the repo on both hosts.
+  # App state, credentials, and sessions remain local and unmanaged.
   home.file = {
+    # Share only crew dispatch policy; other FirstMate config stays host-local.
+    "github/firstmate/config/crew-dispatch.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.firstmate/crew-dispatch.json";
+    ".baby-menu/extensions".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.baby-menu/extensions";
+    ".baby-menu/agents.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.baby-menu/agents.json";
+    ".baby-menu/preferences.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.baby-menu/preferences.json";
     ".config/wezterm".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/wezterm";
     ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/nvim";
     ".config/herdr".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/herdr";
+    ".claude/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.claude/settings.json";
+    ".codex/nix.config.toml".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.codex/nix.config.toml";
+    # grok's config.toml is small and entirely preferences - unlike Codex's,
+    # its live session/trust/marketplace-cache state lives in separate files
+    # under ~/.grok/, so this can be a direct full symlink.
+    ".grok/config.toml".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.grok/config.toml";
+    ".claude/CLAUDE.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
     ".codex/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
 
     # GPG uses the Homebrew macOS Pinentry dialog. Keep this config declarative,

@@ -5,24 +5,34 @@
   "terminal": {
     "showImages": false
   },
-  "hideThinkingBlock": true,
+  "hideThinkingBlock": false,
   "quietStartup": true,
   "theme": "rose-pine-moon-code",
   "steeringMode": "all",
   "followUpMode": "all",
   "collapseChangelog": true,
   "packages": [
-    "npm:pi-web-access@0.14.0",
-    "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.6",
-    "git:github.com/algal/pi-openai-server-compaction@c6d593087709e9481223dc6c6c2269b371b5e055",
+    "npm:pi-web-access",
+    "npm:@ryan_nookpi/pi-extension-codex-fast-mode",
+    "git:github.com/algal/pi-openai-server-compaction",
     "npm:pi-antigravity",
     "npm:pi-claude-bridge",
-    "git:github.com/camilojourney/pi-cursor-provider@73fd2d75c58bfe1757a124e407fbc72f89642826"
+    "git:github.com/camilojourney/pi-cursor-provider",
+    "npm:pi-llama-cpp"
   ],
-  "lastChangelogVersion": "0.84.2",
+  "llamaServerUrl": "http://127.0.0.1:8080",
+  "thinkingBudgets": {
+    "minimal": 512,
+    "low": 1024,
+    "medium": 2048,
+    "high": 4096,
+    "xhigh": 8192
+  },
+  "lastChangelogVersion": "0.87.1",
   "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.6-luna",
+  "defaultModel": "gpt-5.6-sol",
   "defaultThinkingLevel": "high",
   "defaultProjectTrust": "always",
-  "tuiMode": "fullscreen"
+  "tuiMode": "regular",
+  "outputPad": 1
 }

@@ -27,7 +27,7 @@ Harness and stub writes call `assert_path_under_sandbox` / `guard_write_path` so
 
 ## Adopting upstream expert patterns (kunchenguid/dotfiles)
 
-This repo tracks https://github.com/kunchenguid/dotfiles as the reference for WezTerm, Neovim, herdr, and Pi agent config.
+This repo tracks https://github.com/kunchenguid/dotfiles as the reference for WezTerm, Neovim, herdr, Pi, and Claude Code agent config.
 
 **Do not blind-copy.** Use the check script and decisions file:
 

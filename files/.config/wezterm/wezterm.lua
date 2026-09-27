@@ -13,16 +13,16 @@ config.colors = {
 
 config.font = wezterm.font("Hack Nerd Font")
 
+-- I keep this terminal 100% keyboard driven by disabling mouse actions.
 -- Select everything in the pane. This WezTerm version has no SelectAll action,
 -- so Ctrl+Shift+A jumps to the top of the scrollback in copy mode; then press
 -- Space -> G -> y to select everything and copy. Plain Ctrl+A stays free for the
 -- shell (start of line).
--- Keep Ctrl+Shift+Up/Down available for scrolling long Pi responses.
--- WezTerm's defaults use those shortcuts for pane navigation, so send the
--- standard PageUp/PageDown keys to Pi's fullscreen transcript instead.
+-- Ctrl+Shift+Up/Down reverts to WezTerm's default: moving between panes.
 config.keys = {
-  { key = 'UpArrow', mods = 'CTRL|SHIFT', action = wezterm.action.SendKey { key = 'PageUp', mods = '' } },
-  { key = 'DownArrow', mods = 'CTRL|SHIFT', action = wezterm.action.SendKey { key = 'PageDown', mods = '' } },
+  -- Fast scroll in copy mode: Shift+[ jumps a page up, Shift+] jumps a page down.
+  { key = '{', mods = 'SHIFT', action = wezterm.action.CopyMode('PageUp') },
+  { key = '}', mods = 'SHIFT', action = wezterm.action.CopyMode('PageDown') },
   { key = 'A', mods = 'CTRL|SHIFT', action = wezterm.action.Multiple{
     wezterm.action.ActivateCopyMode,
     wezterm.action.CopyMode('MoveToScrollbackTop'),
