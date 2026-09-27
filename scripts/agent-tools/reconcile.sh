@@ -136,6 +136,9 @@ main() {
   install_npm_globals
   install_pipx_packages
   install_external_tools
+  if [ "$HOST_PROFILE" = camilo ]; then
+    "$REPO_ROOT/scripts/agent-tools/install-cursor-agent.sh"
+  fi
   run_setup_hooks
   verify_bins
   info "reconcile complete"
