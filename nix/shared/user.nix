@@ -61,7 +61,9 @@ in
     '';
     settings = {
       add_newline = false;
-      format = "$directory$git_branch$git_status$cmd_duration$line_break$character";
+      format = "$username$hostname$directory$git_branch$git_status$cmd_duration$line_break$character";
+      username.format = "[$user]($style)@";
+      hostname.format = "[$hostname]($style):";
       character = {
         success_symbol = "[❯](purple)";
         error_symbol = "[❯](red)";

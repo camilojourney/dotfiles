@@ -52,8 +52,9 @@
       hostProfile = "camilo-remote";
       hostModule = ./nix/camilo-remote/host.nix;
       userModule = ./nix/camilo-remote/user.nix;
-      userName = "mini";
-      homeDirectory = "/Users/mini";
+      # Match the existing macOS account; activation cannot create its primary user.
+      userName = "camilo_mini";
+      homeDirectory = "/Users/camilo_mini";
     };
   };
 }

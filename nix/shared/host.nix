@@ -1,4 +1,4 @@
-{ config, lib, pkgs, userName, homeDirectory, ... }:
+{ config, lib, pkgs, userName, homeDirectory, hostProfile, ... }:
 
 let
   declaredMasAppIds = lib.concatStringsSep " " (map toString (lib.attrValues config.homebrew.masApps));
@@ -20,6 +20,7 @@ in
     };
     brews = [
       "espeak-ng" # optional text-to-speech support
+      "curl" # downloads pinned external agent releases during activation
       "fswatch" # used by Invoz watch loops
       "gh" # GitHub CLI
       "glab" # GitLab CLI
@@ -49,17 +50,14 @@ in
       "nomachine"
       "tailscale-app"
     ];
-    # App Store apps (not available as Homebrew casks).
-    masApps = {
-      Xcode = 497799835;
-    };
   };
 
   # Homebrew Bundle does not remove MAS apps that disappear from masApps.
   # Run the cleanup as the primary user after Bundle has installed declared apps.
-  system.activationScripts.postActivation.text = lib.mkAfter ''
+  # Mac App Store apps (Xcode) are laptop-only; the remote host declares no masApps.
+  system.activationScripts.postActivation.text = lib.mkIf (hostProfile == "camilo") (lib.mkAfter ''
     ${pkgs.bash}/bin/bash ${../../scripts/mas-cleanup.sh} /opt/homebrew/bin/mas ${userName} ${declaredMasAppIds}
-  '';
+  '');
 
   # starship comes from Home Manager (programs.starship in shared/user.nix)
   environment.systemPackages = [ ];
@@ -86,6 +84,8 @@ in
       NSNavPanelExpandedStateForSaveMode = true;
       NSNavPanelExpandedStateForSaveMode2 = true;
       AppleShowAllExtensions = true;
+      # Keep the menu bar and Dock out of the way on both machines.
+      _HIHideMenuBar = true;
     };
 
     finder = {
@@ -96,6 +96,12 @@ in
 
     trackpad = {
       Clicking = true;
+    };
+
+    dock = {
+      autohide = true;
+      autohide-delay = 0.0;
+      show-recents = false;
     };
   };
 

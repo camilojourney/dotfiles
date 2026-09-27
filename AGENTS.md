@@ -14,6 +14,12 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 
 ## Testing setup/mac.sh
 
+`rebuild.sh` and `rebuild-remote.sh` automatically delegate to setup when Nix
+is missing, and support first activation when only nix-darwin is missing.
+This lets fresh Macs use the same entrypoint as later rebuilds. Validate both
+only with `bash tests/rebuild_remote_test.sh` (stubbed commands), never by
+running either helper directly: they can now install prerequisites too.
+
 Run `bash tests/mac_setup_test.sh`. It simulates a fresh Mac by copying the repo into a scratch fixture (placeholders pre-replaced), building stub `curl`/`sh`/`nix`/`darwin-rebuild`/`sudo`/`bash` executables that record invocations and fake just enough side effects (a profile script, a `nix` binary) for the script to progress, then running the real `setup/mac.sh` against that PATH-masked sandbox. It covers both the fresh-machine path (single-pass activation) and the already-installed fast path. It never touches the real network, Nix store, Homebrew, sudo, or system state. Set `DEBUG_KEEP_SANDBOX=1` to keep the scratch sandbox around for inspection after a failing run.
 
 Each scenario sandboxes `HOME`, re-homes `NVM_DIR` under that temp root, and unsets inherited `BASH_ENV`/`ENV` before invoking `setup/mac.sh` (an inherited absolute `NVM_DIR` from hm-session-vars would otherwise leak stub writes).
