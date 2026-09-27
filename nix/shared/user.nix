@@ -87,7 +87,6 @@ in
     };
     initContent = ''
       bindkey '^f' autosuggest-accept
-      cc() { local c; c="$(command -v claude || true)"; if [[ -z "$c" ]]; then c="$HOME/.local/bin/claude"; fi; [[ -x "$c" ]] || { print -u2 "cc: cannot find claude executable. Run 'rebuild' and try again"; return 1; }; "$c" --dangerously-skip-permissions "$@"; }
     '';
   };
 
@@ -96,8 +95,6 @@ in
     ".config/wezterm".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/wezterm";
     ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/nvim";
     ".config/herdr".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/herdr";
-    ".claude/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.claude/settings.json";
-    ".claude/CLAUDE.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
     ".codex/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
 
     # GPG uses the Homebrew macOS Pinentry dialog. Keep this config declarative,

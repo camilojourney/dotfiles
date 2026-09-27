@@ -195,8 +195,8 @@ test_fresh_install_shared() {
   fi
   out=$(cat "$log/stdout.log" "$log/stderr.log" "$log/npm.log" "$log/pipx.log" "$log/hooks.log")
 
-  assert_contains "$out" "npm: reconciling @earendil-works/pi-coding-agent@0.84.1" "fresh remote installs pi"
-  assert_contains "$out" "pipx: reconciling graphifyy==0.9.34" "fresh remote installs graphifyy"
+  assert_contains "$out" "npm: reconciling @earendil-works/pi-coding-agent@0.87.1" "fresh remote installs pi"
+  assert_contains "$out" "pipx: reconciling graphifyy==0.9.69" "fresh remote installs graphifyy"
   assert_not_contains "$out" "mlx-lm" "remote skips local MLX tools"
   assert_contains "$out" "gh-axi setup hooks" "setup hooks run"
   assert_contains "$out" "graphify install --platform pi" "graphify platform hook"
@@ -216,7 +216,7 @@ test_idempotent_repeat() {
     echo "first reconcile failed" >&2; cat "$log/first/stderr.log" >&2 || true
     fail "first reconcile exited $rc"; rm -rf "$sandbox"; return 0
   fi
-  jq '.venvs.graphifyy = {metadata: {main_package: {package: "graphifyy", package_version: "0.9.34"}}}' \
+  jq '.venvs.graphifyy = {metadata: {main_package: {package: "graphifyy", package_version: "0.9.69"}}}' \
     "$sandbox/pipx-list.json" >"$sandbox/pipx-list.tmp" && mv "$sandbox/pipx-list.tmp" "$sandbox/pipx-list.json"
 
   run_reconcile camilo "$log/second" "$sandbox" || rc=$?
@@ -225,7 +225,7 @@ test_idempotent_repeat() {
     fail "second reconcile exited $rc"; rm -rf "$sandbox"; return 0
   fi
   out2=$(cat "$log/second/stdout.log" "$log/second/stderr.log" 2>/dev/null || true)
-  assert_contains "$out2" "graphifyy==0.9.34 already installed" "repeat skips unchanged pipx"
+  assert_contains "$out2" "graphifyy==0.9.69 already installed" "repeat skips unchanged pipx"
 
   rm -rf "$sandbox"
   pass "repeat activation is idempotent for unchanged pipx"
@@ -239,7 +239,7 @@ test_host_scoped_pipx() {
   run_reconcile camilo "$log" "$sandbox"
   out=$(cat "$log/pipx.log")
   assert_contains "$out" "mlx-lm==0.31.3" "laptop installs mlx-lm"
-  assert_contains "$out" "mlx-optiq==0.4.7" "laptop installs mlx-optiq"
+  assert_contains "$out" "mlx-optiq==0.5.13" "laptop installs mlx-optiq"
 
   rm -rf "$sandbox"
   pass "host-specific pipx packages install only on camilo"

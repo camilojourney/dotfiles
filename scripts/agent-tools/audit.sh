@@ -36,7 +36,7 @@ if [ "$HOST_PROFILE" = camilo ]; then
   declared_pipx=$(printf '%s\n%s\n' "$declared_pipx" "$(jq -r '.pipx.camilo[]?.name // empty' "$MANIFEST")")
 fi
 declared_pipx=$(printf '%s\n' "$declared_pipx" | sed '/^$/d' | sort -u)
-declared_external=$(jq -r '.external | keys[]' "$MANIFEST" | sort -u)
+declared_external=$(jq -r --arg profile "$HOST_PROFILE" '.profiles[$profile].external[]?' "$MANIFEST" | sort -u)
 declared_brew=$(collect_brew_formulas)
 
 echo "=== Declared agent tool inventory (manifest) ==="

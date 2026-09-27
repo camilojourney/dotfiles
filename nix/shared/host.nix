@@ -22,6 +22,7 @@ in
       "espeak-ng" # optional text-to-speech support
       "fswatch" # used by Invoz watch loops
       "gh" # GitHub CLI
+      "glab" # GitLab CLI
       "gnupg" # GPG key generation and commit signing
       "herdr" # agent multiplexer for SSH remote machines
       "just" # task runner for Invoz and other projects
@@ -38,8 +39,6 @@ in
     casks = [
       "wezterm"
       "antigravity-cli"
-      "claude"
-      "claude-code"
       "codex"
       "font-hack-nerd-font" # shared font used by terminal and editor tools
       "gcloud-cli"
