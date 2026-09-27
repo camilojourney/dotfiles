@@ -12,7 +12,6 @@
   homebrew.casks = [
     "baby-menu"
     "camo-studio"
-    "cursor"
     "deepl"
     "elgato-stream-deck"
     "grammarly-desktop"
@@ -33,7 +32,6 @@
   system.defaults.dock = {
     persistent-apps = [
       "/Applications/WezTerm.app"
-      "/Applications/Cursor.app"
       "/Applications/ChatGPT.app"
       "/Applications/Obsidian.app"
       "/Applications/Safari.app"

@@ -1,80 +1,81 @@
 {
   "policy": {
-    "update": "Pinned versions are reconciled on every rebuild. Bump pins in this manifest explicitly; rebuild never floats to unpinned latest.",
+    "update": "Pinned versions are reconciled on every rebuild. Bump pins in this manifest explicitly; rebuild never floats to unpinned latest. Run scripts/agent-tools/check-pins.sh periodically to report registry drift; it never edits or installs anything.",
     "npm": "Global npm CLIs install via brew node npm with --ignore-scripts. The global npm package itself is never managed here so brew node owns npm.",
     "pipx": "Isolated Python CLIs install via brew pipx with ==version pins.",
     "external": "Release archives download from official GitHub releases with sha256 verification (see scripts/agent-tools/install-external.sh).",
-    "reproducibility": "npm/pipx pins are auditable in this file. External binaries add content-addressed sha256 per platform. Bumping a pin is an intentional manifest edit."
+    "reproducibility": "npm/pipx pins are auditable in this file. External binaries add content-addressed sha256 per platform. Bumping a pin is an intentional manifest edit; check-pins.sh is advisory only and rebuilds remain fully pinned."
   },
   "npm": [
-  { "name": "@earendil-works/pi-coding-agent", "version": "0.84.1" },
-  { "name": "acpx", "version": "0.13.0" },
-  { "name": "chrome-devtools-axi", "version": "0.1.28" },
-  { "name": "gh-axi", "version": "0.1.30" },
-  { "name": "gnhf", "version": "0.1.43" },
-  { "name": "lavish-axi", "version": "0.1.47" },
-  { "name": "pnpm", "version": "11.1.1" },
-  { "name": "quota-axi", "version": "0.1.20" },
-  { "name": "tasks-axi", "version": "0.2.5" }
+  { "name": "@earendil-works/pi-coding-agent", "version": "0.87.1" },
+  { "name": "acpx", "version": "0.19.3" },
+  { "name": "chrome-devtools-axi", "version": "0.1.35" },
+  { "name": "gh-axi", "version": "0.1.35" },
+  { "name": "gnhf", "version": "0.1.50" },
+  { "name": "lavish-axi", "version": "0.1.79" },
+  { "name": "pnpm", "version": "12.6.0" },
+  { "name": "quota-axi", "version": "0.1.55" },
+  { "name": "tasks-axi", "version": "0.2.6" }
   ],
+  "profiles": {
+    "camilo-remote": {
+      "npm": ["@earendil-works/pi-coding-agent", "acpx", "gh-axi", "pnpm", "quota-axi", "tasks-axi"],
+      "external": []
+    },
+    "camilo": {
+      "npm": ["@earendil-works/pi-coding-agent", "acpx", "chrome-devtools-axi", "gh-axi", "gnhf", "lavish-axi", "pnpm", "quota-axi", "tasks-axi"],
+      "external": ["no-mistakes", "treehouse"]
+    }
+  },
   "pipx": {
     "shared": [
-      { "name": "graphifyy", "version": "0.9.34" }
+      { "name": "graphifyy", "version": "0.9.69" }
     ],
     "camilo": [
       { "name": "mlx-lm", "version": "0.31.3" },
-      { "name": "mlx-optiq", "version": "0.4.7" }
+      { "name": "mlx-optiq", "version": "0.5.13" }
     ]
   },
   "external": {
     "no-mistakes": {
-      "version": "1.45.4",
+      "version": "1.79.0",
       "repo": "kunchenguid/no-mistakes",
       "installSubdir": ".no-mistakes/bin",
       "binary": "no-mistakes",
       "archivePattern": "no-mistakes-v{version}-{os}-{arch}.tar.gz",
       "sha256": {
-        "darwin-arm64": "7978b68c931207088d9ff7c6255685f60ae6b240ca15228f053d674ed94af8e5",
-        "darwin-amd64": "2596aa20a2c3373b8bc28260e7fe3ad31a32e7c9c0b94dae0c79d805ac039936"
+        "darwin-arm64": "80c2f4b9b3d01cb5d60ca294226b41d7331408e6e5cf0400a576cf3ec25166d7",
+        "darwin-amd64": "97a7fa50be1ec0e07e4b00d38b4fc83b12dc961cbe1a4628a13a5b620662069b"
       }
     },
     "treehouse": {
-      "version": "2.0.1",
+      "version": "3.1.0",
       "repo": "kunchenguid/treehouse",
       "installSubdir": ".local/bin",
       "binary": "treehouse",
       "archivePattern": "treehouse-v{version}-{os}-{arch}.tar.gz",
       "sha256": {
-        "darwin-arm64": "7ee5078f3d1f33c01196548797fce65408e459d53530b77d4ba56e074fa1c1a2",
-        "darwin-amd64": "1cf44580a5837f995e1d3bb74f4fbd3112b642acd20406087d9735a8106112fd"
+        "darwin-arm64": "e78f52f078d90ffa8589da164fc87306020c5524776273ad040af04127dd91df",
+        "darwin-amd64": "95a6f5cf582f767a8b102a749a53ea397bf28d20df10467c367927f26073e131"
       }
     }
   },
   "setupHooks": {
-    "npm": ["gh-axi", "lavish-axi", "chrome-devtools-axi", "tasks-axi"],
+    "npm": [
+      {"name": "gh-axi"},
+      {"name": "lavish-axi", "profiles": ["camilo"]},
+      {"name": "chrome-devtools-axi", "profiles": ["camilo"]},
+      {"name": "tasks-axi"}
+    ],
     "graphify": {
       "command": "graphify",
-      "platforms": ["claude", "codex", "pi", "opencode"]
+      "platforms": ["codex", "pi", "opencode"]
     }
   },
   "verify": {
-    "bins": [
-      "pi",
-      "acpx",
-      "chrome-devtools-axi",
-      "gh-axi",
-      "gnhf",
-      "lavish-axi",
-      "pnpm",
-      "quota-axi",
-      "tasks-axi",
-      "graphify",
-      "no-mistakes",
-      "treehouse",
-      "tmux"
-    ],
+    "bins": ["pi", "acpx", "gh-axi", "pnpm", "quota-axi", "tasks-axi", "graphify", "tmux"],
     "hostBins": {
-      "camilo": ["mlx_lm", "optiq"]
+      "camilo": ["chrome-devtools-axi", "gnhf", "lavish-axi", "no-mistakes", "treehouse", "mlx_lm", "optiq"]
     }
   }
 }

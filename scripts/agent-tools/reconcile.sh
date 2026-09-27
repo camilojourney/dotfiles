@@ -34,7 +34,7 @@ install_npm_globals() {
     [ -n "$specs" ] || continue
     info "npm: reconciling ${specs}"
     npm install -g --ignore-scripts "$specs"
-  done < <(jq -r '.npm[] | "\(.name)@\(.version)"' "$MANIFEST")
+  done < <(jq -r --arg profile "$HOST_PROFILE" '(.profiles[$profile].npm // []) as $allowed | .npm[] | select(.name as $name | $allowed | index($name)) | "\(.name)@\(.version)"' "$MANIFEST")
 }
 
 pipx_list_json() {
@@ -76,7 +76,7 @@ install_external_tools() {
     [ -n "$tool" ] || continue
   info "external: reconciling ${tool}"
     "$REPO_ROOT/scripts/agent-tools/install-external.sh" "$tool" "$MANIFEST"
-  done < <(jq -r '.external | keys[]' "$MANIFEST")
+  done < <(jq -r --arg profile "$HOST_PROFILE" '.profiles[$profile].external[]?' "$MANIFEST")
 }
 
 run_setup_hooks() {
@@ -86,7 +86,7 @@ run_setup_hooks() {
     require_cmd "$tool"
     info "setup hooks: ${tool}"
     "$tool" setup hooks
-  done < <(jq -r '.setupHooks.npm[]' "$MANIFEST")
+  done < <(jq -r --arg profile "$HOST_PROFILE" '.setupHooks.npm[] | select((.profiles // ["camilo", "camilo-remote"]) | index($profile)) | .name' "$MANIFEST")
 
   if jq -e '.setupHooks.graphify' "$MANIFEST" >/dev/null; then
     require_cmd graphify
