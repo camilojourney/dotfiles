@@ -4,7 +4,7 @@
     "npm": "Global npm CLIs install via brew node npm with --ignore-scripts. The global npm package itself is never managed here so brew node owns npm.",
     "pipx": "Isolated Python CLIs install via brew pipx with ==version pins.",
     "external": "Release archives download from official GitHub releases with sha256 verification (see scripts/agent-tools/install-external.sh).",
-    "reproducibility": "npm/pipx pins are auditable in this file. External binaries add content-addressed sha256 per platform. Bumping a pin is an intentional manifest edit; check-pins.sh is advisory only and rebuilds remain fully pinned."
+    "reproducibility": "npm/pipx pins are auditable in this file. External binaries add content-addressed sha256 per platform. Bumping a pin is an intentional manifest edit; check-pins.sh is advisory only and rebuilds remain pinned except for entries explicitly set to latest."
   },
   "npm": [
   { "name": "@earendil-works/pi-coding-agent", "version": "latest" },

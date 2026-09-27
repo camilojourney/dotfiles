@@ -16,7 +16,7 @@ It gives you a structured starting point for managing a Mac setup in code:
 - install GUI apps and macOS-native tools declaratively with Homebrew
 - keep selected app config in the repo and link it into place
 
-I include [WezTerm](https://wezfurlong.org/wezterm/) as the one concrete app-config example because it is real enough to demonstrate the pattern without dragging in the more personal parts of my workflow.
+The repository includes selected editor, terminal, and agent configuration as concrete examples, while leaving credentials and host-local runtime state unmanaged.
 
 ## What is intentionally not included
 
@@ -24,12 +24,10 @@ This repo does **not** try to mirror my entire machine.
 
 I left out things that are too personal or too workflow-specific to make a good public starter repo, including:
 
-- editor config
 - custom shell systems
 - personal scripts
-- AI tooling
 - secrets and tokens
-- private automation
+- host-local runtime state
 
 The goal is to provide a reusable foundation that you can make your own.
 
@@ -42,6 +40,8 @@ The goal is to provide a reusable foundation that you can make your own.
 - `nix/camilo/` - local workstation apps (Baby Menu, Camo, Cursor, DeepL, Grammarly, Notion, Obsidian, and peripherals) + `rebuild` alias
 - `nix/camilo-remote/` - remote-work overlay (shared foundation only + `rebuild` alias)
 - `files/.config/` - live WezTerm / Neovim / herdr configs (symlinked by Home Manager)
+- `files/.claude/`, `files/.codex/`, `files/.grok/`, and `files/.firstmate/` - authored agent and crew-dispatch configuration (symlinked by Home Manager)
+- `files/.pi/agent/` - authored Pi models, settings, themes, and extensions (symlinked by Home Manager)
 - `upstream/kunchenguid/` - complete upstream mirror, selected config snapshot, and adoption decisions for [Kun's configs](https://github.com/kunchenguid/dotfiles)
 - `scripts/check-upstream-configs.sh` - check / safely adopt his updates
 - `rebuild.sh` / `rebuild-remote.sh` - host-specific nix-darwin rebuild helpers
@@ -50,7 +50,7 @@ The goal is to provide a reusable foundation that you can make your own.
 
 ## Tracking Kun's complete repository and config updates
 
-We treat [kunchenguid/dotfiles](https://github.com/kunchenguid/dotfiles) as the expert baseline for terminal, editor, agent, and Pi configuration. The complete upstream repository is mirrored locally so root files and configurations outside the original three config folders are not lost. Selected upstream files are merged into our live `files/` tree while preserving our local additions and multi-host Nix layout.
+We treat [kunchenguid/dotfiles](https://github.com/kunchenguid/dotfiles) as the expert baseline for terminal, editor, agent, and Pi configuration. The complete upstream repository is mirrored locally so root files and configurations outside the selected upstream paths are not lost. Selected upstream files are merged into our live `files/` tree while preserving our local additions and multi-host Nix layout.
 
 ### How it works
 
