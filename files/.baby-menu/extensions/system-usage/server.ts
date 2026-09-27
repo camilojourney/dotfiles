@@ -27,6 +27,7 @@ const GITHUB_GRAPHQL_HISTORY_PAGE_SIZE = 100;
 const GITHUB_CLI_TIMEOUT_MS = 30_000;
 const GH_BIN_CANDIDATES = [process.env.GH_BIN, "/opt/homebrew/bin/gh", "/usr/local/bin/gh", "gh"].filter(Boolean) as string[];
 const GIT_BIN_CANDIDATES = [process.env.GIT_BIN, "/opt/homebrew/bin/git", "/usr/bin/git", "git"].filter(Boolean) as string[];
+const SSH_BIN_CANDIDATES = [process.env.SSH_BIN, "/usr/bin/ssh", "/opt/homebrew/bin/ssh", "/usr/local/bin/ssh", "ssh"].filter(Boolean) as string[];
 
 type RemoteSystemSample = {
   status: "online" | "offline";
@@ -813,11 +814,21 @@ async function readRemoteSystem(): Promise<RemoteSystemSample> {
   if (remoteCache && remoteCache.expiresAt > Date.now()) return remoteCache.sample;
   if (remoteInFlight) return remoteInFlight;
 
-  const inFlight = execFileAsync(
-    "ssh",
-    ["-o", "BatchMode=yes", "-o", "ConnectTimeout=5", "-o", "StrictHostKeyChecking=yes", MINI_MAC_HOST, REMOTE_SAMPLE_COMMAND],
-    { timeout: 7000, maxBuffer: 64 * 1024 },
-  )
+  const sshArgs = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=5", "-o", "StrictHostKeyChecking=yes", MINI_MAC_HOST, REMOTE_SAMPLE_COMMAND];
+  const readWithAvailableSsh = async () => {
+    let lastError: unknown = null;
+    for (const sshBin of SSH_BIN_CANDIDATES) {
+      try {
+        return await execFileAsync(sshBin, sshArgs, { timeout: 7000, maxBuffer: 64 * 1024 });
+      } catch (error) {
+        lastError = error;
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
+    }
+    throw lastError ?? new Error("ssh executable unavailable");
+  };
+
+  const inFlight = readWithAvailableSsh()
     .then(({ stdout }) => parseRemoteSample(stdout) ?? offlineRemoteSample())
     .catch(() => offlineRemoteSample())
     .then((sample) => {

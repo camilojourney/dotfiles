@@ -22,6 +22,100 @@
           "contextWindow": 272000
         }
       }
+    },
+    "nvidia": {
+      "modelOverrides": {
+        "google/gemma-3-12b-it": {
+          "contextWindow": 272000
+        },
+        "google/gemma-3-4b-it": {
+          "contextWindow": 272000
+        },
+        "meta/llama-3.1-70b-instruct": {
+          "contextWindow": 272000
+        },
+        "meta/llama-3.1-8b-instruct": {
+          "contextWindow": 272000
+        },
+        "meta/llama-3.2-11b-vision-instruct": {
+          "contextWindow": 272000
+        },
+        "meta/llama-3.2-90b-vision-instruct": {
+          "contextWindow": 272000
+        },
+        "meta/llama-3.3-70b-instruct": {
+          "contextWindow": 272000
+        },
+        "minimaxai/minimax-m3": {
+          "contextWindow": 272000
+        },
+        "mistralai/mistral-7b-instruct-v0.3": {
+          "contextWindow": 272000
+        },
+        "moonshotai/kimi-k2.6": {
+          "contextWindow": 272000
+        },
+        "nvidia/cosmos-reason2-8b": {
+          "contextWindow": 272000
+        },
+        "nvidia/llama-3.1-nemotron-70b-instruct": {
+          "contextWindow": 272000
+        },
+        "nvidia/llama-3.1-nemotron-nano-8b-v1": {
+          "contextWindow": 272000
+        },
+        "nvidia/llama-3.1-nemotron-nano-vl-8b-v1": {
+          "contextWindow": 272000
+        },
+        "nvidia/llama-3.1-nemotron-ultra-253b-v1": {
+          "contextWindow": 272000
+        },
+        "nvidia/llama-3.3-nemotron-super-49b-v1": {
+          "contextWindow": 272000
+        },
+        "nvidia/llama-3.3-nemotron-super-49b-v1.5": {
+          "contextWindow": 272000
+        },
+        "nvidia/nemotron-3-nano-30b-a3b": {
+          "contextWindow": 272000
+        },
+        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning": {
+          "contextWindow": 272000
+        },
+        "nvidia/nemotron-3-super-120b-a12b": {
+          "contextWindow": 272000
+        },
+        "nvidia/nemotron-3-ultra-550b-a55b": {
+          "contextWindow": 272000
+        },
+        "nvidia/nemotron-3.5-lightning-30b-a3b": {
+          "contextWindow": 272000
+        },
+        "nvidia/nemotron-nano-12b-v2-vl": {
+          "contextWindow": 272000
+        },
+        "nvidia/nvidia-nemotron-nano-9b-v2": {
+          "contextWindow": 272000
+        },
+        "openai/gpt-oss-120b": {
+          "contextWindow": 272000
+        },
+        "openai/gpt-oss-20b": {
+          "contextWindow": 272000
+        },
+        "poolside/laguna-xs-2.1": {
+          "contextWindow": 272000
+        },
+        "stepfun-ai/step-3.7-flash": {
+          "contextWindow": 272000
+        },
+        "thinkingmachines/inkling": {
+          "contextWindow": 272000
+        },
+        "z-ai/glm-5.2": {
+          "contextWindow": 272000
+        }
+      }
     }
   }
 }

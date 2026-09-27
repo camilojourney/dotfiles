@@ -1,0 +1,18 @@
+{
+  "rules": [
+    {
+      "when": "All delegated crewmate and scout work, including continuation and recovery of already-authorized work.",
+      "use": {
+        "harness": "pi",
+        "model": "openai-codex/gpt-5.6-luna",
+        "effort": "medium"
+      },
+      "why": "Explicit current instruction to use Luna for crew and reduce token spend. Preserve required tests and approval boundaries; report a concrete capability or availability blocker rather than silently upgrading models. Do not interrupt active validation merely to change models."
+    }
+  ],
+  "default": {
+    "harness": "pi",
+    "model": "openai-codex/gpt-5.6-luna",
+    "effort": "medium"
+  }
+}

@@ -2,6 +2,8 @@
 
 let
   dotfilesDir = "${config.home.homeDirectory}/github/dotfiles";
+  vaultPath =
+    "${config.home.homeDirectory}/Library/Mobile Documents/iCloud~md~obsidian/Documents/My Vault";
 in
 {
   programs.zsh.shellAliases = {
@@ -10,9 +12,7 @@ in
   };
 
   home.file = {
-    # Baby Menu is local-only. Runtime data remains unmanaged.
-    ".baby-menu/extensions".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.baby-menu/extensions";
-    ".baby-menu/agents.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.baby-menu/agents.json";
-    ".baby-menu/preferences.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.baby-menu/preferences.json";
+    # Obsidian vault lives in iCloud; stable path for Pi and other agents.
+    "github/vault".source = config.lib.file.mkOutOfStoreSymlink vaultPath;
   };
 }

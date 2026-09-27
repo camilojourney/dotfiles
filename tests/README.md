@@ -11,12 +11,11 @@ bash tests/pi_settings_test.sh
 
 `agent_tools_test.sh` exercises the agent-tool reconciliation and audit scripts with stubbed `npm`, `pipx`, external installers, and Homebrew. It proves fresh activation installs the declared inventory, repeat activation is idempotent, setup hooks run, host-specific pipx packages stay scoped, missing package managers fail clearly, and shared Homebrew formulas are recognized for both host profiles. It never touches the real network or host package state.
 
-`pi_settings_test.sh` is a regression test for `files/.pi/agent/settings.json`. It ensures the declarative package list retains only the pinned Cursor provider and cannot reinstall `pi-cursor-sdk`.
+`pi_settings_test.sh` is a regression test for `files/.pi/agent/settings.json`. It ensures the declarative package list retains the Cursor provider and cannot reinstall `pi-cursor-sdk`.
 
 `mac_setup_test.sh` is a regression test for `setup/mac.sh`.
 `rebuild_remote_test.sh` checks the remote rebuild helper's first activation,
 installed fast path, and missing-Nix diagnostic using stubbed sudo and Nix.
-It never runs the script against the real machine, since that script installs Nix and activates a real `nix-darwin` system.
 It never runs the script against the real machine, since that script installs Nix and activates a real `nix-darwin` system.
 Instead it runs the actual `setup/mac.sh` against a PATH-masked sandbox of stub executables (`curl`, `sh`, `nix`, `darwin-rebuild`, `sudo`, `bash`) that simulate a fresh Mac.
 The stubs also make sure the bootstrap uses the canonical `install.determinate.systems` installer URL.

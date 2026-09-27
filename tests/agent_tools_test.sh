@@ -195,7 +195,7 @@ test_fresh_install_shared() {
   fi
   out=$(cat "$log/stdout.log" "$log/stderr.log" "$log/npm.log" "$log/pipx.log" "$log/hooks.log")
 
-  assert_contains "$out" "npm: reconciling @earendil-works/pi-coding-agent@0.87.1" "fresh remote installs pi"
+  assert_contains "$out" "npm: reconciling @earendil-works/pi-coding-agent@latest" "fresh remote installs pi"
   assert_contains "$out" "pipx: reconciling graphifyy==0.9.69" "fresh remote installs graphifyy"
   assert_not_contains "$out" "mlx-lm" "remote skips local MLX tools"
   assert_contains "$out" "gh-axi setup hooks" "setup hooks run"

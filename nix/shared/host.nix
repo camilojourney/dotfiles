@@ -45,10 +45,15 @@ in
       "gcloud-cli"
       "grok-build"
       "google-chrome"
+      # chrome-devtools-axi's CHROME_DEVTOOLS_AXI_CHANNEL is set to "canary"
+      # below in shared/user.nix so it never collides with the daily-driver
+      # google-chrome above; that setting needs this app to actually exist.
+      "google-chrome@canary"
       "chatgpt"
       "mullvad-vpn"
       "nomachine"
       "tailscale-app"
+      "claude-code"
     ];
   };
 
@@ -102,6 +107,12 @@ in
       autohide = true;
       autohide-delay = 0.0;
       show-recents = false;
+      # Baseline for both hosts. Finder and Trash are automatic bookends,
+      # not part of this list; host-specific files may append more apps.
+      persistent-apps = [
+        "/Applications/WezTerm.app"
+        "/Applications/Google Chrome.app"
+      ];
     };
   };
 

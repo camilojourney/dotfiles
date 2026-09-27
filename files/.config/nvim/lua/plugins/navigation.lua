@@ -33,6 +33,7 @@ return {
       view_options = { show_hidden = true },
       keymaps = {
         ['y.'] = 'actions.copy_to_system_clipboard',
+        ['<C-p>'] = { 'actions.preview', opts = { vertical = true, split = 'botright' } },
       },
     },
     keys = { { '<leader>o', '<cmd>Oil<cr>', desc = 'Oil File Browser' } },

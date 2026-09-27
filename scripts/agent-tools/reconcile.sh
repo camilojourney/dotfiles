@@ -111,17 +111,15 @@ verify_bins() {
     fi
   done < <(jq -r '.verify.bins[]' "$MANIFEST")
 
-  if [ "$HOST_PROFILE" = camilo ]; then
-    while IFS= read -r bin; do
-      [ -n "$bin" ] || continue
-      if command -v "$bin" >/dev/null 2>&1; then
-        info "verify: ok ${bin} (host ${HOST_PROFILE})"
-      else
-        printf 'agent-tools: verify: MISSING %s (host %s)\n' "$bin" "$HOST_PROFILE" >&2
-        missing=1
-      fi
-    done < <(jq -r --arg h "$HOST_PROFILE" '.verify.hostBins[$h][]? // empty' "$MANIFEST")
-  fi
+  while IFS= read -r bin; do
+    [ -n "$bin" ] || continue
+    if command -v "$bin" >/dev/null 2>&1; then
+      info "verify: ok ${bin} (host ${HOST_PROFILE})"
+    else
+      printf 'agent-tools: verify: MISSING %s (host %s)\n' "$bin" "$HOST_PROFILE" >&2
+      missing=1
+    fi
+  done < <(jq -r --arg h "$HOST_PROFILE" '.verify.hostBins[$h][]? // empty' "$MANIFEST")
 
   [ "$missing" -eq 0 ] || die "verification failed: one or more required binaries missing"
 }

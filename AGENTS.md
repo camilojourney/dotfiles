@@ -27,7 +27,7 @@ Harness and stub writes call `assert_path_under_sandbox` / `guard_write_path` so
 
 ## Adopting upstream expert patterns (kunchenguid/dotfiles)
 
-This repo tracks https://github.com/kunchenguid/dotfiles as the reference for WezTerm, Neovim, herdr, and Pi agent config.
+This repo tracks https://github.com/kunchenguid/dotfiles as the reference for WezTerm, Neovim, herdr, Pi, and Claude Code agent config.
 
 **Do not blind-copy.** Use the check script and decisions file:
 
@@ -117,7 +117,7 @@ Path mapping: his `home/.config/X` → our `files/.config/X`; his `home/.pi/agen
 
 - CLI: declared in `nix/shared/agent-tools/manifest.lock.json` and reconciled by `scripts/agent-tools/reconcile.sh` on rebuild (Home Manager `installAgentTools` activation; needs brew `node`).
 - Authored config only: `files/.pi/agent/{themes,extensions,models.json,settings.json}` symlinked into `~/.pi/agent/`.
-- Third-party Pi packages are pinned in `settings.json` `"packages"` (not vendored into the repo).
+- Third-party Pi packages are declared in `settings.json` `"packages"` (not vendored into the repo); pin versions when reproducibility is required.
 - Do not manage `~/.pi/agent` wholesale; leave auth, sessions, `npm/`, and `git/` unmanaged.
 
 ## Agent/developer CLI inventory
@@ -128,7 +128,7 @@ Required agent CLIs (npm globals, pipx apps, external release binaries) are owne
 - **npm globals:** reconciled together via `scripts/agent-tools/reconcile.sh` using brew node `npm install -g --ignore-scripts <pkg>@<pin>`. Never declare a global `npm` package.
 - **pipx:** shared packages apply to both hosts; laptop-only MLX tooling lives under `pipx.camilo`.
 - **External** (`no-mistakes`, `treehouse`): pinned GitHub release archives with sha256 in the manifest; installed by `scripts/agent-tools/install-external.sh`.
-- **Update policy:** ordinary `rebuild` reconciles to manifest pins (not floating latest). Bump pins explicitly.
+- **Update policy:** ordinary `rebuild` reconciles to manifest pins (not floating latest), except manifest entries explicitly set to `latest`. Bump pins explicitly.
 - **Audit unmanaged tools:** `bash scripts/agent-tools/audit.sh [camilo|camilo-remote]` (reports only; never deletes).
 - **Tests:** `bash tests/agent_tools_test.sh` (stubbed package managers; no network or host mutation).
 
