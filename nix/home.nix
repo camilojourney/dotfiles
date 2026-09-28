@@ -138,10 +138,6 @@ in
     ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.config/nvim";
     ".config/herdr".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.config/herdr";
     ".claude/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.claude/settings.json";
-    # grok's config.toml is small and entirely preferences, with live
-    # session/trust/marketplace-cache state in separate files under ~/.grok/,
-    # so this can be a direct full symlink.
-    ".grok/config.toml".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.grok/config.toml";
     ".claude/CLAUDE.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/AGENTS.md";
 
     # GPG uses the Homebrew macOS Pinentry dialog. Keep this config declarative,
