@@ -3,9 +3,11 @@
 #
 # Usage: install-external.sh <tool-name> [manifest-path]
 #
-# Downloads the official GitHub release archive for the pinned version, verifies
-# sha256, and installs the binary under $HOME/<installSubdir>. Never uses the
-# floating "latest" install scripts from upstream.
+# Downloads the official GitHub release archive for the pinned bootstrap version,
+# verifies sha256, and installs the binary under $HOME/<installSubdir>.
+# A manifest entry with selfUpdateCommand preserves an existing binary so the
+# reconciliation step can update it through its supported self-updater instead
+# of downgrading it to the bootstrap pin on every rebuild.
 set -euo pipefail
 
 TOOL=${1:?usage: install-external.sh <tool-name> [manifest-path]}
@@ -35,14 +37,20 @@ fi
 entry=$(jq -c --arg tool "$TOOL" '.external[$tool] // empty' "$MANIFEST")
 [ -n "$entry" ] || die "unknown external tool in manifest: $TOOL"
 
-version=$(jq -r '.version' <<<"$entry")
+version=$(jq -r '.bootstrapVersion // .version' <<<"$entry")
 repo=$(jq -r '.repo' <<<"$entry")
 install_subdir=$(jq -r '.installSubdir' <<<"$entry")
 binary=$(jq -r '.binary' <<<"$entry")
 pattern=$(jq -r '.archivePattern' <<<"$entry")
+self_update_count=$(jq -r '(.selfUpdateCommand // []) | length' <<<"$entry")
 
 install_dir="${HOME}/${install_subdir}"
 dest="${install_dir}/${binary}"
+
+if [ "$self_update_count" -gt 0 ] && [ -x "$dest" ]; then
+  info "preserving self-updating $TOOL at $dest"
+  exit 0
+fi
 
 if [ "${AGENT_TOOLS_TEST_MODE:-}" = 1 ]; then
   mkdir -p "$install_dir"

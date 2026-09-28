@@ -15,12 +15,8 @@
     "npm:pi-web-access",
     "npm:@ryan_nookpi/pi-extension-codex-fast-mode",
     "git:github.com/algal/pi-openai-server-compaction",
-    "npm:pi-antigravity",
-    "npm:pi-claude-bridge",
-    "git:github.com/camilojourney/pi-cursor-provider",
-    "npm:pi-llama-cpp"
+    "git:github.com/camilojourney/pi-cursor-provider"
   ],
-  "llamaServerUrl": "http://127.0.0.1:8080",
   "thinkingBudgets": {
     "minimal": 512,
     "low": 1024,
@@ -30,7 +26,7 @@
   },
   "lastChangelogVersion": "0.87.1",
   "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.6-sol",
+  "defaultModel": "gpt-6-sol",
   "defaultThinkingLevel": "high",
   "defaultProjectTrust": "always",
   "tuiMode": "regular",

@@ -109,6 +109,14 @@ in
     '';
   };
 
+  # Baby Menu may recreate starter files after its managed links disappear.
+  # Preserve those conflicts before Home Manager checks link targets, then let
+  # the declarations below restore the authored configuration on every rebuild.
+  home.activation.reconcileBabyMenuConfig = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
+    ${pkgs.bash}/bin/bash "${dotfilesDir}/scripts/reconcile-baby-menu-config.sh" \
+      "${dotfilesDir}/files/.baby-menu" "${homeDirectory}/.baby-menu"
+  '';
+
   # Shared authored config is symlinked from the repo on both hosts.
   # App state, credentials, and sessions remain local and unmanaged.
   home.file = {

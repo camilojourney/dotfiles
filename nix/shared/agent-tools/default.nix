@@ -14,7 +14,7 @@ in
     manifestPath = lib.mkOption {
       type = lib.types.path;
       default = ./manifest.lock.json;
-      description = "Pinned agent tool manifest (versions + external sha256).";
+      description = "Agent tool manifest (latest npm channels, pinned pipx and external bootstraps, and external self-updaters).";
     };
   };
 
@@ -31,6 +31,11 @@ in
         exit 1
       fi
       AGENT_TOOLS_MANIFEST="${config.agentTools.manifestPath}" "${reconcileScript}" "${config.agentTools.hostProfile}"
+    '';
+
+    home.activation.updatePiPackages = lib.hm.dag.entryAfter [ "installAgentTools" ] ''
+      export PATH="/opt/homebrew/bin:$PATH"
+      pi update --extensions
     '';
   };
 }
