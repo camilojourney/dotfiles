@@ -4,11 +4,11 @@ local config = wezterm.config_builder()
 
 config.color_scheme = "rose-pine-moon"
 
--- Make the copy-mode selection highlight obvious against the dark theme.
--- selection_bg = gold (#f6c177) with dark text; tweak freely.
+-- Copy-mode selection highlight, matched to herdr's default (catppuccin)
+-- selection colors so both tools look the same when selecting text.
 config.colors = {
-  selection_fg = "#232136", -- rose-pine base (dark text on the highlight)
-  selection_bg = "#f6c177", -- rose-pine gold (bright, easy to spot)
+  selection_fg = "#cdd6f4", -- catppuccin mocha "text"
+  selection_bg = "#313244", -- catppuccin mocha "surface0"
 }
 
 config.font = wezterm.font("Hack Nerd Font")
@@ -30,13 +30,24 @@ config.keys = {
   { key = 'd', mods = 'CMD|SHIFT', action = wezterm.action.SplitVertical { domain = 'CurrentPaneDomain' } },
 }
 
--- Fast scroll in copy mode: Shift+[ jumps a page up, Shift+] jumps a page down.
+-- Scroll in copy mode: Shift+[ moves up, Shift+] moves down, 3 lines per
+-- press. 1 line felt uncontrollable when held, since the OS key-repeat rate
+-- (KeyRepeat in nix/configuration.nix) is very fast; 3 lines per repeat
+-- event is a calmer step while still covering ground quickly when held.
 -- These live in the copy_mode key table (not config.keys) so Shift+[/] only
 -- do this while copy mode is already active - previously they were global and
 -- swallowed every literal {/[/]/} keystroke typed in the normal shell too.
 local copy_mode = wezterm.gui.default_key_tables().copy_mode
-table.insert(copy_mode, { key = '{', mods = 'SHIFT', action = wezterm.action.CopyMode('PageUp') })
-table.insert(copy_mode, { key = '}', mods = 'SHIFT', action = wezterm.action.CopyMode('PageDown') })
+table.insert(copy_mode, { key = '{', mods = 'SHIFT', action = wezterm.action.Multiple({
+  wezterm.action.CopyMode('MoveUp'),
+  wezterm.action.CopyMode('MoveUp'),
+  wezterm.action.CopyMode('MoveUp'),
+}) })
+table.insert(copy_mode, { key = '}', mods = 'SHIFT', action = wezterm.action.Multiple({
+  wezterm.action.CopyMode('MoveDown'),
+  wezterm.action.CopyMode('MoveDown'),
+  wezterm.action.CopyMode('MoveDown'),
+}) })
 config.key_tables = { copy_mode = copy_mode }
 config.font_size = 15.0
 config.window_background_opacity = 0.8

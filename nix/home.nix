@@ -167,8 +167,13 @@ in
   # creates/updates. Running before it meant those hooks read a symlink still
   # pointing at the previous generation - stale or, after a source file
   # rename, outright missing.
+  # Appends (not prepends) /usr/bin and /opt/homebrew/bin: this activation
+  # block runs in the same shell as later stock home-manager steps (e.g.
+  # setupLaunchAgents), which depend on Nix's GNU coreutils (already earlier
+  # in $PATH) for flags like `readlink -m` that BSD's /usr/bin/readlink
+  # doesn't support. Prepending shadowed those and broke setupLaunchAgents.
   home.activation.installAgentTools = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-    export PATH="/opt/homebrew/bin:/usr/bin:/bin:$PATH"
+    export PATH="$PATH:/opt/homebrew/bin:/usr/bin:/bin"
     reconcileScript="${dotfilesDir}/scripts/agent-tools/reconcile.sh"
     if [ ! -x "$reconcileScript" ]; then
       echo "installAgentTools: reconcile script missing at $reconcileScript" >&2
@@ -178,7 +183,7 @@ in
   '';
 
   home.activation.updatePiPackages = lib.hm.dag.entryAfter [ "installAgentTools" ] ''
-    export PATH="/opt/homebrew/bin:/usr/bin:/bin:$PATH"
+    export PATH="$PATH:/opt/homebrew/bin:/usr/bin:/bin"
     pi update --extensions
   '';
 }
