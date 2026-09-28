@@ -277,6 +277,23 @@ test_manifest_json_valid() {
   pass "manifest.lock.json parses and has required sections"
 }
 
+test_self_updates_after_tool_install() {
+  local module source
+  module="$REPO_ROOT/nix/shared/agent-tools/default.nix"
+  source=$(<"$module")
+  assert_contains "$source" 'home.activation.updatePiPackages' \
+    "Home Manager declares Pi package reconciliation"
+  assert_contains "$source" 'home.activation.updateTreehouse' \
+    "Home Manager declares Treehouse self-update"
+  assert_contains "$source" 'entryAfter [ "installAgentTools" ]' \
+    "self-updates run only after tools are installed"
+  assert_contains "$source" 'pi update --extensions' \
+    "every activation updates configured Pi packages"
+  assert_contains "$source" 'treehouse update' \
+    "every activation updates Treehouse"
+  pass "Home Manager updates Pi packages and Treehouse after installing agent tools"
+}
+
 test_audit_recognizes_shared_uv_for_both_hosts() {
   local sandbox profile out unmanaged
   sandbox=$(setup_sandbox)
@@ -306,6 +323,7 @@ test_idempotent_repeat
 test_host_scoped_pipx
 test_missing_npm_fails
 test_manifest_json_valid
+test_self_updates_after_tool_install
 test_audit_recognizes_shared_uv_for_both_hosts
 
 if [ "$FAILURES" -gt 0 ]; then

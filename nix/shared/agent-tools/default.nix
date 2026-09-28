@@ -32,5 +32,15 @@ in
       fi
       AGENT_TOOLS_MANIFEST="${config.agentTools.manifestPath}" "${reconcileScript}" "${config.agentTools.hostProfile}"
     '';
+
+    home.activation.updatePiPackages = lib.hm.dag.entryAfter [ "installAgentTools" ] ''
+      export PATH="/opt/homebrew/bin:$PATH"
+      pi update --extensions
+    '';
+
+    home.activation.updateTreehouse = lib.hm.dag.entryAfter [ "installAgentTools" ] ''
+      export PATH="/opt/homebrew/bin:$HOME/.local/bin:$PATH"
+      treehouse update
+    '';
   };
 }
