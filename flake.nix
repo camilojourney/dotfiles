@@ -16,14 +16,15 @@
   outputs = { nixpkgs, nix-darwin, home-manager, ... }:
   let
     lib = nixpkgs.lib;
-    # One configuration.nix and one home.nix for every machine - the handful
-    # of things that actually differ (sleep, cleanup, casks, aliases) branch
-    # on hostProfile inside those two files instead of separate host modules.
+    # One configuration.nix and one home.nix for every machine - identical
+    # except userName/homeDirectory, the real per-account identity nix-darwin
+    # needs. hostProfile only reaches home.nix (safe-maintenance.sh's
+    # --profile flag); configuration.nix doesn't need it.
     mkDarwin = { hostProfile, userName, homeDirectory, includeExtras ? false }:
       nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
         specialArgs = {
-          inherit hostProfile userName homeDirectory;
+          inherit userName homeDirectory;
         };
         modules = [
           ./nix/configuration.nix

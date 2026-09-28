@@ -10,7 +10,7 @@ scripts/safe-maintenance.sh --profile camilo-remote --action cleanup
 ```
 
 The profile may be omitted only when `HOME` ends in `/Users/camiloslaptop` or
-`/Users/mini`. A profile and target home must agree; outside paths and symlink
+`/Users/camilo_mini`. A profile and target home must agree; outside paths and symlink
 escapes are refused. The Mini scope is Pythia, Trader, Pilaster, and verified
 dependencies. The laptop profile remains unchanged.
 

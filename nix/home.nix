@@ -90,9 +90,6 @@ in
     };
   };
 
-  # Identical on every machine. hostProfile is only ever used to fill in
-  # safe-maintenance's --profile value below - it's the real account name,
-  # not a configuration difference.
   programs.zsh = {
     enable = true;
     autosuggestion.enable = true;
@@ -113,6 +110,7 @@ in
       # visible window so a running automation can be watched/debugged live.
       axi-watch = "CHROME_DEVTOOLS_AXI_HEADED=1 chrome-devtools-axi";
       storage-report = "bash ~/github/dotfiles/scripts/storage-report.sh";
+      # hostProfile picks the safe-maintenance profile for this account.
       safe-maintenance = "~/github/dotfiles/scripts/safe-maintenance.sh --profile ${hostProfile}";
     };
     initContent = ''

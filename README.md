@@ -1,14 +1,10 @@
 # dotfiles
 
-This repo is the public, reusable core of my Mac setup.
+My personal Mac setup as code, built with [Nix](https://nixos.org/), [`nix-darwin`](https://github.com/nix-darwin/nix-darwin), [Home Manager](https://github.com/nix-community/home-manager), and declarative [Homebrew](https://brew.sh/).
 
-It is built with [Nix](https://nixos.org/), [`nix-darwin`](https://github.com/nix-darwin/nix-darwin), [Home Manager](https://github.com/nix-community/home-manager), and declarative [Homebrew](https://brew.sh/). The goal is to give macOS developers a reproducible base they can fork and adapt without inheriting someone else's entire private dotfiles repo.
+I run this on two Macs: my laptop, and a Mac mini I use as a remote work computer. `rebuild.sh` detects which one it's running on and applies the matching config automatically, so the same command works on either.
 
-If you want the longer explanation, see the [blog post](https://open.substack.com/pub/kunchenguid/p/how-i-built-a-reproducible-mac-setup?utm_campaign=post-expanded-share&utm_medium=web).
-
-## What this repo does
-
-It gives you a structured starting point for managing a Mac setup in code:
+## What's here
 
 - bootstrap a fresh Mac with `setup/mac.sh`
 - configure macOS defaults with `nix-darwin`
@@ -16,28 +12,23 @@ It gives you a structured starting point for managing a Mac setup in code:
 - install GUI apps and macOS-native tools declaratively with Homebrew
 - keep selected app config in the repo and link it into place
 
-The repository includes selected editor, terminal, and agent configuration as concrete examples, while leaving credentials and host-local runtime state unmanaged.
+Editor, terminal, and agent configuration live here as real, current files - not stripped-down examples. Credentials, session state, and other host-local runtime data are never committed.
 
-## What is intentionally not included
+## If you're only running this on one Mac
 
-This repo does **not** try to mirror my entire machine.
+Everything here works fine on a single machine - you just won't need all of it:
 
-I left out things that are too personal or too workflow-specific to make a good public starter repo, including:
-
-- custom shell systems
-- personal scripts
-- secrets and tokens
-- host-local runtime state
-
-The goal is to provide a reusable foundation that you can make your own.
+- `flake.nix`, `nix/configuration.nix`, `nix/home.nix` are the whole setup. `nix/camilo-extra.nix` is optional, for apps you only want on some machines.
+- `./rebuild.sh` is the one command you run, always. It reads the macOS account it's running under to pick the right config - with one machine there's nothing to disambiguate, it just works.
+- Ignore `rebuild-total.sh` and the `-remote`/`-total` flake attrs entirely; those exist only because I have two machines with different optional extras.
 
 ## Repo structure
 
 - `setup/mac.sh` - bootstrap a fresh Mac
 - `setup/README.md` - bootstrap usage and testing notes
-- `flake.nix` - top-level Nix wiring (`#camilo`, `#camilo-remote`, and their `#camilo-total` / `#camilo-remote-total` variants)
-- `nix/configuration.nix` - system-level config (macOS defaults, Homebrew) identical on both machines
-- `nix/home.nix` - user-level config (shell, packages, prompt, symlinks) identical on both machines
+- `flake.nix` - top-level Nix wiring (`#camilo` for the laptop, `#camilo-remote` for the Mac mini, and their `#camilo-total` / `#camilo-remote-total` variants)
+- `nix/configuration.nix` - system-level config (macOS defaults, Homebrew), identical on both machines
+- `nix/home.nix` - user-level config (shell, packages, prompt, symlinks), identical on both machines
 - `nix/camilo-extra.nix` - personal apps (Camo, OBS, WhatsApp, Dato, Notion, Obsidian, and more) - never installed by plain `rebuild.sh`, only by `rebuild-total.sh`
 - `home/.config/` - live WezTerm / Neovim / herdr configs (symlinked by Home Manager)
 - `home/.claude/`, `home/.grok/`, and `home/.firstmate/` - authored agent and crew-dispatch configuration (symlinked by Home Manager)
@@ -50,7 +41,7 @@ The goal is to provide a reusable foundation that you can make your own.
 
 ## Tracking Kun's complete repository and config updates
 
-We treat [kunchenguid/dotfiles](https://github.com/kunchenguid/dotfiles) as the expert baseline for terminal, editor, agent, and Pi configuration. The complete upstream repository is mirrored locally so root files and configurations outside the selected upstream paths are not lost. Selected upstream files are merged into our live `home/` tree while preserving our local additions and multi-host Nix layout.
+I treat [kunchenguid/dotfiles](https://github.com/kunchenguid/dotfiles) as the expert baseline for terminal, editor, agent, and Pi configuration. The complete upstream repository is mirrored locally so root files and configurations outside the selected upstream paths are not lost. Selected upstream files are merged into my live `home/` tree while preserving my local additions and multi-host Nix layout.
 
 ### How it works
 
@@ -58,15 +49,15 @@ We treat [kunchenguid/dotfiles](https://github.com/kunchenguid/dotfiles) as the 
 |-------|------|
 | `upstream/kunchenguid/repository/` | Complete local upstream mirror at the recorded commit (ignored, not versioned) |
 | `upstream/kunchenguid/repository.commit` | Commit represented by the local mirror (ignored, not versioned) |
-| `home/.config/` and `home/.pi/agent/` | What our machines actually use |
+| `home/.config/` and `home/.pi/agent/` | What my machines actually use |
 | `upstream/kunchenguid/snapshot/` | Selected config copy used by the adoption checker for diffs |
 | `upstream/kunchenguid/decisions.json` | Per-file policy, adopted hashes, mirror metadata, and local additions |
 
 Policies in `decisions.json`:
 
-- **`track`** - stay with him. Auto-apply is safe when our file still matches the last adopted hash.
-- **`extend`** - his base + our additions (list them in `our_additions`). Never auto-overwrite; review when he changes.
-- **`fork`** - we own it; his diffs are inspiration only.
+- **`track`** - stay with him. Auto-apply is safe when my file still matches the last adopted hash.
+- **`extend`** - his base + my additions (list them in `our_additions`). Never auto-overwrite; review when he changes.
+- **`fork`** - I own it; his diffs are inspiration only.
 - **`ignore`** - stop watching.
 
 ### Routine (do this when he updates, or monthly)
@@ -86,8 +77,8 @@ bash scripts/check-upstream-configs.sh --refresh-repository
 Read the STATUS column:
 
 - `IN_SYNC` - nothing to do
-- `UPSTREAM_UPDATE` - he changed it; we did not customize → safe to adopt
-- `EXTENDED` - we customized; upstream unchanged
+- `UPSTREAM_UPDATE` - he changed it; I did not customize → safe to adopt
+- `EXTENDED` - I customized; upstream unchanged
 - `CONFLICT` - both changed → open a diff and merge by hand
 
 Adopt only the safe track updates:
@@ -102,64 +93,28 @@ Inspect a file before applying:
 diff -u home/.config/wezterm/wezterm.lua upstream/kunchenguid/snapshot/wezterm/wezterm.lua
 ```
 
-### Adding our own changes
+### Adding my own changes
 
 1. Edit `home/.config/...` as usual.
 2. In `upstream/kunchenguid/decisions.json`, set that file's `policy` to `extend` (or `fork`).
-3. Record what you added in `our_additions` (short bullets).
+3. Record what I added in `our_additions` (short bullets).
 4. Re-run the check script so the next update surfaces as `EXTENDED` / `CONFLICT` instead of a blind overwrite.
 
-Example: if you add WezTerm `Cmd+D` splits on top of his minimal config, mark `wezterm/wezterm.lua` as `extend` and put `"Cmd+D / Cmd+Shift+D pane splits"` in `our_additions`.
+Example: if I add WezTerm `Cmd+D` splits on top of his minimal config, mark `wezterm/wezterm.lua` as `extend` and put `"Cmd+D / Cmd+Shift+D pane splits"` in `our_additions`.
 
-
-## How to use it
-
-### 1. Clone the repo
-
-```bash
-git clone git@github.com:camilojourney/dotfiles.git ~/github/dotfiles
-cd ~/github/dotfiles
-```
-
-### 2. Replace the placeholders
-
-Update values like:
-
-- `yourname`
-- `/Users/yourname`
-- `Your Name`
-- `you@example.com`
-
-If you are on an Intel Mac, change the system target in `flake.nix` from:
-
-```nix
-system = "aarch64-darwin";
-```
-
-to:
-
-```nix
-system = "x86_64-darwin";
-```
-
-### 3. Run the bootstrap script on a fresh Mac
-
-This repo is primarily set up for Apple Silicon Macs. If you are on Intel, make the architecture change above before you run the bootstrap script.
+## Bootstrapping a Mac
 
 ```bash
 bash setup/mac.sh
-# on the remote Mac, select that host instead:
+# on the Mac mini, select that host instead:
 DARWIN_FLAKE_ATTR=camilo-remote bash setup/mac.sh
 ```
 
 It installs Nix and Homebrew if missing, applies the `nix-darwin` + Home Manager config, and installs `nvm` - designed to complete in one run on a truly fresh Mac, no second shell needed. See [`setup/README.md`](setup/README.md) for what it does step by step and its environment variables.
 
-## How I manage changes later
+## Making changes later
 
-After the initial bootstrap, the usual workflow is:
-
-1. edit the Nix config
-2. run:
+After the initial bootstrap, the usual workflow is: edit the Nix config, then run:
 
 ```bash
 rebuild
@@ -175,8 +130,8 @@ account it's running under and picks the matching flake attr (`camilo` or
 rebuild
 ```
 
-On the laptop, when you also want the personal apps in `nix/camilo-extra.nix`
-(Camo, OBS, WhatsApp, Dato, etc.), run the total variant instead - it's the
+On the laptop, when I also want the personal apps in `nix/camilo-extra.nix`
+(Camo, OBS, WhatsApp, Dato, etc.), I run the total variant instead - it's the
 same script, plus that one extra module:
 
 ```bash
@@ -199,19 +154,7 @@ Agent npm globals, uv tool apps, and external tools (`no-mistakes`, `treehouse`)
 
 A good setup does not force every tool through one package manager. It just makes the ownership of each layer clear.
 
-## Why this setup looks like this
-
-I wanted a setup that was:
-
-- reproducible on a new Mac
-- structured enough to maintain
-- pragmatic about macOS
-- publishable without oversharing the rest of my workflow
-
-That is why this repo focuses on the reusable core.
-
 ## Related
 
-- Long-form write-up: [blog post](https://open.substack.com/pub/kunchenguid/p/how-i-built-a-reproducible-mac-setup?utm_campaign=post-expanded-share&utm_medium=web)
 - GitHub repo: <https://github.com/camilojourney/dotfiles>
-- Forked from: <https://github.com/kunchenguid/dotfiles-mac-nix>
+- Based on the structure of: <https://github.com/kunchenguid/dotfiles-mac-nix>

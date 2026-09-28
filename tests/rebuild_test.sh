@@ -15,10 +15,16 @@ cat > "$SANDBOX/bin/sudo" <<'EOF'
 printf '%s\n' "$@" > "$STUB_LOG"
 EOF
 chmod +x "$SANDBOX/bin/sudo"
+cat > "$SANDBOX/bin/open" <<'EOF'
+#!/bin/bash
+printf 'open %s\n' "$*" > "$STUB_OPEN_LOG"
+EOF
+chmod +x "$SANDBOX/bin/open"
 
 run_helper() {
   env -u BASH_ENV -u ENV HOME="$SANDBOX/home" PATH="$SANDBOX/bin" \
-    STUB_LOG="$SANDBOX/log" DARWIN_REBUILD_BIN="$SANDBOX/darwin-rebuild" \
+    STUB_LOG="$SANDBOX/log" STUB_OPEN_LOG="$SANDBOX/open-log" \
+    DARWIN_REBUILD_BIN="$SANDBOX/darwin-rebuild" \
     REBUILD_ACCOUNT="$ACCOUNT" "$@" \
     /bin/bash "$SANDBOX/rebuild.sh"
 }
@@ -39,11 +45,19 @@ test "$status" -eq 1
 
 # Installed nix-darwin uses the normal activation path.
 cp "$SANDBOX/bin/sudo" "$SANDBOX/darwin-rebuild"
+rm -f "$SANDBOX/open-log"
 run_helper
 printf '%s\n' "$SANDBOX/darwin-rebuild" switch --flake \
   "$SANDBOX#$PROFILE" > "$SANDBOX/expected"
 diff -u "$SANDBOX/expected" "$SANDBOX/log"
 rm -f "$SANDBOX/log"
+
+# Baby Menu is brought forward on the laptop only, after activation succeeds.
+if [ "$ACCOUNT" = camiloslaptop ]; then
+  [ "$(cat "$SANDBOX/open-log")" = "open -a Baby Menu" ] || { echo "FAIL: Baby Menu was not opened on the laptop" >&2; exit 1; }
+else
+  [ ! -f "$SANDBOX/open-log" ] || { echo "FAIL: Baby Menu was opened on the remote account" >&2; exit 1; }
+fi
 
 echo "PASS: rebuild.sh ($ACCOUNT -> $PROFILE) requires bootstrap first, then activates"
 done

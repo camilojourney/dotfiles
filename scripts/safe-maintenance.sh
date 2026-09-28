@@ -39,11 +39,11 @@ if [ -z "$profile" ]; then
   owner=$(basename -- "${root%/}")
   case "$owner" in
     camiloslaptop) profile=camilo ;;
-    mini) profile=camilo-remote ;;
+    camilo_mini) profile=camilo-remote ;;
     *) printf 'safe-maintenance: cannot safely detect a machine profile for %s\n' "$root" >&2; exit 3 ;;
   esac
 fi
-expected_owner=mini
+expected_owner=camilo_mini
 [ "$profile" = camilo ] && expected_owner=camiloslaptop
 
 [ -n "$root" ] || { printf 'safe-maintenance: HOME is unset\n' >&2; exit 3; }

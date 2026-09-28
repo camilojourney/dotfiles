@@ -25,4 +25,10 @@ if [ ! -x "$DARWIN_REBUILD_BIN" ]; then
   printf 'rebuild.sh: darwin-rebuild not found at %s - run setup/mac.sh first to bootstrap this machine.\n' "$DARWIN_REBUILD_BIN" >&2
   exit 1
 fi
-exec sudo "$DARWIN_REBUILD_BIN" switch --flake "$DIR#$FLAKE_ATTR"
+sudo "$DARWIN_REBUILD_BIN" switch --flake "$DIR#$FLAKE_ATTR"
+
+# Laptop only: bring Baby Menu to the menu bar right away, so a rebuild that
+# changed its widgets is visible now instead of at the next login.
+if [ "$REBUILD_ACCOUNT" = camiloslaptop ]; then
+  open -a "Baby Menu" || true
+fi
