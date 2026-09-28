@@ -53,7 +53,7 @@
     }
   },
   "setupHooks": {
-    "npm": ["gh-axi", "lavish-axi", "chrome-devtools-axi", "tasks-axi"],
+    "npm": ["gh-axi", "chrome-devtools-axi", "tasks-axi"],
     "graphify": {
       "command": "graphify",
       "platforms": ["pi", "opencode"]
