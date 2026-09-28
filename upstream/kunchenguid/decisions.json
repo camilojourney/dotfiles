@@ -1,5 +1,5 @@
 {
-  "$schema_note": "Tracks how we follow kunchenguid/dotfiles for wezterm/nvim/herdr. Live configs live in files/.config/; this file records policy so future upstream updates are reviewable, not blind overwrites.",
+  "$schema_note": "Tracks how we follow kunchenguid/dotfiles for wezterm/nvim/herdr. Live configs live in home/.config/; this file records policy so future upstream updates are reviewable, not blind overwrites.",
   "upstream": {
     "repo": "https://github.com/kunchenguid/dotfiles",
     "ref": "main",
@@ -9,15 +9,15 @@
     "last_checked_commit": "9a4a6387d0dd6f4bf9b8a5a732b406916bbbf95d",
     "last_checked_at": "2026-08-28",
     "mirror_decision": "adopt-complete-reference",
-    "mirror_notes": "Keep the entire upstream repository available for review. Merge only selected authored configurations into files/; retain our multi-host Nix layout and local additions instead of replacing them. The checker refresh currently hits a 404 for .claude/settings.json because it assumes every tracked path is under home/.config; the complete mirror was refreshed separately after review."
+    "mirror_notes": "Keep the entire upstream repository available for review. Merge only selected authored configurations into home/; retain our multi-host Nix layout and local additions instead of replacing them. The checker refresh currently hits a 404 for .claude/settings.json because it assumes every tracked path is under home/.config; the complete mirror was refreshed separately after review."
   },
   "agent_instructions": {
-    "files/AGENTS.md": {
+    "home/AGENTS.md": {
       "source": "upstream/kunchenguid/repository/home/AGENTS.md",
       "decision": "merge",
       "upstream_sha256": "456554e70b335eaf10ddbfd4f1e8bc45cf631b28d42d1040917a76a45fb91bb7",
       "upstream_commit": "9a4a6387d0dd6f4bf9b8a5a732b406916bbbf95d",
-      "rationale": "Adopt the new simple-workflow and swarm-approval rules plus the file-maintenance guidance; keep local Graphify/Holusight guidance and project-specific additions."
+      "rationale": "Adopt the new simple-workflow and swarm-approval rules plus the file-maintenance guidance. Graphify/Holusight guidance was later removed from this file as always-on triggers since their relevance is project-dependent, not global."
     }
   },
   "policies": {
@@ -118,11 +118,11 @@
         "agentPushNotifEnabled = true",
         "model = \"claude-sonnet-5\" default"
       ],
-      "notes": "Path is files/.claude/settings.json here (Kun's is home/.claude/settings.json). CLAUDE.md is forked entirely - shared with Codex's AGENTS.md, not tracked against Kun's."
+      "notes": "Path matches Kun's exactly: home/.claude/settings.json. CLAUDE.md is forked entirely, not tracked against Kun's."
     }
   },
   "howto_add_our_own": [
-    "Edit files/.config/... as usual (live configs).",
+    "Edit home/.config/... as usual (live configs).",
     "Set that file's policy to 'extend' (or 'fork' if you no longer want upstream).",
     "List what you added in our_additions so the next check explains the divergence.",
     "Run: bash scripts/check-upstream-configs.sh",

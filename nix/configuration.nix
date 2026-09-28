@@ -1,4 +1,4 @@
-{ config, lib, pkgs, userName, homeDirectory, hostProfile, ... }:
+{ config, lib, pkgs, userName, homeDirectory, ... }:
 
 let
   declaredMasAppIds = lib.concatStringsSep " " (map toString (lib.attrValues config.homebrew.masApps));
@@ -9,15 +9,29 @@ in
 
   nixpkgs.config.allowUnfree = true;
 
+  # Both machines stay reachable overnight: the laptop runs agent work while
+  # unattended, the remote box is only reachable over Tailscale, which idle
+  # sleep would suspend. On battery, macOS still sleeps on its own low-power
+  # floor regardless of this setting.
+  power.sleep.computer = "never";
+
   homebrew = {
     enable = true;
     enableZshIntegration = true; # puts /opt/homebrew/bin on PATH for Homebrew CLIs.
     onActivation = {
       # Removes undeclared Homebrew formulae, casks, and taps while preserving
-      # their user data. Mac App Store apps need the cleanup script below.
+      # their user data, on every machine. Mac App Store apps need the
+      # cleanup script below instead - Homebrew Bundle doesn't reach those.
       cleanup = "uninstall";
       upgrade = true; # brew upgrade + brew upgrade --cask on each rebuild
     };
+    taps = [
+      {
+        # Baby Menu comes from this non-official tap; wanted on both machines.
+        name = "kunchenguid/tap";
+        trusted = true;
+      }
+    ];
     brews = [
       "espeak-ng" # optional text-to-speech support
       "curl" # downloads pinned external agent releases during activation
@@ -29,10 +43,8 @@ in
       "just" # task runner for Invoz and other projects
       "mas" # Mac App Store CLI and MAS cleanup
       "node" # owns npm; never install a separate global npm
-      "opencode"
       "pass" # password-store CLI
       "pinentry-mac" # macOS passphrase prompt for gpg-agent
-      "pipx" # isolated Python CLIs managed by the agent-tool manifest
       "starship" # nixpkgs starship currently fails to link on Darwin
       "tmux" # runtime backend for terminal-multiplexed agent sessions
       "uv"
@@ -40,31 +52,36 @@ in
     casks = [
       "wezterm"
       "antigravity-cli"
-      "codex"
       "font-hack-nerd-font" # shared font used by terminal and editor tools
       "gcloud-cli"
       "grok-build"
       "google-chrome"
       # chrome-devtools-axi's CHROME_DEVTOOLS_AXI_CHANNEL is set to "canary"
-      # below in shared/user.nix so it never collides with the daily-driver
-      # google-chrome above; that setting needs this app to actually exist.
+      # in home.nix so it never collides with the daily-driver google-chrome
+      # above; that setting needs this app to actually exist.
       "google-chrome@canary"
       "chatgpt"
       "mullvad-vpn"
-      "nomachine"
       "tailscale-app"
       "claude-code"
+      "baby-menu"
+      # Replaces Docker Desktop: gives `docker build`/`docker run` and
+      # `kubectl` without Docker Desktop's battery/CPU overhead. Needed on
+      # both machines to run Invoz.
+      "orbstack"
     ];
   };
 
   # Homebrew Bundle does not remove MAS apps that disappear from masApps.
-  # Run the cleanup as the primary user after Bundle has installed declared apps.
-  # Mac App Store apps (Xcode) are laptop-only; the remote host declares no masApps.
-  system.activationScripts.postActivation.text = lib.mkIf (hostProfile == "camilo") (lib.mkAfter ''
-    ${pkgs.bash}/bin/bash ${../../scripts/mas-cleanup.sh} /opt/homebrew/bin/mas ${userName} ${declaredMasAppIds}
+  # Run the cleanup as the primary user after Bundle has installed declared
+  # apps. Gated on masApps actually being declared (only true when
+  # nix/camilo-extra.nix is imported, i.e. via ./rebuild-total.sh) - not on
+  # which machine this is, so a plain ./rebuild.sh never touches MAS apps.
+  system.activationScripts.postActivation.text = lib.mkIf (config.homebrew.masApps != { }) (lib.mkAfter ''
+    ${pkgs.bash}/bin/bash ${../scripts/mas-cleanup.sh} /opt/homebrew/bin/mas ${userName} ${declaredMasAppIds}
   '');
 
-  # starship comes from Home Manager (programs.starship in shared/user.nix)
+  # starship comes from Home Manager (programs.starship in home.nix)
   environment.systemPackages = [ ];
 
   system.primaryUser = userName;
@@ -103,12 +120,12 @@ in
       Clicking = true;
     };
 
+    # Identical, minimal Dock on both machines. Finder and Trash are
+    # automatic bookends, not part of this list.
     dock = {
       autohide = true;
       autohide-delay = 0.0;
       show-recents = false;
-      # Baseline for both hosts. Finder and Trash are automatic bookends,
-      # not part of this list; host-specific files may append more apps.
       persistent-apps = [
         "/Applications/WezTerm.app"
         "/Applications/Google Chrome.app"

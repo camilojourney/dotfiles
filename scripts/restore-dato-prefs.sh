@@ -4,7 +4,7 @@
 set -euo pipefail
 
 REPO_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-SRC="$REPO_ROOT/files/.config/dato/com.sindresorhus.Dato.plist"
+SRC="$REPO_ROOT/home/.config/dato/com.sindresorhus.Dato.plist"
 DEST_DIR="$HOME/Library/Containers/com.sindresorhus.Dato/Data/Library/Preferences"
 DEST="$DEST_DIR/com.sindresorhus.Dato.plist"
 

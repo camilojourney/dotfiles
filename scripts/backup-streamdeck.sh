@@ -3,7 +3,7 @@
 set -euo pipefail
 
 REPO_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-DEST="$REPO_ROOT/files/.config/streamdeck"
+DEST="$REPO_ROOT/home/.config/streamdeck"
 SUPPORT="$HOME/Library/Application Support/com.elgato.StreamDeck"
 
 if [ ! -d "$SUPPORT/ProfilesV3" ]; then

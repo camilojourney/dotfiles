@@ -7,10 +7,10 @@
 # macOS metadata junk
 .DS_Store
 
-# Herdr runtime state (lives under files/.config/herdr via HM symlink)
-files/.config/herdr/*.log
-files/.config/herdr/*.sock
-files/.config/herdr/session.json
-files/.config/herdr/.plugins.lock
-files/.config/herdr/release-notes.json
-files/.config/herdr/sessions/
+# Herdr runtime state (lives under home/.config/herdr via HM symlink)
+home/.config/herdr/*.log
+home/.config/herdr/*.sock
+home/.config/herdr/session.json
+home/.config/herdr/.plugins.lock
+home/.config/herdr/release-notes.json
+home/.config/herdr/sessions/

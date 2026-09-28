@@ -4,14 +4,14 @@ Run all tests with:
 
 ```bash
 bash tests/mac_setup_test.sh
-bash tests/rebuild_remote_test.sh
+bash tests/rebuild_test.sh
 bash tests/agent_tools_test.sh
 bash tests/baby_menu_config_test.sh
 bash tests/pi_settings_test.sh
 ```
 
-`agent_tools_test.sh` exercises the agent-tool reconciliation and audit scripts with stubbed `npm`, `pipx`, external installers, and Homebrew.
-It proves fresh activation installs the declared inventory, repeat activation does not downgrade self-updating tools, npm tools follow their latest channel, external updaters run safely, setup hooks run, host-specific pipx packages stay scoped, missing package managers fail clearly, and shared Homebrew formulas are recognized for both host profiles.
+`agent_tools_test.sh` exercises the agent-tool reconciliation and audit scripts with stubbed `npm`, `uv`, external installers, and Homebrew.
+It proves fresh activation installs the one declared inventory identically on every machine (no per-host profiles), repeat activation does not downgrade self-updating tools, npm tools follow their latest channel, external updaters run safely, setup hooks run, and missing package managers fail clearly.
 It never touches the real network or host package state.
 
 `baby_menu_config_test.sh` proves a rebuild preserves conflicting starter configuration, restores the three authored Baby Menu links, leaves runtime state untouched, and remains idempotent.
@@ -20,8 +20,11 @@ It never touches the real network or host package state.
 It ensures the package list retains only the intended Cursor provider, keeps GPT-6 Sol with high thinking as the default, removes the fixed llama.cpp URL, and limits custom model metadata to DeepSeek's 500,000-token context overrides.
 
 `mac_setup_test.sh` is a regression test for `setup/mac.sh`.
-`rebuild_remote_test.sh` checks the remote rebuild helper's first activation,
-installed fast path, and missing-Nix diagnostic using stubbed sudo and Nix.
+`rebuild_test.sh` checks the one shared `rebuild.sh` helper's account-based
+flake-attr detection (both `camiloslaptop`/`camilo` and `camilo_mini`/
+`camilo-remote`, plus an unrecognized account failing loudly), the installed
+fast path, and that a not-yet-bootstrapped machine fails with a clear message
+pointing at `setup/mac.sh` instead of trying to install Nix itself.
 It never runs the script against the real machine, since that script installs Nix and activates a real `nix-darwin` system.
 Instead it runs the actual `setup/mac.sh` against a PATH-masked sandbox of stub executables (`curl`, `sh`, `nix`, `darwin-rebuild`, `sudo`, `bash`) that simulate a fresh Mac.
 The stubs also make sure the bootstrap uses the canonical `install.determinate.systems` installer URL.
@@ -33,4 +36,4 @@ It covers two scenarios:
 - a fresh machine, where the script must install Nix, source the daemon profile into the current shell, and activate `nix-darwin` for the first time, all in a single pass with no second-session step
 - an already-bootstrapped machine, where the existing `darwin-rebuild switch` fast path is used instead
 
-See `AGENTS.md` for the fresh-machine single-pass contract these tests protect.
+`setup/mac.sh` is the only place that bootstrap logic lives now - `rebuild.sh` assumes it has already run and fails with a clear message if `darwin-rebuild` isn't installed yet.

@@ -2,10 +2,10 @@
 # Regression tests for agent-tool reconciliation and audit scripts
 #
 # Runs reconciliation and audit checks with stub package managers so no real
-# network or system mutation occurs. Proves fresh activation installs the declared
-# set, repeat activation is idempotent, setup hooks run, host-specific pipx
-# packages stay scoped, missing package managers fail according to policy, and
-# shared Homebrew formulas are recognized by the audit for both host profiles.
+# network or system mutation occurs. Proves fresh activation installs the
+# declared set (identical on every machine - one manifest, no host
+# profiles), repeat activation is idempotent, setup hooks run, and missing
+# package managers fail according to policy.
 #
 # Run: bash tests/agent_tools_test.sh
 
@@ -53,7 +53,7 @@ setup_sandbox() {
   cp "$REPO_ROOT/scripts/agent-tools/"*.sh "$sandbox/repo/scripts/agent-tools/"
   chmod +x "$sandbox/repo/scripts/agent-tools/"*.sh
 
-  printf '{}' >"$sandbox/pipx-list.json"
+  : >"$sandbox/uv-tool-list.txt"
   # Copying Apple's signed jq binary causes macOS to kill the copied executable.
   # A symlink retains the original executable while keeping the test PATH-masked.
   ln -s "$(command -v jq)" "$sandbox/stubs/jq"
@@ -103,39 +103,36 @@ case "${1:-}" in
 esac
 STUB
 
-  cat >"$sandbox/stubs/pipx" <<'STUB'
+  cat >"$sandbox/stubs/uv" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
-LOG="${AGENT_TOOLS_PIPX_LOG:?}"
-echo "pipx $*" >>"$LOG"
+LOG="${AGENT_TOOLS_UV_LOG:?}"
+echo "uv $*" >>"$LOG"
 case "${1:-}" in
-  list)
-    if [ "${2:-}" = --json ]; then
-      cat "${AGENT_TOOLS_STUB_PIPX_LIST:?}"
-      exit 0
-    fi
-    if [ "${2:-}" = --short ]; then
-      jq -r '.venvs | keys[]' "${AGENT_TOOLS_STUB_PIPX_LIST:?}" 2>/dev/null || true
-      exit 0
-    fi
-    ;;
-  install)
-    pkg="${*: -1}"
-    name="${pkg%%==*}"
-    version="${pkg##*==}"
-    tmp=$(mktemp)
-    jq --arg n "$name" --arg v "$version" \
-      '.venvs[$n] = {metadata: {main_package: {package: $n, package_version: $v}}}' \
-      "${AGENT_TOOLS_STUB_PIPX_LIST:?}" >"$tmp" && mv "$tmp" "${AGENT_TOOLS_STUB_PIPX_LIST:?}"
-    mkdir -p "$HOME/.local/bin"
-    case "$name" in
-      graphifyy) cmd=graphify ;;
-      mlx-lm) cmd=mlx_lm ;;
-      mlx-optiq) cmd=optiq ;;
-      *) cmd="$name" ;;
+  tool)
+    case "${2:-}" in
+      list)
+        cat "${AGENT_TOOLS_STUB_UV_LIST:?}"
+        ;;
+      install)
+        pkg="${*: -1}"
+        name="${pkg%%==*}"
+        version="${pkg##*==}"
+        list="${AGENT_TOOLS_STUB_UV_LIST:?}"
+        grep -v "^${name} " "$list" >"${list}.tmp" 2>/dev/null || true
+        mv "${list}.tmp" "$list"
+        echo "${name} v${version}" >>"$list"
+        mkdir -p "$HOME/.local/bin"
+        case "$name" in
+          graphifyy) cmd=graphify ;;
+          mlx-lm) cmd=mlx_lm ;;
+          mlx-optiq) cmd=optiq ;;
+          *) cmd="$name" ;;
+        esac
+        printf '#!/usr/bin/env bash\necho %s stub\n' "$cmd" >"$HOME/.local/bin/$cmd"
+        chmod +x "$HOME/.local/bin/$cmd"
+        ;;
     esac
-    printf '#!/usr/bin/env bash\necho %s stub\n' "$cmd" >"$HOME/.local/bin/$cmd"
-    chmod +x "$HOME/.local/bin/$cmd"
     ;;
 esac
 exit 0
@@ -161,11 +158,11 @@ EOF
 }
 
 run_reconcile() {
-  local profile=$1 log=$2 sandbox=$3
+  local log=$1 sandbox=$2
   local repo="$sandbox/repo"
-  local manifest="$repo/nix/shared/agent-tools/manifest.lock.json"
+  local manifest="$repo/nix/agent-tools.manifest.lock.json"
   local brew_bin="$sandbox/stubs"
-  local stub_pipx="$sandbox/pipx-list.json"
+  local stub_uv="$sandbox/uv-tool-list.txt"
   local home_dir="$sandbox/home"
   mkdir -p "$log"
   env -i \
@@ -173,22 +170,22 @@ run_reconcile() {
     AGENT_TOOLS_REPO_ROOT="$repo" \
     AGENT_TOOLS_MANIFEST="$manifest" \
     AGENT_TOOLS_BREW_BIN="$brew_bin" \
-    AGENT_TOOLS_STUB_PIPX_LIST="$stub_pipx" \
+    AGENT_TOOLS_STUB_UV_LIST="$stub_uv" \
     AGENT_TOOLS_TEST_MODE=1 \
     AGENT_TOOLS_NPM_LOG="$log/npm.log" \
-    AGENT_TOOLS_PIPX_LOG="$log/pipx.log" \
+    AGENT_TOOLS_UV_LOG="$log/uv.log" \
     AGENT_TOOLS_HOOK_LOG="$log/hooks.log" \
     PATH="$brew_bin:$home_dir/stub-npm/bin:$home_dir/.local/bin:$home_dir/.no-mistakes/bin:/usr/bin:/bin" \
-    "$REAL_BASH" "$repo/scripts/agent-tools/reconcile.sh" "$profile" \
+    "$REAL_BASH" "$repo/scripts/agent-tools/reconcile.sh" \
     >"$log/stdout.log" 2>"$log/stderr.log"
 }
 
-test_fresh_install_shared() {
+test_fresh_install() {
   local sandbox log out rc=0
   sandbox=$(setup_sandbox)
   log="$sandbox/log/fresh"
 
-  run_reconcile camilo-remote "$log" "$sandbox" || rc=$?
+  run_reconcile "$log" "$sandbox" || rc=$?
   if [ "$rc" -ne 0 ]; then
     echo "reconcile failed (rc=$rc)" >&2
     cat "$log/stderr.log" >&2 || true
@@ -196,20 +193,21 @@ test_fresh_install_shared() {
     rm -rf "$sandbox"
     return 0
   fi
-  out=$(cat "$log/stdout.log" "$log/stderr.log" "$log/npm.log" "$log/pipx.log" "$log/hooks.log")
+  out=$(cat "$log/stdout.log" "$log/stderr.log" "$log/npm.log" "$log/uv.log" "$log/hooks.log")
 
-  assert_contains "$out" "npm: reconciling @earendil-works/pi-coding-agent@latest" "fresh remote installs pi"
-  assert_contains "$out" "npm: reconciling tasks-axi@latest" "fresh remote updates tasks-axi from latest"
-  assert_contains "$out" "no-mistakes update --yes" "fresh remote self-updates no-mistakes"
-  assert_contains "$out" "treehouse update" "fresh remote self-updates Treehouse"
-  assert_contains "$out" "pipx: reconciling graphifyy==0.9.69" "fresh remote installs graphifyy"
-  assert_not_contains "$out" "mlx-lm" "remote skips local MLX tools"
+  assert_contains "$out" "npm: reconciling @earendil-works/pi-coding-agent@latest" "fresh install installs pi"
+  assert_contains "$out" "npm: reconciling tasks-axi@latest" "fresh install updates tasks-axi from latest"
+  assert_contains "$out" "no-mistakes update --yes" "fresh install self-updates no-mistakes"
+  assert_contains "$out" "treehouse update" "fresh install self-updates Treehouse"
+  assert_contains "$out" "uv: reconciling graphifyy==0.9.69" "fresh install installs graphifyy"
+  assert_contains "$out" "uv: reconciling mlx-lm==0.31.3" "fresh install installs mlx-lm on every machine"
+  assert_contains "$out" "uv: reconciling mlx-optiq==0.5.13" "fresh install installs mlx-optiq on every machine"
   assert_contains "$out" "gh-axi setup hooks" "setup hooks run"
   assert_contains "$out" "graphify install --platform pi" "graphify platform hook"
-  assert_contains "$out" "reconcile complete" "fresh remote completes"
+  assert_contains "$out" "reconcile complete" "fresh install completes"
 
   rm -rf "$sandbox"
-  pass "fresh activation installs shared inventory for camilo-remote"
+  pass "fresh activation installs the one shared inventory identically"
 }
 
 test_idempotent_repeat() {
@@ -217,40 +215,27 @@ test_idempotent_repeat() {
   sandbox=$(setup_sandbox)
   log="$sandbox/log/idempotent"
 
-  run_reconcile camilo "$log/first" "$sandbox" || rc=$?
+  run_reconcile "$log/first" "$sandbox" || rc=$?
   if [ "$rc" -ne 0 ]; then
     echo "first reconcile failed" >&2; cat "$log/first/stderr.log" >&2 || true
     fail "first reconcile exited $rc"; rm -rf "$sandbox"; return 0
   fi
-  jq '.venvs.graphifyy = {metadata: {main_package: {package: "graphifyy", package_version: "0.9.69"}}}' \
-    "$sandbox/pipx-list.json" >"$sandbox/pipx-list.tmp" && mv "$sandbox/pipx-list.tmp" "$sandbox/pipx-list.json"
+  grep -v '^graphifyy ' "$sandbox/uv-tool-list.txt" >"$sandbox/uv-tool-list.tmp" 2>/dev/null || true
+  mv "$sandbox/uv-tool-list.tmp" "$sandbox/uv-tool-list.txt"
+  echo "graphifyy v0.9.69" >>"$sandbox/uv-tool-list.txt"
 
-  run_reconcile camilo "$log/second" "$sandbox" || rc=$?
+  run_reconcile "$log/second" "$sandbox" || rc=$?
   if [ "$rc" -ne 0 ]; then
     echo "second reconcile failed" >&2; cat "$log/second/stderr.log" >&2 || true
     fail "second reconcile exited $rc"; rm -rf "$sandbox"; return 0
   fi
   out2=$(cat "$log/second/stdout.log" "$log/second/stderr.log" 2>/dev/null || true)
-  assert_contains "$out2" "graphifyy==0.9.69 already installed" "repeat skips unchanged pipx"
+  assert_contains "$out2" "graphifyy==0.9.69 already installed" "repeat skips unchanged uv tool"
   assert_contains "$out2" "preserving self-updating no-mistakes" "repeat does not downgrade no-mistakes"
   assert_contains "$out2" "preserving self-updating treehouse" "repeat does not downgrade Treehouse"
 
   rm -rf "$sandbox"
-  pass "repeat activation is idempotent for unchanged pipx"
-}
-
-test_host_scoped_pipx() {
-  local sandbox log out
-  sandbox=$(setup_sandbox)
-  log="$sandbox/log/host"
-
-  run_reconcile camilo "$log" "$sandbox"
-  out=$(cat "$log/pipx.log")
-  assert_contains "$out" "mlx-lm==0.31.3" "laptop installs mlx-lm"
-  assert_contains "$out" "mlx-optiq==0.5.13" "laptop installs mlx-optiq"
-
-  rm -rf "$sandbox"
-  pass "host-specific pipx packages install only on camilo"
+  pass "repeat activation is idempotent for unchanged uv tool"
 }
 
 test_missing_npm_fails() {
@@ -263,13 +248,13 @@ test_missing_npm_fails() {
   env -i \
     HOME="$sandbox/home" \
     AGENT_TOOLS_REPO_ROOT="$sandbox/repo" \
-    AGENT_TOOLS_MANIFEST="$sandbox/repo/nix/shared/agent-tools/manifest.lock.json" \
+    AGENT_TOOLS_MANIFEST="$sandbox/repo/nix/agent-tools.manifest.lock.json" \
     AGENT_TOOLS_BREW_BIN="$sandbox/stubs" \
-    AGENT_TOOLS_STUB_PIPX_LIST="$sandbox/pipx-list.json" \
+    AGENT_TOOLS_STUB_UV_LIST="$sandbox/uv-tool-list.txt" \
     AGENT_TOOLS_TEST_MODE=1 \
     AGENT_TOOLS_NPM_LOG="$log/npm.log" \
     PATH="$sandbox/stubs:$sandbox/home/.local/bin:/usr/bin:/bin" \
-    "$REAL_BASH" "$sandbox/repo/scripts/agent-tools/reconcile.sh" camilo-remote \
+    "$REAL_BASH" "$sandbox/repo/scripts/agent-tools/reconcile.sh" \
     >"$log/stdout.log" 2>"$log/stderr.log" || rc=$?
 
   [ "$rc" -ne 0 ] || fail "missing npm should fail"
@@ -281,8 +266,9 @@ test_missing_npm_fails() {
 
 test_manifest_json_valid() {
   jq -e '
-    .npm and .pipx and .external and .setupHooks
-    and ([.npm[].version] | all(. == "latest"))
+    .npm and .uv and .external and .setupHooks
+    and (.profiles | not)
+    and ([.npm[] | type] | all(. == "string"))
     and (.external["no-mistakes"].version == "latest")
     and (.external["no-mistakes"].bootstrapVersion == "1.79.0")
     and (.external["no-mistakes"].selfUpdateCommand == ["update", "--yes"])
@@ -290,8 +276,8 @@ test_manifest_json_valid() {
     and (.external.treehouse.version == "latest")
     and (.external.treehouse.bootstrapVersion == "3.1.0")
     and (.external.treehouse.selfUpdateCommand == ["update"])
-  ' "$REPO_ROOT/nix/shared/agent-tools/manifest.lock.json" >/dev/null
-  pass "manifest.lock.json selects latest npm tools and declared external self-updaters"
+  ' "$REPO_ROOT/nix/agent-tools.manifest.lock.json" >/dev/null
+  pass "manifest.lock.json is one flat list (no per-host profiles), latest npm tools, declared external self-updaters"
 }
 
 test_deferred_no_mistakes_update_does_not_block_rebuild() {
@@ -300,7 +286,7 @@ test_deferred_no_mistakes_update_does_not_block_rebuild() {
   log="$sandbox/log/deferred-update"
   touch "$sandbox/home/fail-no-mistakes-update"
 
-  run_reconcile camilo "$log" "$sandbox" || rc=$?
+  run_reconcile "$log" "$sandbox" || rc=$?
   [ "$rc" -eq 0 ] || fail "deferred no-mistakes update blocked reconciliation (rc=$rc)"
   out=$(cat "$log/stdout.log" "$log/stderr.log" "$log/hooks.log" 2>/dev/null || true)
   assert_contains "$out" "deferred no-mistakes self-update after exit 42" \
@@ -311,37 +297,34 @@ test_deferred_no_mistakes_update_does_not_block_rebuild() {
   pass "a refused no-mistakes self-update is retried on a later rebuild"
 }
 
-test_audit_recognizes_shared_uv_for_both_hosts() {
-  local sandbox profile out unmanaged
+test_audit_runs_with_no_arguments() {
+  local sandbox out unmanaged
   sandbox=$(setup_sandbox)
 
-  for profile in camilo camilo-remote; do
-    out=$(env -i \
-      HOME="$sandbox/home" \
-      AGENT_TOOLS_BREW_BIN="$sandbox/stubs" \
-      PATH="$sandbox/stubs:/usr/bin:/bin" \
-      "$REAL_BASH" "$sandbox/repo/scripts/agent-tools/audit.sh" "$profile")
-    assert_contains "$out" "--- Unmanaged Homebrew formulas (not in declared brew set) ---" \
-      "audit reports Homebrew formula status for $profile"
-    unmanaged=$(printf '%s\n' "$out" | awk '
-      /^--- Unmanaged Homebrew formulas/{in_section=1; next}
-      /^--- /{in_section=0}
-      in_section {print}
-    ')
-    assert_not_contains "$unmanaged" "uv" "audit recognizes shared uv for $profile"
-  done
+  out=$(env -i \
+    HOME="$sandbox/home" \
+    AGENT_TOOLS_BREW_BIN="$sandbox/stubs" \
+    PATH="$sandbox/stubs:/usr/bin:/bin" \
+    "$REAL_BASH" "$sandbox/repo/scripts/agent-tools/audit.sh")
+  assert_contains "$out" "--- Unmanaged Homebrew formulas (not in declared brew set) ---" \
+    "audit reports Homebrew formula status"
+  unmanaged=$(printf '%s\n' "$out" | awk '
+    /^--- Unmanaged Homebrew formulas/{in_section=1; next}
+    /^--- /{in_section=0}
+    in_section {print}
+  ')
+  assert_not_contains "$unmanaged" "uv" "audit recognizes shared uv"
 
   rm -rf "$sandbox"
-  pass "audit recognizes shared uv for both host profiles"
+  pass "audit runs identically with no host-profile argument"
 }
 
-test_fresh_install_shared
+test_fresh_install
 test_idempotent_repeat
-test_host_scoped_pipx
 test_missing_npm_fails
 test_manifest_json_valid
 test_deferred_no_mistakes_update_does_not_block_rebuild
-test_audit_recognizes_shared_uv_for_both_hosts
+test_audit_runs_with_no_arguments
 
 if [ "$FAILURES" -gt 0 ]; then
   echo "$FAILURES test(s) failed" >&2

@@ -35,22 +35,22 @@ The goal is to provide a reusable foundation that you can make your own.
 
 - `setup/mac.sh` - bootstrap a fresh Mac
 - `setup/README.md` - bootstrap usage and testing notes
-- `flake.nix` - top-level Nix wiring (`#camilo` and `#camilo-remote`)
-- `nix/shared/` - foundation host + user config shared by both machines
-- `nix/camilo/` - local workstation apps (Baby Menu, Camo, Cursor, DeepL, Grammarly, Notion, Obsidian, and peripherals) + `rebuild` alias
-- `nix/camilo-remote/` - remote-work overlay (shared foundation only + `rebuild` alias)
-- `files/.config/` - live WezTerm / Neovim / herdr configs (symlinked by Home Manager)
-- `files/.claude/`, `files/.codex/`, `files/.grok/`, and `files/.firstmate/` - authored agent and crew-dispatch configuration (symlinked by Home Manager)
-- `files/.pi/agent/` - authored Pi models, settings, themes, and extensions (symlinked by Home Manager)
+- `flake.nix` - top-level Nix wiring (`#camilo`, `#camilo-remote`, and their `#camilo-total` / `#camilo-remote-total` variants)
+- `nix/configuration.nix` - system-level config (macOS defaults, Homebrew) identical on both machines
+- `nix/home.nix` - user-level config (shell, packages, prompt, symlinks) identical on both machines
+- `nix/camilo-extra.nix` - personal apps (Camo, OBS, WhatsApp, Dato, Notion, Obsidian, and more) - never installed by plain `rebuild.sh`, only by `rebuild-total.sh`
+- `home/.config/` - live WezTerm / Neovim / herdr configs (symlinked by Home Manager)
+- `home/.claude/`, `home/.grok/`, and `home/.firstmate/` - authored agent and crew-dispatch configuration (symlinked by Home Manager)
+- `home/.pi/agent/` - authored Pi models, settings, themes, and extensions (symlinked by Home Manager)
 - `upstream/kunchenguid/` - complete upstream mirror, selected config snapshot, and adoption decisions for [Kun's configs](https://github.com/kunchenguid/dotfiles)
 - `scripts/check-upstream-configs.sh` - check / safely adopt his updates
-- `rebuild.sh` / `rebuild-remote.sh` - host-specific nix-darwin rebuild helpers
+- `rebuild.sh` - one nix-darwin rebuild helper for both machines, detects the account and picks the right flake attr
+- `rebuild-total.sh` - same, plus `nix/camilo-extra.nix` (personal apps); typically only needed on the laptop
 - `tests/` - safe shell regression tests for bootstrap and agent tools
-- `blog.md` - local copy of the [blog post](https://open.substack.com/pub/kunchenguid/p/how-i-built-a-reproducible-mac-setup?utm_campaign=post-expanded-share&utm_medium=web)
 
 ## Tracking Kun's complete repository and config updates
 
-We treat [kunchenguid/dotfiles](https://github.com/kunchenguid/dotfiles) as the expert baseline for terminal, editor, agent, and Pi configuration. The complete upstream repository is mirrored locally so root files and configurations outside the selected upstream paths are not lost. Selected upstream files are merged into our live `files/` tree while preserving our local additions and multi-host Nix layout.
+We treat [kunchenguid/dotfiles](https://github.com/kunchenguid/dotfiles) as the expert baseline for terminal, editor, agent, and Pi configuration. The complete upstream repository is mirrored locally so root files and configurations outside the selected upstream paths are not lost. Selected upstream files are merged into our live `home/` tree while preserving our local additions and multi-host Nix layout.
 
 ### How it works
 
@@ -58,7 +58,7 @@ We treat [kunchenguid/dotfiles](https://github.com/kunchenguid/dotfiles) as the 
 |-------|------|
 | `upstream/kunchenguid/repository/` | Complete local upstream mirror at the recorded commit (ignored, not versioned) |
 | `upstream/kunchenguid/repository.commit` | Commit represented by the local mirror (ignored, not versioned) |
-| `files/.config/` and `files/.pi/agent/` | What our machines actually use |
+| `home/.config/` and `home/.pi/agent/` | What our machines actually use |
 | `upstream/kunchenguid/snapshot/` | Selected config copy used by the adoption checker for diffs |
 | `upstream/kunchenguid/decisions.json` | Per-file policy, adopted hashes, mirror metadata, and local additions |
 
@@ -99,12 +99,12 @@ bash scripts/check-upstream-configs.sh --apply
 Inspect a file before applying:
 
 ```bash
-diff -u files/.config/wezterm/wezterm.lua upstream/kunchenguid/snapshot/wezterm/wezterm.lua
+diff -u home/.config/wezterm/wezterm.lua upstream/kunchenguid/snapshot/wezterm/wezterm.lua
 ```
 
 ### Adding our own changes
 
-1. Edit `files/.config/...` as usual.
+1. Edit `home/.config/...` as usual.
 2. In `upstream/kunchenguid/decisions.json`, set that file's `policy` to `extend` (or `fork`).
 3. Record what you added in `our_additions` (short bullets).
 4. Re-run the check script so the next update surfaces as `EXTENDED` / `CONFLICT` instead of a blind overwrite.
@@ -148,27 +148,11 @@ This repo is primarily set up for Apple Silicon Macs. If you are on Intel, make 
 
 ```bash
 bash setup/mac.sh
-```
-
-On the remote Mac, select that host instead:
-
-```bash
+# on the remote Mac, select that host instead:
 DARWIN_FLAKE_ATTR=camilo-remote bash setup/mac.sh
 ```
 
-The script will:
-
-- install [Determinate Nix Installer](https://determinate.systems/nix-installer/) if needed
-- install [Homebrew](https://brew.sh/) if needed
-- apply the `nix-darwin` + Home Manager config
-- install [`nvm`](https://github.com/nvm-sh/nvm) and a default Node.js version if needed
-
-On a fresh machine, the bootstrap is designed to complete in one run.
-After the Determinate installer runs, the script sources the Nix daemon profile into the current shell and uses an absolute `nix` path for the first `nix-darwin` activation, so you should not need a second shell or a second setup run.
-
-The `NIX_DAEMON_PROFILE` and `DARWIN_REBUILD_BIN` environment variables are only there so the regression test can point the script at sandboxed paths.
-`DARWIN_FLAKE_ATTR` selects which flake output to apply (`camilo` by default, or `camilo-remote`).
-Normal use should leave the first two unset.
+It installs Nix and Homebrew if missing, applies the `nix-darwin` + Home Manager config, and installs `nvm` - designed to complete in one run on a truly fresh Mac, no second shell needed. See [`setup/README.md`](setup/README.md) for what it does step by step and its environment variables.
 
 ## How I manage changes later
 
@@ -181,7 +165,9 @@ After the initial bootstrap, the usual workflow is:
 rebuild
 ```
 
-The laptop helper and alias target `#camilo`:
+One script and one alias for both machines - `rebuild.sh` reads the macOS
+account it's running under and picks the matching flake attr (`camilo` or
+`camilo-remote`) automatically, so the same command works everywhere:
 
 ```bash
 ./rebuild.sh
@@ -189,35 +175,27 @@ The laptop helper and alias target `#camilo`:
 rebuild
 ```
 
-On the remote machine, use the matching helper and alias, which target `#camilo-remote`:
+On the laptop, when you also want the personal apps in `nix/camilo-extra.nix`
+(Camo, OBS, WhatsApp, Dato, etc.), run the total variant instead - it's the
+same script, plus that one extra module:
 
 ```bash
-./rebuild-remote.sh
-# or:
-rebuild
+./rebuild-total.sh
 ```
 
 ## Testing
 
-Do not run `setup/mac.sh` against a development or CI machine just to test it.
-Run the sandboxed regression test instead:
-
-```bash
-bash tests/mac_setup_test.sh
-```
-
-It runs the real script logic with stub executables for `curl`, `sh`, `nix`, `darwin-rebuild`, `sudo`, and `bash`, covering both a fresh-machine single-pass bootstrap and the already-bootstrapped fast path.
-The harness also guards every harness/stub write against sandbox escapes, re-homes `NVM_DIR` under the sandboxed `HOME`, and unsets inherited `BASH_ENV`/`ENV` hooks before invoking the script under test.
+Do not run `setup/mac.sh` or `rebuild.sh`/`rebuild-total.sh` against a real machine just to test them - they install Nix, Homebrew, and activate a real system. Run the sandboxed regression tests instead; see [`tests/README.md`](tests/README.md).
 
 ## Where to add new tools
 
 My rough rule of thumb:
 
 - use **Home Manager / Nix** for reproducible baseline CLI tools, fonts, shell utilities, and user environment packages
-- use **Homebrew** for GUI apps and macOS-native tools that fit naturally there (declared in `nix/shared/host.nix` and host overlays)
-- use **`nix/shared/agent-tools/manifest.lock.json`** for required agent/developer CLIs installed via npm, pipx, or pinned external release archives
+- use **Homebrew** for GUI apps and macOS-native tools that fit naturally there (declared in `nix/configuration.nix`, or `nix/camilo-extra.nix` for personal-only apps)
+- use **`nix/agent-tools.manifest.lock.json`** for required agent/developer CLIs installed via npm, uv tool, or pinned external release archives
 
-Agent npm globals, pipx apps, and external tools (`no-mistakes`, `treehouse`) reconcile together on every `rebuild` via `scripts/agent-tools/reconcile.sh`. Add new entries to the manifest instead of ad hoc activation blocks. Run `bash scripts/agent-tools/audit.sh` to see unmanaged top-level tools without deleting anything.
+Agent npm globals, uv tool apps, and external tools (`no-mistakes`, `treehouse`) reconcile together on every `rebuild` via `scripts/agent-tools/reconcile.sh`. Add new entries to the manifest instead of ad hoc activation blocks. Run `bash scripts/agent-tools/audit.sh` to see unmanaged top-level tools without deleting anything.
 
 A good setup does not force every tool through one package manager. It just makes the ownership of each layer clear.
 

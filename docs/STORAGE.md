@@ -1,7 +1,9 @@
-# Storage on the remote Mac
+# Storage
 
 Run `bash scripts/storage-report.sh` from the repository, or `storage-report`
-after activating the remote profile. Run it weekly and after large installs.
+on either machine. Run it weekly and after large installs. The mac-mini
+(`camilo-remote`) runs consistently low on free space, so check it there most
+often.
 It only measures existing locations. Totals overlap, and access errors mean a
 measurement may be incomplete. It does not record private file contents.
 
@@ -17,7 +19,8 @@ agent sessions, containers, or model servers.
 | `~/.npm` | npm cache and logs | Start with `npm cache verify`; inspect size before choosing further cleanup. |
 | `~/github` | Repositories, `node_modules`, `.venv`, build output, project data | Inspect one project at a time. Generated dependencies may be recreated from lockfiles; keep source, `.git`, databases, and unpublished work. |
 | `~/.cache/huggingface`, `~/.ollama` | Downloaded model weights | Remove individual unused models through their owning tool. Models can be very large. |
-| Docker/Colima directories | Images, containers, volumes | If installed, inspect `docker system df`; volumes may contain databases. Do not bulk-delete these directories. |
+| `~/Library/Group Containers/HUAQ24HBR6.dev.orbstack/data` | OrbStack's VM disk image (`data.img`) - every container/image/volume | This is the real location; `~/.orbstack` is only a bind-mount view and takes no space itself. The image is sparse, so `du -sh` on this path (not Finder's "apparent size") is the true usage. Inspect with `docker system df`; prune with `docker system prune` (add `--volumes` only if you don't need volume data). Changing OrbStack's storage location is in OrbStack → Settings → Disk. |
+| Docker/Colima directories | Images, containers, volumes (only relevant if you also have standalone Docker Desktop or Colima installed) | If installed, inspect `docker system df`; volumes may contain databases. Do not bulk-delete these directories. |
 | `~/.codex`, `~/.claude`, `~/.pi` | Sessions, history, credentials, plugins, tool state | These are not disposable caches. Review specific sessions rather than deleting the whole directory. |
 | `~/.local`, `~/Library/pnpm`, `~/.nvm` | Installed tools and runtimes as well as some caches | Uninstall unused versions with the owning package manager. |
 | `~/Downloads`, `~/.Trash`, `~/Library/Logs` | Downloads, deleted files, logs | Review old files and retain anything needed before deleting. |

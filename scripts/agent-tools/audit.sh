@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
 # audit.sh - report unmanaged top-level agent/developer CLIs (never deletes)
 #
-# Usage: audit.sh [host-profile]
-#   host-profile defaults to camilo
+# Usage: audit.sh
 set -euo pipefail
 
-HOST_PROFILE=${1:-camilo}
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-MANIFEST="$REPO_ROOT/nix/shared/agent-tools/manifest.lock.json"
+MANIFEST="$REPO_ROOT/nix/agent-tools.manifest.lock.json"
 BREW_BIN=${AGENT_TOOLS_BREW_BIN:-/opt/homebrew/bin}
 
 export PATH="${BREW_BIN}:${HOME}/.local/bin:${HOME}/.no-mistakes/bin:${PATH:-}"
@@ -26,22 +24,17 @@ require_cmd jq
 [ -f "$MANIFEST" ] || die "manifest not found: $MANIFEST"
 
 collect_brew_formulas() {
-  grep -hoE '"[a-z0-9+@._-]+"' "$REPO_ROOT/nix/shared/host.nix" "$REPO_ROOT/nix/${HOST_PROFILE}/host.nix" 2>/dev/null \
+  grep -hoE '"[a-z0-9+@._-]+"' "$REPO_ROOT/nix/configuration.nix" 2>/dev/null \
     | tr -d '"' \
     | sort -u || true
 }
 
-declared_pipx=$(jq -r '.pipx.shared[].name' "$MANIFEST")
-if [ "$HOST_PROFILE" = camilo ]; then
-  declared_pipx=$(printf '%s\n%s\n' "$declared_pipx" "$(jq -r '.pipx.camilo[]?.name // empty' "$MANIFEST")")
-fi
-declared_pipx=$(printf '%s\n' "$declared_pipx" | sed '/^$/d' | sort -u)
-declared_external=$(jq -r --arg profile "$HOST_PROFILE" '.profiles[$profile].external[]?' "$MANIFEST" | sort -u)
+declared_uv=$(jq -r '.uv[].name' "$MANIFEST" | sort -u)
+declared_external=$(jq -r '.external | keys[]' "$MANIFEST" | sort -u)
 declared_brew=$(collect_brew_formulas)
 
 echo "=== Declared agent tool inventory (manifest) ==="
 echo "Manifest: $MANIFEST"
-echo "Host profile: $HOST_PROFILE"
 echo
 
 report_section() {
@@ -68,22 +61,22 @@ fi
 
 unmanaged_npm=()
 for pkg in "${actual_npm[@]:-}"; do
-  if ! jq -e --arg p "$pkg" '.npm[] | select(.name == $p)' "$MANIFEST" >/dev/null; then
+  if ! jq -e --arg p "$pkg" '.npm[] | select(. == $p)' "$MANIFEST" >/dev/null; then
     unmanaged_npm+=("$pkg")
   fi
 done
 
-# pipx
-actual_pipx=()
-if command -v pipx >/dev/null 2>&1; then
+# uv tool
+actual_uv=()
+if command -v uv >/dev/null 2>&1; then
   while IFS= read -r pkg; do
     [ -n "$pkg" ] || continue
-    actual_pipx+=("$pkg")
-  done < <(pipx list --short 2>/dev/null | awk '{print $1}' || true)
+    actual_uv+=("$pkg")
+  done < <(uv tool list 2>/dev/null | awk '$1 != "-" {print $1}' || true)
 fi
-unmanaged_pipx=()
-for pkg in "${actual_pipx[@]:-}"; do
-  grep -qxF "$pkg" <<<"$declared_pipx" || unmanaged_pipx+=("$pkg")
+unmanaged_uv=()
+for pkg in "${actual_uv[@]:-}"; do
+  grep -qxF "$pkg" <<<"$declared_uv" || unmanaged_uv+=("$pkg")
 done
 
 # brew formulas (top-level only)
@@ -104,11 +97,11 @@ for tool in $declared_external; do
 done
 
 report_section "Unmanaged npm globals (not in manifest)" "${unmanaged_npm[@]:-}"
-report_section "Unmanaged pipx apps (not in manifest for ${HOST_PROFILE})" "${unmanaged_pipx[@]:-}"
+report_section "Unmanaged uv tool apps (not in manifest)" "${unmanaged_uv[@]:-}"
 report_section "Unmanaged Homebrew formulas (not in declared brew set)" "${unmanaged_brew_formulas[@]:-}"
 report_section "Declared external tools missing from PATH" "${missing_external[@]:-}"
 
 echo "=== Notes ==="
 echo "- This script reports only; it never deletes or uninstalls."
-echo "- Homebrew cleanup removes undeclared brew packages on rebuild; npm/pipx/external extras stay until removed manually."
-echo "- Add new required tools via nix/shared/agent-tools/manifest.lock.json and nix/shared/host.nix (brew), then rebuild."
+echo "- Homebrew cleanup removes undeclared brew packages on rebuild; npm/uv tool/external extras stay until removed manually."
+echo "- Add new required tools via nix/agent-tools.manifest.lock.json and nix/configuration.nix (brew), then rebuild."

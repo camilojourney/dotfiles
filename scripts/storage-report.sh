@@ -17,6 +17,7 @@ for path in \
   "$HOME/Library/pnpm" "$HOME/.cache/huggingface" "$HOME/.ollama" \
   "$HOME/.codex" "$HOME/.claude" "$HOME/.pi" \
   "$HOME/Library/Logs" "$HOME/Library/Developer" \
+  "$HOME/Library/Group Containers/HUAQ24HBR6.dev.orbstack/data" \
   "$HOME/Library/Containers/com.docker.docker" \
   "$HOME/.docker" "$HOME/.colima" \
   "$HOME/Downloads" "$HOME/.Trash" "$HOME/github"; do

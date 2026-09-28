@@ -2,6 +2,12 @@
 
 let
   dotfilesDir = "${config.home.homeDirectory}/github/dotfiles";
+  # Obsidian vault lives in iCloud; stable path for Pi and other agents.
+  # Declared on every machine - harmless where Obsidian/iCloud sync for this
+  # vault isn't present yet (nix/camilo-extra.nix, via ./rebuild-total.sh),
+  # it just sits as an unused symlink until they are.
+  vaultPath =
+    "${config.home.homeDirectory}/Library/Mobile Documents/iCloud~md~obsidian/Documents/My Vault";
 in
 {
   home.username = userName;
@@ -41,7 +47,10 @@ in
   };
 
   # uv installs user-scoped CLI entry points, including graphify, here.
-  home.sessionPath = [ "${homeDirectory}/.local/bin" ];
+  home.sessionPath = [
+    "${homeDirectory}/.local/bin"
+    "${homeDirectory}/.no-mistakes/bin"
+  ];
 
   programs.git = {
     enable = true;
@@ -81,6 +90,9 @@ in
     };
   };
 
+  # Identical on every machine. hostProfile is only ever used to fill in
+  # safe-maintenance's --profile value below - it's the real account name,
+  # not a configuration difference.
   programs.zsh = {
     enable = true;
     autosuggestion.enable = true;
@@ -94,15 +106,14 @@ in
       m = "git switch main";
       # Matches Kun's alias: explicitly bypasses Claude Code permission prompts.
       cc = "claude --dangerously-skip-permissions";
-      # --profile nix layers ~/.codex/nix.config.toml (nix-managed) on top of
-      # the base ~/.codex/config.toml, which stays live/unmanaged since it's
-      # mostly generated per-project trust and plugin state. A bare `codex`
-      # invocation still falls back to the base file's own copies of these
-      # same values, kept in sync by hand.
-      co = "codex --profile nix";
+      # One script for both hosts: rebuild.sh detects the account and picks
+      # the right flake attr, so this alias never needs a host override.
+      rebuild = "~/github/dotfiles/rebuild.sh";
       # Same persistent profile as chrome-devtools-axi's default, but with a
       # visible window so a running automation can be watched/debugged live.
       axi-watch = "CHROME_DEVTOOLS_AXI_HEADED=1 chrome-devtools-axi";
+      storage-report = "bash ~/github/dotfiles/scripts/storage-report.sh";
+      safe-maintenance = "~/github/dotfiles/scripts/safe-maintenance.sh --profile ${hostProfile}";
     };
     initContent = ''
       bindkey '^f' autosuggest-accept
@@ -114,28 +125,26 @@ in
   # the declarations below restore the authored configuration on every rebuild.
   home.activation.reconcileBabyMenuConfig = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
     ${pkgs.bash}/bin/bash "${dotfilesDir}/scripts/reconcile-baby-menu-config.sh" \
-      "${dotfilesDir}/files/.baby-menu" "${homeDirectory}/.baby-menu"
+      "${dotfilesDir}/home/.baby-menu" "${homeDirectory}/.baby-menu"
   '';
 
-  # Shared authored config is symlinked from the repo on both hosts.
+  # Identical authored config symlinked from the repo on every machine.
   # App state, credentials, and sessions remain local and unmanaged.
   home.file = {
     # Share only crew dispatch policy; other FirstMate config stays host-local.
-    "github/firstmate/config/crew-dispatch.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.firstmate/crew-dispatch.json";
-    ".baby-menu/extensions".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.baby-menu/extensions";
-    ".baby-menu/agents.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.baby-menu/agents.json";
-    ".baby-menu/preferences.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.baby-menu/preferences.json";
-    ".config/wezterm".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/wezterm";
-    ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/nvim";
-    ".config/herdr".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/herdr";
-    ".claude/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.claude/settings.json";
-    ".codex/nix.config.toml".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.codex/nix.config.toml";
-    # grok's config.toml is small and entirely preferences - unlike Codex's,
-    # its live session/trust/marketplace-cache state lives in separate files
-    # under ~/.grok/, so this can be a direct full symlink.
-    ".grok/config.toml".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.grok/config.toml";
-    ".claude/CLAUDE.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
-    ".codex/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/AGENTS.md";
+    "github/firstmate/config/crew-dispatch.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/crew-dispatch.json";
+    ".baby-menu/extensions".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.baby-menu/extensions";
+    ".baby-menu/agents.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.baby-menu/agents.json";
+    ".baby-menu/preferences.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.baby-menu/preferences.json";
+    ".config/wezterm".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.config/wezterm";
+    ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.config/nvim";
+    ".config/herdr".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.config/herdr";
+    ".claude/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.claude/settings.json";
+    # grok's config.toml is small and entirely preferences, with live
+    # session/trust/marketplace-cache state in separate files under ~/.grok/,
+    # so this can be a direct full symlink.
+    ".grok/config.toml".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.grok/config.toml";
+    ".claude/CLAUDE.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/AGENTS.md";
 
     # GPG uses the Homebrew macOS Pinentry dialog. Keep this config declarative,
     # while leaving ~/.gnupg keys, sockets, and trust data unmanaged.
@@ -147,16 +156,29 @@ in
 
     # Pi (kunchenguid-aligned): only authored config/theme/extensions.
     # Runtime (auth, sessions, ~/.pi/agent/npm|git) stays unmanaged.
-    ".pi/agent/themes".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.pi/agent/themes";
-    ".pi/agent/extensions".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.pi/agent/extensions";
-    ".pi/agent/models.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.pi/agent/models.json";
-    ".pi/agent/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.pi/agent/settings.json";
+    ".pi/agent/themes".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.pi/agent/themes";
+    ".pi/agent/extensions".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.pi/agent/extensions";
+    ".pi/agent/models.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.pi/agent/models.json";
+    ".pi/agent/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.pi/agent/settings.json";
+
+    "github/vault".source = config.lib.file.mkOutOfStoreSymlink vaultPath;
   };
 
-  imports = [ ./agent-tools ];
+  # Required agent/developer CLIs (npm globals, uv tool apps, pinned external
+  # release archives): declared in nix/agent-tools.manifest.lock.json,
+  # reconciled by this script on every rebuild. One manifest, every machine.
+  home.activation.installAgentTools = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    export PATH="/opt/homebrew/bin:$PATH"
+    reconcileScript="${dotfilesDir}/scripts/agent-tools/reconcile.sh"
+    if [ ! -x "$reconcileScript" ]; then
+      echo "installAgentTools: reconcile script missing at $reconcileScript" >&2
+      exit 1
+    fi
+    AGENT_TOOLS_MANIFEST="${./agent-tools.manifest.lock.json}" "$reconcileScript"
+  '';
 
-  agentTools = {
-    enable = true;
-    inherit hostProfile;
-  };
+  home.activation.updatePiPackages = lib.hm.dag.entryAfter [ "installAgentTools" ] ''
+    export PATH="/opt/homebrew/bin:$PATH"
+    pi update --extensions
+  '';
 }

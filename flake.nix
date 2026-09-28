@@ -15,15 +15,19 @@
 
   outputs = { nixpkgs, nix-darwin, home-manager, ... }:
   let
-    mkDarwin = { hostProfile, hostModule, userModule, userName, homeDirectory }:
+    lib = nixpkgs.lib;
+    # One configuration.nix and one home.nix for every machine - the handful
+    # of things that actually differ (sleep, cleanup, casks, aliases) branch
+    # on hostProfile inside those two files instead of separate host modules.
+    mkDarwin = { hostProfile, userName, homeDirectory, includeExtras ? false }:
       nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
         specialArgs = {
           inherit hostProfile userName homeDirectory;
         };
         modules = [
-          ./nix/shared/host.nix
-          hostModule
+          ./nix/configuration.nix
+        ] ++ lib.optional includeExtras ./nix/camilo-extra.nix ++ [
           home-manager.darwinModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
@@ -32,29 +36,30 @@
             home-manager.extraSpecialArgs = {
               inherit hostProfile userName homeDirectory;
             };
-            home-manager.users = {
-              ${userName} = {
-                imports = [ ./nix/shared/user.nix userModule ];
-              };
-            };
+            home-manager.users.${userName}.imports = [ ./nix/home.nix ];
           }
         ];
       };
-  in {
-    darwinConfigurations.camilo = mkDarwin {
+    camilo = {
       hostProfile = "camilo";
-      hostModule = ./nix/camilo/host.nix;
-      userModule = ./nix/camilo/user.nix;
       userName = "camiloslaptop";
       homeDirectory = "/Users/camiloslaptop";
     };
-    darwinConfigurations.camilo-remote = mkDarwin {
+    camiloRemote = {
       hostProfile = "camilo-remote";
-      hostModule = ./nix/camilo-remote/host.nix;
-      userModule = ./nix/camilo-remote/user.nix;
       # Match the existing macOS account; activation cannot create its primary user.
       userName = "camilo_mini";
       homeDirectory = "/Users/camilo_mini";
     };
+  in {
+    # Plain targets: the shared dev baseline only, never the personal extras
+    # in camilo-extra.nix. Run via ./rebuild.sh on either machine.
+    darwinConfigurations.camilo = mkDarwin camilo;
+    darwinConfigurations.camilo-remote = mkDarwin camiloRemote;
+
+    # "Total" targets: the same host, plus camilo-extra.nix. Run via
+    # ./rebuild-total.sh, typically only ever needed on the laptop.
+    darwinConfigurations.camilo-total = mkDarwin (camilo // { includeExtras = true; });
+    darwinConfigurations.camilo-remote-total = mkDarwin (camiloRemote // { includeExtras = true; });
   };
 }

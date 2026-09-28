@@ -1,34 +1,28 @@
 #!/usr/bin/env bash
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+
+# One script for both machines: pick the flake attr from the macOS account
+# running it, so `./rebuild.sh` behaves correctly on either host with no
+# flags. REBUILD_ACCOUNT is overridable so tests can simulate either account
+# without depending on the real one running the test. REBUILD_SUFFIX lets
+# rebuild-total.sh reuse this exact script to target the "-total" flake
+# attrs (base config + nix/camilo-extra.nix) instead of duplicating it.
+: "${REBUILD_ACCOUNT:=$(id -un)}"
+: "${REBUILD_SUFFIX:=}"
+case "$REBUILD_ACCOUNT" in
+  camiloslaptop) FLAKE_ATTR="camilo$REBUILD_SUFFIX" ;;
+  camilo_mini) FLAKE_ATTR="camilo-remote$REBUILD_SUFFIX" ;;
+  *)
+    printf 'rebuild.sh: unrecognized account "%s" - add it to the case statement in this script.\n' "$REBUILD_ACCOUNT" >&2
+    exit 1
+    ;;
+esac
+
+# Absolute path: sudo does not inherit interactive PATH.
 : "${DARWIN_REBUILD_BIN:=/run/current-system/sw/bin/darwin-rebuild}"
-if [ -x "$DARWIN_REBUILD_BIN" ]; then
-  # Absolute path: sudo does not inherit interactive PATH.
-  exec sudo "$DARWIN_REBUILD_BIN" switch --flake "$DIR#camilo"
+if [ ! -x "$DARWIN_REBUILD_BIN" ]; then
+  printf 'rebuild.sh: darwin-rebuild not found at %s - run setup/mac.sh first to bootstrap this machine.\n' "$DARWIN_REBUILD_BIN" >&2
+  exit 1
 fi
-
-# Nix may be installed without being available in this shell yet.
-if ! command -v nix >/dev/null 2>&1; then
-  : "${NIX_DAEMON_PROFILE:=/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh}"
-  if [ -f "$NIX_DAEMON_PROFILE" ]; then
-    set +u
-    # shellcheck disable=SC1090
-    . "$NIX_DAEMON_PROFILE"
-    set -u
-  fi
-fi
-
-NIX_BIN=$(command -v nix || true)
-if [ -z "$NIX_BIN" ]; then
-  # Fresh Macs have no Nix yet. Previously this stopped with instructions to
-  # run setup manually, making repeated rebuild attempts fail the same way.
-  # Delegate to setup so one command installs prerequisites and activates the
-  # correct host; exec avoids activating a second time after setup succeeds.
-  printf 'Nix is unavailable; running first-time setup for camilo.\n' >&2
-  export DARWIN_FLAKE_ATTR=camilo
-  exec /bin/bash "$DIR/setup/mac.sh"
-fi
-# Resolve even a relative PATH entry before passing the executable to sudo.
-NIX_BIN="$(cd "$(dirname "$NIX_BIN")" && pwd -P)/$(basename "$NIX_BIN")"
-exec sudo "$NIX_BIN" --extra-experimental-features "nix-command flakes" \
-  run nix-darwin/master#darwin-rebuild -- switch --flake "$DIR#camilo"
+exec sudo "$DARWIN_REBUILD_BIN" switch --flake "$DIR#$FLAKE_ATTR"

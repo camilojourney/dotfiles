@@ -32,10 +32,10 @@ fail() {
 
 mkdir -p "$FIXTURE/scripts" "$FIXTURE/upstream/kunchenguid/snapshot/wezterm" \
   "$FIXTURE/upstream/kunchenguid/repository/home/.config/wezterm" \
-  "$FIXTURE/files/.config/wezterm" "$UPSTREAM_SOURCE/home/.config/wezterm" "$STUB_BIN"
+  "$FIXTURE/home/.config/wezterm" "$UPSTREAM_SOURCE/home/.config/wezterm" "$STUB_BIN"
 cp "$REPO_ROOT/scripts/check-upstream-configs.sh" "$FIXTURE/scripts/"
 printf 'resolved upstream config\n' >"$UPSTREAM_SOURCE/home/.config/wezterm/wezterm.lua"
-printf 'local config\n' >"$FIXTURE/files/.config/wezterm/wezterm.lua"
+printf 'local config\n' >"$FIXTURE/home/.config/wezterm/wezterm.lua"
 printf 'old snapshot config\n' >"$FIXTURE/upstream/kunchenguid/snapshot/wezterm/wezterm.lua"
 printf 'old mirror config\n' >"$FIXTURE/upstream/kunchenguid/repository/home/.config/wezterm/wezterm.lua"
 printf 'obsolete mirror file\n' >"$FIXTURE/upstream/kunchenguid/repository/obsolete"

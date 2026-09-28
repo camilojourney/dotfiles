@@ -11,7 +11,7 @@
 set -euo pipefail
 
 TOOL=${1:?usage: install-external.sh <tool-name> [manifest-path]}
-MANIFEST=${2:-"$(cd "$(dirname "$0")/../.." && pwd)/nix/shared/agent-tools/manifest.lock.json"}
+MANIFEST=${2:-"$(cd "$(dirname "$0")/../.." && pwd)/nix/agent-tools.manifest.lock.json"}
 
 die() {
   printf 'install-external: %s\n' "$*" >&2

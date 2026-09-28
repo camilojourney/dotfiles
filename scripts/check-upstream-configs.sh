@@ -18,8 +18,8 @@ UPSTREAM_PARENT=$(dirname "$UPSTREAM_ROOT")
 DECISIONS="$UPSTREAM_ROOT/decisions.json"
 SNAP="$UPSTREAM_ROOT/snapshot"
 MIRROR="$UPSTREAM_ROOT/repository"
-OURS="$REPO_ROOT/files/.config"
-PI_OURS="$REPO_ROOT/files/.pi/agent"
+OURS="$REPO_ROOT/home/.config"
+PI_OURS="$REPO_ROOT/home/.pi/agent"
 UPSTREAM_REPO="${UPSTREAM_REPO:-kunchenguid/dotfiles}"
 UPSTREAM_REF="${UPSTREAM_REF:-main}"
 STAGE_DIR=""
@@ -151,9 +151,9 @@ import_missing_authored_configs() {
     done < <(find "$MIRROR/home/.pi/agent" -type f -print0)
   fi
 
-  if [ ! -e "$REPO_ROOT/files/.claude/settings.json" ] && [ -f "$MIRROR/home/.claude/settings.json" ]; then
-    mkdir -p "$REPO_ROOT/files/.claude"
-    cp -p "$MIRROR/home/.claude/settings.json" "$REPO_ROOT/files/.claude/settings.json"
+  if [ ! -e "$REPO_ROOT/home/.claude/settings.json" ] && [ -f "$MIRROR/home/.claude/settings.json" ]; then
+    mkdir -p "$REPO_ROOT/home/.claude"
+    cp -p "$MIRROR/home/.claude/settings.json" "$REPO_ROOT/home/.claude/settings.json"
     echo "Imported missing upstream Claude config: home/.claude/settings.json"
   fi
 }
@@ -274,7 +274,7 @@ for rel, meta in sorted(tracked.items()):
         note = "could not fetch"
     elif not ours.exists():
         status = "MISSING_OURS"
-        note = "not in files/.config"
+        note = "not in home/.config"
         up = sha(snap)
         if apply and policy == "track":
             ours.parent.mkdir(parents=True, exist_ok=True)
@@ -349,5 +349,5 @@ else:
     actionable = sum(1 for s in statuses if s in ("UPSTREAM_UPDATE", "MISSING_OURS", "CONFLICT"))
     print(f"Check complete. {actionable} file(s) need attention.")
     print("Safe auto-adopt for clean track files: bash scripts/check-upstream-configs.sh --apply")
-    print("Review diffs: diff -u files/.config/<path> upstream/kunchenguid/snapshot/<path>")
+    print("Review diffs: diff -u home/.config/<path> upstream/kunchenguid/snapshot/<path>")
 PY

@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
-# reconcile.sh - idempotently install/reconcile declared agent tool inventory
+# reconcile.sh - idempotently install/reconcile the declared agent tool inventory
 #
-# Usage: reconcile.sh <host-profile>
-#   host-profile: camilo | camilo-remote
+# Usage: reconcile.sh
 #
-# Called from Home Manager activation on rebuild. Reads nix/shared/agent-tools/manifest.lock.json.
+# One inventory, every machine. Called from Home Manager activation on
+# rebuild. Reads nix/agent-tools.manifest.lock.json.
 set -euo pipefail
 
-HOST_PROFILE=${1:?usage: reconcile.sh <camilo|camilo-remote>}
 REPO_ROOT=${AGENT_TOOLS_REPO_ROOT:-"$(cd "$(dirname "$0")/../.." && pwd)"}
-MANIFEST="${AGENT_TOOLS_MANIFEST:-$REPO_ROOT/nix/shared/agent-tools/manifest.lock.json}"
+MANIFEST="${AGENT_TOOLS_MANIFEST:-$REPO_ROOT/nix/agent-tools.manifest.lock.json}"
 BREW_BIN=${AGENT_TOOLS_BREW_BIN:-/opt/homebrew/bin}
 
 export PATH="${BREW_BIN}:${HOME}/.local/bin:${HOME}/.no-mistakes/bin:${PATH:-}"
@@ -29,45 +28,40 @@ require_cmd() {
 
 install_npm_globals() {
   require_cmd npm
-  local specs name version
+  local specs
   while IFS= read -r specs; do
     [ -n "$specs" ] || continue
     info "npm: reconciling ${specs}"
     npm install -g --ignore-scripts "$specs"
-  done < <(jq -r --arg profile "$HOST_PROFILE" '(.profiles[$profile].npm // []) as $allowed | .npm[] | select(.name as $name | $allowed | index($name)) | "\(.name)@\(.version)"' "$MANIFEST")
+  done < <(jq -r '.npm[] | "\(.)@latest"' "$MANIFEST")
 }
 
-pipx_list_json() {
-  if [ -n "${AGENT_TOOLS_STUB_PIPX_LIST:-}" ] && [ -f "${AGENT_TOOLS_STUB_PIPX_LIST}" ]; then
-    cat "${AGENT_TOOLS_STUB_PIPX_LIST}"
+uv_tool_list() {
+  if [ -n "${AGENT_TOOLS_STUB_UV_LIST:-}" ] && [ -f "${AGENT_TOOLS_STUB_UV_LIST}" ]; then
+    cat "${AGENT_TOOLS_STUB_UV_LIST}"
     return 0
   fi
-  pipx list --json
+  uv tool list
 }
 
-pipx_installed_version() {
+uv_tool_installed_version() {
   local name=$1
-  pipx_list_json | jq -r --arg n "$name" '.venvs[$n].metadata.main_package.package_version // empty'
+  uv_tool_list | awk -v n="$name" '$1 == n { sub(/^v/, "", $2); print $2; exit }'
 }
 
-install_pipx_packages() {
-  require_cmd pipx
-  local filter='.pipx.shared[]'
-  if [ "$HOST_PROFILE" = camilo ]; then
-    filter='.pipx.shared[], .pipx.camilo[]?'
-  fi
-
+install_uv_tools() {
+  require_cmd uv
   local name version current
   while IFS=$'\t' read -r name version; do
     [ -n "$name" ] || continue
-    current=$(pipx_installed_version "$name" || true)
+    current=$(uv_tool_installed_version "$name" || true)
     if [ "$current" = "$version" ]; then
-      info "pipx: ${name}==${version} already installed"
+      info "uv: ${name}==${version} already installed"
       continue
     fi
-    info "pipx: reconciling ${name}==${version}"
-    pipx install --force "${name}==${version}" || die "pipx install failed for ${name}==${version}"
-  done < <(jq -r "$filter | [.name, .version] | @tsv" "$MANIFEST")
+    info "uv: reconciling ${name}==${version}"
+    uv tool install --force "${name}==${version}" || die "uv tool install failed for ${name}==${version}"
+  done < <(jq -r '.uv[] | [.name, .version] | @tsv' "$MANIFEST")
 }
 
 install_external_tools() {
@@ -76,7 +70,7 @@ install_external_tools() {
     [ -n "$tool" ] || continue
     info "external: reconciling ${tool}"
     "$REPO_ROOT/scripts/agent-tools/install-external.sh" "$tool" "$MANIFEST"
-  done < <(jq -r --arg profile "$HOST_PROFILE" '.profiles[$profile].external[]?' "$MANIFEST")
+  done < <(jq -r '.external | keys[]' "$MANIFEST")
 }
 
 self_update_external_tools() {
@@ -101,10 +95,10 @@ self_update_external_tools() {
       continue
     fi
     die "self-update failed for ${tool} (exit ${rc})"
-  done < <(jq -r --arg profile "$HOST_PROFILE" '
-    .profiles[$profile].external[]? as $tool
-    | select((.external[$tool].selfUpdateCommand // []) | length > 0)
-    | [$tool, (.external[$tool].selfUpdateFailure // "error")] | @tsv
+  done < <(jq -r '
+    .external | to_entries[]
+    | select((.value.selfUpdateCommand // []) | length > 0)
+    | [.key, (.value.selfUpdateFailure // "error")] | @tsv
   ' "$MANIFEST")
 }
 
@@ -115,7 +109,7 @@ run_setup_hooks() {
     require_cmd "$tool"
     info "setup hooks: ${tool}"
     "$tool" setup hooks
-  done < <(jq -r --arg profile "$HOST_PROFILE" '.setupHooks.npm[] | select((.profiles // ["camilo", "camilo-remote"]) | index($profile)) | .name' "$MANIFEST")
+  done < <(jq -r '.setupHooks.npm[]' "$MANIFEST")
 
   if jq -e '.setupHooks.graphify' "$MANIFEST" >/dev/null; then
     require_cmd graphify
@@ -140,30 +134,16 @@ verify_bins() {
     fi
   done < <(jq -r '.verify.bins[]' "$MANIFEST")
 
-  while IFS= read -r bin; do
-    [ -n "$bin" ] || continue
-    if command -v "$bin" >/dev/null 2>&1; then
-      info "verify: ok ${bin} (host ${HOST_PROFILE})"
-    else
-      printf 'agent-tools: verify: MISSING %s (host %s)\n' "$bin" "$HOST_PROFILE" >&2
-      missing=1
-    fi
-  done < <(jq -r --arg h "$HOST_PROFILE" '.verify.hostBins[$h][]? // empty' "$MANIFEST")
-
   [ "$missing" -eq 0 ] || die "verification failed: one or more required binaries missing"
 }
 
 main() {
   require_cmd jq
   [ -f "$MANIFEST" ] || die "manifest not found: $MANIFEST"
-  case "$HOST_PROFILE" in
-    camilo | camilo-remote) ;;
-    *) die "unknown host profile: $HOST_PROFILE" ;;
-  esac
 
-  info "reconciling inventory for host profile ${HOST_PROFILE}"
+  info "reconciling agent tool inventory"
   install_npm_globals
-  install_pipx_packages
+  install_uv_tools
   install_external_tools
   self_update_external_tools
   run_setup_hooks

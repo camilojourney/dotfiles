@@ -19,7 +19,7 @@ This folder is a **backup / source of truth in git**, not a live WezTerm-style s
 ## Refresh the backup from this Mac
 
 ```bash
-plutil -convert xml1 -o files/.config/dato/com.sindresorhus.Dato.plist \
+plutil -convert xml1 -o home/.config/dato/com.sindresorhus.Dato.plist \
   "$HOME/Library/Containers/com.sindresorhus.Dato/Data/Library/Preferences/com.sindresorhus.Dato.plist"
 ```
 

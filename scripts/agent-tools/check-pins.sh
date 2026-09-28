@@ -6,23 +6,23 @@
 set -euo pipefail
 
 REPO_ROOT=${AGENT_TOOLS_REPO_ROOT:-"$(cd "$(dirname "$0")/../.." && pwd)"}
-MANIFEST=${AGENT_TOOLS_MANIFEST:-$REPO_ROOT/nix/shared/agent-tools/manifest.lock.json}
+MANIFEST=${AGENT_TOOLS_MANIFEST:-$REPO_ROOT/nix/agent-tools.manifest.lock.json}
 
 command -v jq >/dev/null || { echo "check-pins: required command not found: jq" >&2; exit 1; }
 command -v npm >/dev/null || { echo "check-pins: required command not found: npm" >&2; exit 1; }
 command -v curl >/dev/null || { echo "check-pins: required command not found: curl" >&2; exit 1; }
 
 printf '%-42s %-12s %s\n' package pinned latest
-while IFS=$'\t' read -r name pinned; do
+while IFS= read -r name; do
   latest=$(npm view "$name" version 2>/dev/null || latest="unavailable")
-  printf '%-42s %-12s %s\n' "$name" "$pinned" "$latest"
-done < <(jq -r '.npm[] | [.name, .version] | @tsv' "$MANIFEST")
+  printf '%-42s %-12s %s\n' "$name" "latest" "$latest"
+done < <(jq -r '.npm[]' "$MANIFEST")
 
 printf '\n%-42s %-12s %s\n' package pinned latest
 while IFS=$'\t' read -r name pinned; do
   latest=$(python3 -m pip index versions "$name" 2>/dev/null | awk 'NR==1 {sub(/^.*\(/, ""); sub(/\).*$/, ""); print; exit}' || true)
   printf '%-42s %-12s %s\n' "$name" "$pinned" "${latest:-unavailable}"
-done < <(jq -r '.pipx.shared[]?, .pipx.camilo[]? | [.name, .version] | @tsv' "$MANIFEST")
+done < <(jq -r '.uv[] | [.name, .version] | @tsv' "$MANIFEST")
 
 printf '\n%-42s %-12s %s\n' release pinned latest
 while IFS=$'\t' read -r name repo pinned; do
