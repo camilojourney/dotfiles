@@ -8,7 +8,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 MANIFEST="$REPO_ROOT/nix/agent-tools.manifest.lock.json"
 BREW_BIN=${AGENT_TOOLS_BREW_BIN:-/opt/homebrew/bin}
 
-export PATH="${BREW_BIN}:${HOME}/.local/bin:${HOME}/.no-mistakes/bin:${PATH:-}"
+export PATH="${BREW_BIN}:${HOME}/.local/bin:${HOME}/.no-mistakes/bin:${PATH:-}:/usr/bin:/bin"
 
 die() {
   printf 'audit-agent-tools: %s\n' "$*" >&2

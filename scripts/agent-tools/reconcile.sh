@@ -11,7 +11,10 @@ REPO_ROOT=${AGENT_TOOLS_REPO_ROOT:-"$(cd "$(dirname "$0")/../.." && pwd)"}
 MANIFEST="${AGENT_TOOLS_MANIFEST:-$REPO_ROOT/nix/agent-tools.manifest.lock.json}"
 BREW_BIN=${AGENT_TOOLS_BREW_BIN:-/opt/homebrew/bin}
 
-export PATH="${BREW_BIN}:${HOME}/.local/bin:${HOME}/.no-mistakes/bin:${PATH:-}"
+# Home Manager activation hands this script a minimal PATH that can omit
+# /usr/bin - guarantee it so POSIX tools like awk and curl are always found,
+# regardless of what the caller's environment already had.
+export PATH="${BREW_BIN}:${HOME}/.local/bin:${HOME}/.no-mistakes/bin:${PATH:-}:/usr/bin:/bin"
 
 die() {
   printf 'agent-tools: %s\n' "$*" >&2
