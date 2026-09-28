@@ -6,12 +6,15 @@ Run all tests with:
 bash tests/mac_setup_test.sh
 bash tests/rebuild_remote_test.sh
 bash tests/agent_tools_test.sh
+bash tests/baby_menu_config_test.sh
 bash tests/pi_settings_test.sh
 ```
 
 `agent_tools_test.sh` exercises the agent-tool reconciliation and audit scripts with stubbed `npm`, `pipx`, external installers, and Homebrew.
-It proves fresh activation installs the declared inventory, repeat activation is idempotent, Pi packages and Treehouse update after tool installation, setup hooks run, host-specific pipx packages stay scoped, missing package managers fail clearly, and shared Homebrew formulas are recognized for both host profiles.
+It proves fresh activation installs the declared inventory, repeat activation does not downgrade self-updating tools, npm tools follow their latest channel, external updaters run safely, setup hooks run, host-specific pipx packages stay scoped, missing package managers fail clearly, and shared Homebrew formulas are recognized for both host profiles.
 It never touches the real network or host package state.
+
+`baby_menu_config_test.sh` proves a rebuild preserves conflicting starter configuration, restores the three authored Baby Menu links, leaves runtime state untouched, and remains idempotent.
 
 `pi_settings_test.sh` is a regression test for the declarative Pi settings and model overrides.
 It ensures the package list retains only the intended Cursor provider, keeps GPT-6 Sol with high thinking as the default, removes the fixed llama.cpp URL, and limits custom model metadata to DeepSeek's 500,000-token context overrides.

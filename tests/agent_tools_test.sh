@@ -141,11 +141,14 @@ esac
 exit 0
 STUB
 
-  for tool in gh-axi lavish-axi chrome-devtools-axi tasks-axi graphify tmux; do
+  for tool in gh-axi lavish-axi chrome-devtools-axi tasks-axi graphify tmux no-mistakes treehouse; do
     cat >"$sandbox/stubs/$tool" <<EOF
 #!/usr/bin/env bash
 LOG="\${AGENT_TOOLS_HOOK_LOG:?}"
 echo "$tool \$*" >>"\$LOG"
+if [ "$tool" = no-mistakes ] && [ -e "\$HOME/fail-no-mistakes-update" ]; then
+  exit 42
+fi
 exit 0
 EOF
   done
@@ -196,6 +199,9 @@ test_fresh_install_shared() {
   out=$(cat "$log/stdout.log" "$log/stderr.log" "$log/npm.log" "$log/pipx.log" "$log/hooks.log")
 
   assert_contains "$out" "npm: reconciling @earendil-works/pi-coding-agent@latest" "fresh remote installs pi"
+  assert_contains "$out" "npm: reconciling tasks-axi@latest" "fresh remote updates tasks-axi from latest"
+  assert_contains "$out" "no-mistakes update --yes" "fresh remote self-updates no-mistakes"
+  assert_contains "$out" "treehouse update" "fresh remote self-updates Treehouse"
   assert_contains "$out" "pipx: reconciling graphifyy==0.9.69" "fresh remote installs graphifyy"
   assert_not_contains "$out" "mlx-lm" "remote skips local MLX tools"
   assert_contains "$out" "gh-axi setup hooks" "setup hooks run"
@@ -226,6 +232,8 @@ test_idempotent_repeat() {
   fi
   out2=$(cat "$log/second/stdout.log" "$log/second/stderr.log" 2>/dev/null || true)
   assert_contains "$out2" "graphifyy==0.9.69 already installed" "repeat skips unchanged pipx"
+  assert_contains "$out2" "preserving self-updating no-mistakes" "repeat does not downgrade no-mistakes"
+  assert_contains "$out2" "preserving self-updating treehouse" "repeat does not downgrade Treehouse"
 
   rm -rf "$sandbox"
   pass "repeat activation is idempotent for unchanged pipx"
@@ -272,26 +280,35 @@ test_missing_npm_fails() {
 }
 
 test_manifest_json_valid() {
-  jq -e '.npm and .pipx and .external and .setupHooks' \
-    "$REPO_ROOT/nix/shared/agent-tools/manifest.lock.json" >/dev/null
-  pass "manifest.lock.json parses and has required sections"
+  jq -e '
+    .npm and .pipx and .external and .setupHooks
+    and ([.npm[].version] | all(. == "latest"))
+    and (.external["no-mistakes"].version == "latest")
+    and (.external["no-mistakes"].bootstrapVersion == "1.79.0")
+    and (.external["no-mistakes"].selfUpdateCommand == ["update", "--yes"])
+    and (.external["no-mistakes"].selfUpdateFailure == "defer")
+    and (.external.treehouse.version == "latest")
+    and (.external.treehouse.bootstrapVersion == "3.1.0")
+    and (.external.treehouse.selfUpdateCommand == ["update"])
+  ' "$REPO_ROOT/nix/shared/agent-tools/manifest.lock.json" >/dev/null
+  pass "manifest.lock.json selects latest npm tools and declared external self-updaters"
 }
 
-test_self_updates_after_tool_install() {
-  local module source
-  module="$REPO_ROOT/nix/shared/agent-tools/default.nix"
-  source=$(<"$module")
-  assert_contains "$source" 'home.activation.updatePiPackages' \
-    "Home Manager declares Pi package reconciliation"
-  assert_contains "$source" 'home.activation.updateTreehouse' \
-    "Home Manager declares Treehouse self-update"
-  assert_contains "$source" 'entryAfter [ "installAgentTools" ]' \
-    "self-updates run only after tools are installed"
-  assert_contains "$source" 'pi update --extensions' \
-    "every activation updates configured Pi packages"
-  assert_contains "$source" 'treehouse update' \
-    "every activation updates Treehouse"
-  pass "Home Manager updates Pi packages and Treehouse after installing agent tools"
+test_deferred_no_mistakes_update_does_not_block_rebuild() {
+  local sandbox log out rc=0
+  sandbox=$(setup_sandbox)
+  log="$sandbox/log/deferred-update"
+  touch "$sandbox/home/fail-no-mistakes-update"
+
+  run_reconcile camilo "$log" "$sandbox" || rc=$?
+  [ "$rc" -eq 0 ] || fail "deferred no-mistakes update blocked reconciliation (rc=$rc)"
+  out=$(cat "$log/stdout.log" "$log/stderr.log" "$log/hooks.log" 2>/dev/null || true)
+  assert_contains "$out" "deferred no-mistakes self-update after exit 42" \
+    "active-run-style no-mistakes refusal is surfaced as deferred"
+  assert_contains "$out" "treehouse update" "other self-updaters still run after a deferred update"
+
+  rm -rf "$sandbox"
+  pass "a refused no-mistakes self-update is retried on a later rebuild"
 }
 
 test_audit_recognizes_shared_uv_for_both_hosts() {
@@ -323,7 +340,7 @@ test_idempotent_repeat
 test_host_scoped_pipx
 test_missing_npm_fails
 test_manifest_json_valid
-test_self_updates_after_tool_install
+test_deferred_no_mistakes_update_does_not_block_rebuild
 test_audit_recognizes_shared_uv_for_both_hosts
 
 if [ "$FAILURES" -gt 0 ]; then

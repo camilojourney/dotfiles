@@ -74,9 +74,38 @@ install_external_tools() {
   local tool
   while IFS= read -r tool; do
     [ -n "$tool" ] || continue
-  info "external: reconciling ${tool}"
+    info "external: reconciling ${tool}"
     "$REPO_ROOT/scripts/agent-tools/install-external.sh" "$tool" "$MANIFEST"
   done < <(jq -r --arg profile "$HOST_PROFILE" '.profiles[$profile].external[]?' "$MANIFEST")
+}
+
+self_update_external_tools() {
+  local tool failure arg rc
+  local -a args
+  while IFS=$'\t' read -r tool failure; do
+    [ -n "$tool" ] || continue
+    require_cmd "$tool"
+    args=()
+    while IFS= read -r arg; do
+      args+=("$arg")
+    done < <(jq -r --arg tool "$tool" '.external[$tool].selfUpdateCommand[]' "$MANIFEST")
+    [ "${#args[@]}" -gt 0 ] || die "self-update command is empty for ${tool}"
+    info "external: self-updating ${tool}"
+    rc=0
+    "$tool" "${args[@]}" || rc=$?
+    if [ "$rc" -eq 0 ]; then
+      continue
+    fi
+    if [ "$failure" = defer ]; then
+      printf 'agent-tools: external: deferred %s self-update after exit %s; the next rebuild will retry\n' "$tool" "$rc" >&2
+      continue
+    fi
+    die "self-update failed for ${tool} (exit ${rc})"
+  done < <(jq -r --arg profile "$HOST_PROFILE" '
+    .profiles[$profile].external[]? as $tool
+    | select((.external[$tool].selfUpdateCommand // []) | length > 0)
+    | [$tool, (.external[$tool].selfUpdateFailure // "error")] | @tsv
+  ' "$MANIFEST")
 }
 
 run_setup_hooks() {
@@ -136,6 +165,7 @@ main() {
   install_npm_globals
   install_pipx_packages
   install_external_tools
+  self_update_external_tools
   run_setup_hooks
   verify_bins
   info "reconcile complete"
