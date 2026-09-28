@@ -106,12 +106,21 @@ self_update_external_tools() {
 }
 
 run_setup_hooks() {
-  local tool
+  local tool rc
   while IFS= read -r tool; do
     [ -n "$tool" ] || continue
     require_cmd "$tool"
     info "setup hooks: ${tool}"
-    "$tool" setup hooks
+    # A tool's own hook install can fail transiently (e.g. it reads a config
+    # symlink that a prior activation step hasn't relinked yet). Don't let
+    # one tool's hook failure abort the whole rebuild - that would also block
+    # the later activation step that would fix a stale symlink in the first
+    # place. Warn and retry next rebuild instead.
+    rc=0
+    "$tool" setup hooks || rc=$?
+    if [ "$rc" -ne 0 ]; then
+      printf 'agent-tools: setup hooks: %s failed (exit %s); will retry next rebuild\n' "$tool" "$rc" >&2
+    fi
   done < <(jq -r '.setupHooks.npm[]' "$MANIFEST")
 
   if jq -e '.setupHooks.graphify' "$MANIFEST" >/dev/null; then

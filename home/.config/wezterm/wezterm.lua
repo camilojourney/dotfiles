@@ -20,9 +20,6 @@ config.font = wezterm.font("Hack Nerd Font")
 -- shell (start of line).
 -- Ctrl+Shift+Up/Down reverts to WezTerm's default: moving between panes.
 config.keys = {
-  -- Fast scroll in copy mode: Shift+[ jumps a page up, Shift+] jumps a page down.
-  { key = '{', mods = 'SHIFT', action = wezterm.action.CopyMode('PageUp') },
-  { key = '}', mods = 'SHIFT', action = wezterm.action.CopyMode('PageDown') },
   { key = 'A', mods = 'CTRL|SHIFT', action = wezterm.action.Multiple{
     wezterm.action.ActivateCopyMode,
     wezterm.action.CopyMode('MoveToScrollbackTop'),
@@ -32,6 +29,15 @@ config.keys = {
   { key = 'd', mods = 'CMD', action = wezterm.action.SplitHorizontal { domain = 'CurrentPaneDomain' } },
   { key = 'd', mods = 'CMD|SHIFT', action = wezterm.action.SplitVertical { domain = 'CurrentPaneDomain' } },
 }
+
+-- Fast scroll in copy mode: Shift+[ jumps a page up, Shift+] jumps a page down.
+-- These live in the copy_mode key table (not config.keys) so Shift+[/] only
+-- do this while copy mode is already active - previously they were global and
+-- swallowed every literal {/[/]/} keystroke typed in the normal shell too.
+local copy_mode = wezterm.gui.default_key_tables().copy_mode
+table.insert(copy_mode, { key = '{', mods = 'SHIFT', action = wezterm.action.CopyMode('PageUp') })
+table.insert(copy_mode, { key = '}', mods = 'SHIFT', action = wezterm.action.CopyMode('PageDown') })
+config.key_tables = { copy_mode = copy_mode }
 config.font_size = 15.0
 config.window_background_opacity = 0.8
 config.macos_window_background_blur = 50

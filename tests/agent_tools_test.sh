@@ -146,6 +146,9 @@ echo "$tool \$*" >>"\$LOG"
 if [ "$tool" = no-mistakes ] && [ -e "\$HOME/fail-no-mistakes-update" ]; then
   exit 42
 fi
+if [ "\$1" = setup ] && [ "\$2" = hooks ] && [ -e "\$HOME/fail-$tool-setup-hooks" ]; then
+  exit 1
+fi
 exit 0
 EOF
   done
@@ -298,6 +301,26 @@ test_deferred_no_mistakes_update_does_not_block_rebuild() {
   pass "a refused no-mistakes self-update is retried on a later rebuild"
 }
 
+test_failed_setup_hook_does_not_block_rebuild() {
+  local sandbox log out rc=0
+  sandbox=$(setup_sandbox)
+  log="$sandbox/log/failed-hook"
+  touch "$sandbox/home/fail-chrome-devtools-axi-setup-hooks"
+
+  run_reconcile "$log" "$sandbox" || rc=$?
+  [ "$rc" -eq 0 ] || fail "a single failing setup hook blocked the whole rebuild (rc=$rc)"
+  out=$(cat "$log/stdout.log" "$log/stderr.log" "$log/hooks.log" 2>/dev/null || true)
+  assert_contains "$out" "setup hooks: chrome-devtools-axi failed" \
+    "a failing setup hook is surfaced as a warning, not a fatal error"
+  assert_contains "$out" "tasks-axi setup hooks" \
+    "later setup hooks still run after an earlier one fails"
+  assert_contains "$out" "reconcile complete" \
+    "reconciliation still completes (and can relink stale symlinks) after a setup hook fails"
+
+  rm -rf "$sandbox"
+  pass "a failing setup hook is deferred and does not abort the rebuild"
+}
+
 test_audit_runs_with_no_arguments() {
   local sandbox out unmanaged
   sandbox=$(setup_sandbox)
@@ -325,6 +348,7 @@ test_idempotent_repeat
 test_missing_npm_fails
 test_manifest_json_valid
 test_deferred_no_mistakes_update_does_not_block_rebuild
+test_failed_setup_hook_does_not_block_rebuild
 test_audit_runs_with_no_arguments
 
 if [ "$FAILURES" -gt 0 ]; then
