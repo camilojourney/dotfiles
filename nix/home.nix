@@ -161,8 +161,14 @@ in
   # Required agent/developer CLIs (npm globals, uv tool apps, pinned external
   # release archives): declared in nix/agent-tools.manifest.lock.json,
   # reconciled by this script on every rebuild. One manifest, every machine.
-  home.activation.installAgentTools = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    export PATH="/opt/homebrew/bin:$PATH"
+  #
+  # Runs after linkGeneration (not just writeBoundary): some tools' setup
+  # hooks read ~/.claude/settings.json, which linkGeneration is what actually
+  # creates/updates. Running before it meant those hooks read a symlink still
+  # pointing at the previous generation - stale or, after a source file
+  # rename, outright missing.
+  home.activation.installAgentTools = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+    export PATH="/opt/homebrew/bin:/usr/bin:/bin:$PATH"
     reconcileScript="${dotfilesDir}/scripts/agent-tools/reconcile.sh"
     if [ ! -x "$reconcileScript" ]; then
       echo "installAgentTools: reconcile script missing at $reconcileScript" >&2
@@ -172,7 +178,7 @@ in
   '';
 
   home.activation.updatePiPackages = lib.hm.dag.entryAfter [ "installAgentTools" ] ''
-    export PATH="/opt/homebrew/bin:$PATH"
+    export PATH="/opt/homebrew/bin:/usr/bin:/bin:$PATH"
     pi update --extensions
   '';
 }
