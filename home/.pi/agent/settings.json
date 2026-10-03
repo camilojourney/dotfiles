@@ -26,7 +26,7 @@
   },
   "lastChangelogVersion": "0.99.1",
   "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-6-sol",
+  "defaultModel": "gpt-6.1-sol",
   "defaultThinkingLevel": "high",
   "defaultProjectTrust": "always",
   "tuiMode": "regular",
