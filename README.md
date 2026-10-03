@@ -31,7 +31,7 @@ Everything here works fine on a single machine - you just won't need all of it:
 - `nix/home.nix` - user-level config (shell, packages, prompt, symlinks), identical on both machines
 - `nix/camilo-extra.nix` - personal apps (Camo, OBS, WhatsApp, Dato, Notion, Obsidian, and more) - never installed by plain `rebuild.sh`, only by `rebuild-total.sh`
 - `home/.config/` - live WezTerm / Neovim / herdr configs (symlinked by Home Manager)
-- `home/.claude/` and `home/.firstmate/` - authored agent and crew-dispatch configuration (symlinked by Home Manager)
+- `home/.claude/` and `home/.firstmate/` - authored agent, crew-dispatch, and secondmate harness configuration (symlinked by Home Manager)
 - `home/.pi/agent/` - authored Pi models, settings, themes, and extensions (symlinked by Home Manager)
 - `upstream/kunchenguid/` - complete upstream mirror, selected config snapshot, and adoption decisions for [Kun's configs](https://github.com/kunchenguid/dotfiles)
 - `scripts/check-upstream-configs.sh` - check / safely adopt his updates

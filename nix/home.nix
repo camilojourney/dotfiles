@@ -17,6 +17,7 @@ in
 
   # Lean set (aligned with kunchenguid): only CLIs used constantly + Hack Nerd Font.
   home.packages = with pkgs; [
+    go
     ripgrep
     fd
     fzf
@@ -101,12 +102,17 @@ in
       push = "git push";
       pull = "git pull";
       m = "git switch main";
+      st = "git status";
+      d = "git diff";
+      dc = "git diff --staged";
+      lg = "git log --oneline --graph";
       # Matches Kun's alias: explicitly bypasses Claude Code permission prompts.
       cc = "claude --dangerously-skip-permissions";
       # One script for both hosts: rebuild.sh detects the account and picks
       # the right flake attr, so this alias never needs a host override.
       rebuild = "~/github/dotfiles/rebuild.sh";
       # Same persistent profile as chrome-devtools-axi's default, but with a
+      rebuild-total = "~/github/dotfiles/rebuild-total.sh";
       # visible window so a running automation can be watched/debugged live.
       axi-watch = "CHROME_DEVTOOLS_AXI_HEADED=1 chrome-devtools-axi";
       storage-report = "bash ~/github/dotfiles/scripts/storage-report.sh";
@@ -129,8 +135,9 @@ in
   # Identical authored config symlinked from the repo on every machine.
   # App state, credentials, and sessions remain local and unmanaged.
   home.file = {
-    # Share only crew dispatch policy; other FirstMate config stays host-local.
+    # Share authored dispatch policy only. Credentials and sessions stay host-local.
     "github/firstmate/config/crew-dispatch.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/crew-dispatch.json";
+    "github/firstmate/config/secondmate-harness".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/secondmate-harness";
     ".baby-menu/extensions".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.baby-menu/extensions";
     ".baby-menu/agents.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.baby-menu/agents.json";
     ".baby-menu/preferences.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.baby-menu/preferences.json";
@@ -185,5 +192,13 @@ in
   home.activation.updatePiPackages = lib.hm.dag.entryAfter [ "installAgentTools" ] ''
     export PATH="$PATH:/opt/homebrew/bin:/usr/bin:/bin"
     pi update --extensions
+  '';
+
+  home.activation.installFabric = lib.hm.dag.entryAfter [ "updatePiPackages" ] ''
+    export PATH="$PATH:/opt/homebrew/bin:/usr/bin:/bin"
+    # Install fabric via Homebrew if not already installed
+    if ! command -v fabric &> /dev/null; then
+      /opt/homebrew/bin/brew install danielmiessler/fabric/fabric 2>/dev/null || true
+    fi
   '';
 }

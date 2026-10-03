@@ -9,6 +9,7 @@
   "npm": [
     "@earendil-works/pi-coding-agent",
     "acpx",
+    "backpass",
     "chrome-devtools-axi",
     "gh-axi",
     "gnhf",
@@ -61,7 +62,7 @@
   },
   "verify": {
     "bins": [
-      "pi", "acpx", "gh-axi", "pnpm", "quota-axi", "tasks-axi", "graphify", "tmux",
+      "pi", "acpx", "backpass", "gh-axi", "pnpm", "quota-axi", "tasks-axi", "graphify", "tmux",
       "chrome-devtools-axi", "gnhf", "lavish-axi", "no-mistakes", "treehouse",
       "mlx_lm", "optiq"
     ]

@@ -24,7 +24,7 @@
     "high": 4096,
     "xhigh": 8192
   },
-  "lastChangelogVersion": "0.87.1",
+  "lastChangelogVersion": "0.99.1",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-6-sol",
   "defaultThinkingLevel": "high",
