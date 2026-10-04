@@ -18,9 +18,9 @@
       "when": "Review, audit, or second opinion on a diff/PR/design another crewmate produced. Not for writing the fix.",
       "use": [
         { "harness": "claude", "model": "opus", "effort": "high" },
-        { "harness": "pi", "model": "openai-codex/gpt-6-astra", "effort": "high", "provider": "codex" }
+        { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "high", "provider": "codex" }
       ],
-      "why": "Review with a different model family than the author. Codex-authored work goes to Opus, Claude-authored work goes to Astra."
+      "why": "Review with a different model family than the author. Codex-authored work goes to Opus, Claude-authored work goes to Sol."
     },
     {
       "when": "Recon-only, file gathering, narrow lookup, or a trivial mechanical edit (rename, format sweep, typo fix).",
@@ -55,11 +55,11 @@
     {
       "when": "Hardest available work: root-cause investigation, architecture, ambiguous design, or already failed on the workhorse tier.",
       "use": [
-        { "harness": "pi", "model": "openai-codex/gpt-6-astra", "effort": "xhigh", "provider": "codex" },
+        { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "xhigh", "provider": "codex" },
         { "harness": "claude", "model": "opus", "effort": "xhigh" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "xhigh", "provider": "grok" }
       ],
-      "why": "Frontier tier, reserve for this only. Never Claude fable: it stalls unattended on a usage-credit prompt."
+      "why": "Frontier tier, reserve for this only. GPT-6.1 Sol replaces GPT-6 Astra: it matches or beats Astra on the Artificial Analysis Coding Agent Index at a fraction of the cost per task. Never Claude fable: it stalls unattended on a usage-credit prompt."
     }
   ],
   "default": [
