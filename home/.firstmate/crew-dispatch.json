@@ -10,6 +10,11 @@
       "why": "Only the Grok TUI has live web access."
     },
     {
+      "when": "Task needs generated images or visual assets: icons, illustrations, logos, mockup art, placeholder imagery.",
+      "use": { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "medium", "provider": "agy" },
+      "why": "Only Pi with the pi-antigravity extension has a generate_image tool (saves under .pi/generated-images/). Spends the agy quota."
+    },
+    {
       "when": "Review, audit, or second opinion on a diff/PR/design another crewmate produced. Not for writing the fix.",
       "use": [
         { "harness": "claude", "model": "opus", "effort": "high" },
