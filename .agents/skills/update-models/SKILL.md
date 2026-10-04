@@ -1,6 +1,6 @@
 ---
 name: update-models
-description: Use when changing which AI models the agent fleet uses - bumping to a new model release, swapping a harness, adding a provider (e.g. Antigravity via Pi), retiring a model, or re-checking which models are the best value per tier against current coding benchmarks. Covers online benchmark research (score vs cost per task), every file that names a model (Firstmate crew dispatch, secondmate harness, Pi default, no-mistakes, and the test that pins Pi's default), how to verify each name exists before saving, and how to confirm Jev can actually pick it.
+description: Use when changing which AI models the agent fleet uses - bumping to a new model release, swapping a harness, adding a provider (e.g. Antigravity via Pi), retiring a model, or re-checking which models are the best value per tier against current coding benchmarks and each provider's quota. Covers online benchmark research (score vs cost per task), reading quota-axi to see which providers Jev will actually pick, every file that names a model (Firstmate crew dispatch, secondmate harness, Pi default, no-mistakes, and the test that pins Pi's default), how to verify each name exists before saving, and how to confirm Jev can actually pick it.
 ---
 
 # update-models
@@ -8,6 +8,8 @@ description: Use when changing which AI models the agent fleet uses - bumping to
 Model names live in several files. A bump that misses one leaves part of the fleet on the old model, and a name that does not exist makes launches fail or get blocked. Always update and verify all of them together.
 
 This skill lives in `.agents/skills/`; `.claude/skills` is a symlink to that directory, so edit it there only.
+
+Nothing runs this skill automatically. The daily auto-update (`docs/AUTO-UPDATE.md`) upgrades tool versions on both machines - Pi, quota-axi, Pi extensions, Homebrew - but never changes which models the fleet uses, and it does not refresh Pi's model catalog (`pi update --models`). New releases reach the fleet only when someone runs this skill. Its only interaction with model choice is delivery: a change pushed to `main` reaches the remote box at its next 05:00 run.
 
 ## Where models are set
 
@@ -40,9 +42,21 @@ Pick each tier's models from current measurements, not from version numbers or a
    - Scores are measured in each vendor's own agent (Codex CLI, Claude Code, Antigravity SDK), while the fleet often runs the model through Pi; treat them as directional, and do not swap tiers over a gap smaller than about 2 points.
 4. Show the user the relevant rows (score, $/task, minutes) and the proposed tier changes before editing, unless they already named the change.
 
+## Reading quota
+
+Within a dispatch tier, Jev does not pick by benchmark score: code picks the eligible candidate with the highest `spendPriority` from `quota-axi` (higher means more quota that would go unused before its reset). So read quota before proposing tier changes, not only after.
+
+Run `quota-axi` (add `--json` for every field) and, per provider in `crew-dispatch.json`, note:
+
+- `effectivePercentRemaining` and `spendPriority`. A provider with high remaining and a positive `spendPriority` will win every tier it is in until its quota drops; that is where spare quota gets spent, so place it only in tiers where its score is close to the best (see the spare-quota rule above).
+- `runway: exhausted_now` or 0% remaining: its candidates are ineligible until the reset shown, so a tier whose other candidates are also exhausted escalates instead of dispatching. Do not count an exhausted provider as a tier's only fallback.
+- `spendPriority` of `unknown`, `auth_required`, or a row under `attention[]`: the provider is unranked and will not win a tier while a ranked candidate exists. Fix auth first, or tell the user it is a manual pick only. Antigravity shows `unknown` on a quota-axi build without the windowSeconds fix (see `docs/AUTO-UPDATE.md`, temporary quota-axi section).
+
+A single read can fail transiently (a provider row comes back `unknown` and is fine a minute later). Re-run before concluding a provider is unmeasured.
+
 ## Steps
 
-1. Confirm the target models with the user, backed by the benchmark research above. Do not assume a model exists because a version number looks like the next step: check news or vendor docs when the name is new.
+1. Confirm the target models with the user, backed by the benchmark research and quota reading above. Do not assume a model exists because a version number looks like the next step: check news or vendor docs when the name is new.
 2. Verify every model name against its harness's own catalog:
    - Pi: `pi --list-models <search>`. If the catalog looks stale, `pi update --models`; if that refresh fails, say so and fall back to vendor docs rather than guessing.
    - Claude: use aliases `opus`, `sonnet`, `haiku`; they always resolve to the latest (`claude --help`, `--model`). Never auto-select `fable` in dispatch: it stalls unattended on a usage-credit prompt.
@@ -61,5 +75,5 @@ Pick each tier's models from current measurements, not from version numbers or a
    ```
    No output means valid; any `CREW_DISPATCH:` line is an error to fix.
 6. Confirm Jev can pick the new profile. Jev (`bin/fm-dispatch-resolve.sh`, on when `TYPESAFE_API_KEY` is in `~/github/firstmate/.env`) picks the rule; then code picks the eligible candidate with the highest `spendPriority` from `quota-axi`. Write a small brief whose `## Captain's intent` and `## Firstmate spec` fit the tier you changed, then run `bin/fm-dispatch-resolve.sh <brief> --project <name>` from `~/github/firstmate`. Each new candidate must show `-> eligible`. `eligible, unranked` means its provider has no `spendPriority` or no quota row the resolver binds to its model, so Jev will never choose it while a ranked candidate exists; tell the user it is only a manual or fallback pick until `quota-axi` or the resolver ranks that provider. Antigravity needs quota-axi windows with `windowSeconds` and the resolver's `gemini`/`claude_gpt` scope binding to rank.
-7. Check `quota-axi` once: a provider shown as `auth_required` or `unknown` is never ranked above one with known quota, so its models will rarely be picked until auth is fixed.
-8. Report what changed per file, and remind the user that secondmate homes only receive `crew-dispatch.json` when their sync is not skipped, and remote (Mac mini) homes refuse it while it is a symlink.
+7. Re-read `quota-axi` and repeat the step 6 check for each tier you changed: confirm which candidate wins today and why (its `spendPriority`), so the user knows where the work will actually go.
+8. Report what changed per file, the benchmark rows behind each change, and the quota picture from step 7, and remind the user that secondmate homes only receive `crew-dispatch.json` when their sync is not skipped, and remote (Mac mini) homes refuse it while it is a symlink.
