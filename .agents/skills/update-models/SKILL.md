@@ -36,7 +36,7 @@ Build the list of runnable models from each harness's own catalog. Each catalog 
 | Harness | Catalog command | Notes |
 |---|---|---|
 | Pi | `pi --list-models <search>` | Refresh first with `pi update --models`; the daily rebuild does not. A provider extension's list can lag the vendor: Pi still listed `antigravity/claude-sonnet-4-6` after Antigravity retired it, and did not list Sonnet/Opus 5.5. Pi accepts an unlisted `provider/id` with a "Using custom model id" warning, so check the vendor's own catalog for those. |
-| Antigravity (`agy`) | `agy models` | Authoritative for Antigravity. It also serves Claude/GPT models (e.g. `claude-opus-5-5-high`), but their pool is too small to dispatch to (see placement rules). Ids carry the effort suffix; effort caps at `high`. |
+| Antigravity (`agy`) | `agy models` | Authoritative for Antigravity. It also serves Claude/GPT models (e.g. `claude-opus-5-5-high`) from a separate, smaller pool (see placement rules). Ids carry the effort suffix; effort caps at `high`. |
 | Claude Code | `opus`, `sonnet`, `haiku` aliases | Always the latest. Never dispatch `fable`: it stalls unattended on a usage-credit prompt. |
 | Codex models via Pi | `pi --list-models openai-codex` | |
 | Grok TUI | `grok models` | |
@@ -60,7 +60,7 @@ Coding tiers (recon, everyday, large, hardest, review, default) are placed from 
    - Quality first: a tier's candidates are the highest-scoring runnable models. Cost per task breaks ties only within about 2 points.
    - Effort is a cost knob: when a higher effort does not score higher (Sol medium 61.4, high 60.1, max 60.1), use the cheaper one, except in the hardest tier (Sol xhigh 62.9 at $1.04).
    - A newer, cheaper model that matches an older one replaces it (Sol 6.1 xhigh 62.9 at $1.04 replaced Astra max 61.6 at $7.47).
-   - The same model through a different harness is the same quality, but check the extra pool is worth having before adding it. Antigravity's `claude_gpt` pool (Claude/GPT models via agy) is small: on 2026-10-04 five short tool-call tests used about 7% of its 5-hour window, while a dozen Gemini calls left the `gemini` pool at 99%. So on Antigravity use only the Google models; Claude runs through Claude Code.
+   - The same model through a different harness is the same quality, but size its quota pool before choosing tiers. Antigravity's two pools are separate: `gemini` is large (a dozen calls left it at 99%), `claude_gpt` is small (five short tool calls used about 7% of its 5-hour window on 2026-10-04). So Gemini serves the high-volume rules (recon, web research, images), and agy Claude is limited to one short, infrequent job - review - where it adds capacity without draining. Jev's `spendPriority` also drops a fast-draining pool out of the ranking on its own.
    - A model below a tier's best (more than about 2 points) goes in only as a deliberate, user-approved trade, because spare quota will make it win that tier. Record the trade in the rule's `why`.
    - A harness that caps effort below a tier's effort (agy caps at `high`) stays out of that tier (the hardest tier runs `xhigh`).
    - Scores come from each vendor's own agent (Codex CLI, Claude Code, Antigravity SDK); the fleet often runs the model through Pi or agy. Treat them as directional.

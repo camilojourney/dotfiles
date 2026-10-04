@@ -19,9 +19,10 @@
       "when": "Review, audit, or second opinion on a diff/PR/design another crewmate produced. Not for writing the fix.",
       "use": [
         { "harness": "claude", "model": "opus", "effort": "high" },
-        { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "high", "provider": "codex" }
+        { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "high", "provider": "codex" },
+        { "harness": "agy", "model": "claude-opus-5-5-high", "effort": "high" }
       ],
-      "why": "Review with a different model family than the author. Codex-authored work goes to Opus, Claude-authored work goes to Sol."
+      "why": "Review with a different model family than the author. Codex-authored work goes to Opus, Claude-authored work goes to Sol. agy Opus 5.5 high is the same model as claude:opus on Antigravity's separate claude_gpt quota; that pool is small (about 1.4% of its 5-hour window per short call), so it is used only here, where tasks are short and infrequent, and its spendPriority drops it out once it drains."
     },
     {
       "when": "Recon-only, file gathering, narrow lookup, or a trivial mechanical edit (rename, format sweep, typo fix).",
