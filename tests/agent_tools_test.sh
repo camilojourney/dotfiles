@@ -118,6 +118,7 @@ case "${1:-}" in
         pkg="${*: -1}"
         name="${pkg%%==*}"
         version="${pkg##*==}"
+        [ "$pkg" != "$name" ] || version=latest
         list="${AGENT_TOOLS_STUB_UV_LIST:?}"
         grep -v "^${name} " "$list" >"${list}.tmp" 2>/dev/null || true
         mv "${list}.tmp" "$list"
@@ -202,12 +203,14 @@ test_fresh_install() {
   assert_contains "$out" "npm: reconciling tasks-axi@latest" "fresh install updates tasks-axi from latest"
   assert_contains "$out" "no-mistakes update --yes" "fresh install self-updates no-mistakes"
   assert_contains "$out" "treehouse update" "fresh install self-updates Treehouse"
-  assert_contains "$out" "uv: reconciling graphifyy==0.9.69" "fresh install installs graphifyy"
+  assert_contains "$out" "uv: reconciling graphifyy at latest" "fresh install installs graphifyy at latest"
+  assert_contains "$out" "uv tool install --force --upgrade graphifyy" "graphifyy installs unpinned with upgrade"
   assert_contains "$out" "uv: reconciling mlx-lm==0.31.3" "fresh install installs mlx-lm on every machine"
   assert_contains "$out" "uv: reconciling mlx-optiq==0.5.13" "fresh install installs mlx-optiq on every machine"
   assert_contains "$out" "gh-axi setup hooks" "setup hooks run"
   assert_not_contains "$out" "lavish-axi setup hooks" "lavish-axi setup hooks does not run automatically"
   assert_contains "$out" "graphify install --platform pi" "graphify platform hook"
+  assert_contains "$out" "graphify install --platform claude" "graphify installs its Claude Code skill"
   assert_contains "$out" "reconcile complete" "fresh install completes"
 
   rm -rf "$sandbox"
@@ -224,9 +227,6 @@ test_idempotent_repeat() {
     echo "first reconcile failed" >&2; cat "$log/first/stderr.log" >&2 || true
     fail "first reconcile exited $rc"; rm -rf "$sandbox"; return 0
   fi
-  grep -v '^graphifyy ' "$sandbox/uv-tool-list.txt" >"$sandbox/uv-tool-list.tmp" 2>/dev/null || true
-  mv "$sandbox/uv-tool-list.tmp" "$sandbox/uv-tool-list.txt"
-  echo "graphifyy v0.9.69" >>"$sandbox/uv-tool-list.txt"
 
   run_reconcile "$log/second" "$sandbox" || rc=$?
   if [ "$rc" -ne 0 ]; then
@@ -234,7 +234,8 @@ test_idempotent_repeat() {
     fail "second reconcile exited $rc"; rm -rf "$sandbox"; return 0
   fi
   out2=$(cat "$log/second/stdout.log" "$log/second/stderr.log" 2>/dev/null || true)
-  assert_contains "$out2" "graphifyy==0.9.69 already installed" "repeat skips unchanged uv tool"
+  assert_contains "$out2" "mlx-lm==0.31.3 already installed" "repeat skips unchanged pinned uv tool"
+  assert_contains "$out2" "uv: reconciling graphifyy at latest" "repeat upgrades a latest uv tool every time"
   assert_contains "$out2" "preserving self-updating no-mistakes" "repeat does not downgrade no-mistakes"
   assert_contains "$out2" "preserving self-updating treehouse" "repeat does not downgrade Treehouse"
 

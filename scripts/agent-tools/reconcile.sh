@@ -57,6 +57,13 @@ install_uv_tools() {
   local name version current
   while IFS=$'\t' read -r name version; do
     [ -n "$name" ] || continue
+    # "latest" tracks the newest release on every rebuild; --force drops any
+    # earlier ==pin the tool was installed with, which `uv tool upgrade` keeps.
+    if [ "$version" = latest ]; then
+      info "uv: reconciling ${name} at latest"
+      uv tool install --force --upgrade "$name" || die "uv tool install failed for ${name} (latest)"
+      continue
+    fi
     current=$(uv_tool_installed_version "$name" || true)
     if [ "$current" = "$version" ]; then
       info "uv: ${name}==${version} already installed"
