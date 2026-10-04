@@ -138,6 +138,12 @@ in
     # Share authored dispatch policy only. Credentials and sessions stay host-local.
     "github/firstmate/config/crew-dispatch.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/crew-dispatch.json";
     "github/firstmate/config/secondmate-harness".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/secondmate-harness";
+    # force: replaces the pre-existing hand-made config on first activation; its
+    # content was merged into the dotfiles copy.
+    ".no-mistakes/config.yaml" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.no-mistakes/config.yaml";
+      force = true;
+    };
     ".baby-menu/extensions".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.baby-menu/extensions";
     ".baby-menu/agents.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.baby-menu/agents.json";
     ".baby-menu/preferences.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.baby-menu/preferences.json";
@@ -145,7 +151,12 @@ in
     ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.config/nvim";
     ".config/herdr".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.config/herdr";
     ".claude/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.claude/settings.json";
+    # One global instructions file for every agent: edit home/AGENTS.md only.
     ".claude/CLAUDE.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/AGENTS.md";
+    ".pi/agent/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/AGENTS.md";
+    ".codex/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/AGENTS.md";
+    ".config/opencode/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/AGENTS.md";
+    ".gemini/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/AGENTS.md";
 
     # GPG uses the Homebrew macOS Pinentry dialog. Keep this config declarative,
     # while leaving ~/.gnupg keys, sockets, and trust data unmanaged.
