@@ -154,8 +154,6 @@ in
     # One global instructions file for every agent: edit home/AGENTS.md only.
     ".claude/CLAUDE.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/AGENTS.md";
     ".pi/agent/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/AGENTS.md";
-    ".codex/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/AGENTS.md";
-    ".config/opencode/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/AGENTS.md";
     ".gemini/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/AGENTS.md";
 
     # GPG uses the Homebrew macOS Pinentry dialog. Keep this config declarative,
