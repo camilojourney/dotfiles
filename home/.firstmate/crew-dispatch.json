@@ -46,9 +46,10 @@
       "use": [
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "high", "provider": "codex" },
         { "harness": "claude", "model": "opus", "effort": "high" },
+        { "harness": "agy", "model": "claude-opus-5-5-high", "effort": "high" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "high", "provider": "grok" }
       ],
-      "why": "Same Sol model as workhorse tier, more thinking budget. Grok 4.7 here is a quota fallback, not a first pick."
+      "why": "Same Sol model as workhorse tier, more thinking budget. Opus 5.5 via the agy harness is the same model as claude:opus but bills Antigravity's separate claude_gpt quota, so it wins while that quota lasts. Grok 4.7 here is a quota fallback, not a first pick."
     },
     {
       "when": "Hardest available work: root-cause investigation, architecture, ambiguous design, or already failed on the workhorse tier.",
