@@ -15,7 +15,7 @@
     "npm:pi-web-access@0.32.0",
     "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.7",
     "git:github.com/algal/pi-openai-server-compaction#8a3de2f3b0c178fdd6f73f2f94172dfc3943e466",
-    "git:github.com/camilojourney/pi-cursor-provider#v0.1.11"
+    "git:github.com/camilojourney/pi-cursor-provider#73fd2d75c58bfe1757a124e407fbc72f89642826"
   ],
   "thinkingBudgets": {
     "minimal": 512,

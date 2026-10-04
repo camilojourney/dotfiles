@@ -35,7 +35,7 @@ All are symlinked by `nix/home.nix` and shared by both machines; a new model-bea
    - Grok TUI: `grok models`.
    - Antigravity native: `agy models`.
    A name missing from a catalog that reached the account is a blocker, not a warning.
-3. Smoke-test each new Pi model once: `pi --model <provider/id> --thinking low -p "Reply with exactly OK" </dev/null`. Without `</dev/null` it waits on stdin forever. Some providers (Antigravity) print the reply and then do not exit; the reply is the pass signal, kill the process after it.
+3. Smoke-test each new Pi model once: `pi --model <provider/id> --thinking low -p "Reply with exactly OK" </dev/null`. Without `</dev/null` it waits on stdin forever. It must exit within seconds of printing the reply; if it hangs, a Pi extension is holding the process open (test each with `pi --no-extensions -e <path> ...`), and every no-mistakes step will stall until its timeout.
 4. Edit all files above consistently. Keep each dispatch tier's reasoning class: frontier models stay in the hardest tier, cheap models in the recon tier. Edit JSON with `jq` or exact full-line matches; a substring replace on an indented line also hits the more-indented copy of it.
 5. Validate `crew-dispatch.json` with Firstmate's own checker, `crew_dispatch_validate` in `~/github/firstmate/bin/fm-bootstrap.sh`. Do not run the whole `fm-bootstrap.sh` to do it: it ignores `--help` and runs a full bootstrap. Extract the function and run it against a scratch copy of the config:
    ```sh

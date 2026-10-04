@@ -7,7 +7,7 @@ set -euo pipefail
 REPO_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." &>/dev/null && pwd)
 SETTINGS="$REPO_ROOT/home/.pi/agent/settings.json"
 MODELS="$REPO_ROOT/home/.pi/agent/models.json"
-CURSOR_PROVIDER="git:github.com/camilojourney/pi-cursor-provider#v0.1.11"
+CURSOR_PROVIDER="git:github.com/camilojourney/pi-cursor-provider#73fd2d75c58bfe1757a124e407fbc72f89642826"
 
 jq -e --arg cursor_provider "$CURSOR_PROVIDER" '
   .packages as $packages
