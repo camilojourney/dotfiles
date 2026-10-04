@@ -2,12 +2,13 @@
   "rules": [
     {
       "when": "Task needs live web facts: breaking news, current events, today's market/product state.",
-      "use": {
-        "harness": "grok",
-        "model": "grok-4.7",
-        "effort": "medium"
-      },
-      "why": "Only the Grok TUI has live web access."
+      "use": [
+        { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "medium", "provider": "agy" },
+        { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "medium", "provider": "codex" },
+        { "harness": "claude", "model": "sonnet", "effort": "medium" },
+        { "harness": "grok", "model": "grok-4.7", "effort": "medium" }
+      ],
+      "why": "Every candidate can search the live web: Pi through the pi-web-access extension (Codex-backed OpenAI search for openai-codex models, Exa otherwise), Claude Code through its built-in web search, and the Grok TUI natively (plus live X data). Research is not coding, so Gemini 3.8 Flash's coding score does not hold it back here and it spends the spare agy quota. Quota picks among them."
     },
     {
       "when": "Task needs generated images or visual assets: icons, illustrations, logos, mockup art, placeholder imagery.",
