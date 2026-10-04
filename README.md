@@ -138,6 +138,12 @@ same script, plus that one extra module:
 ./rebuild-total.sh
 ```
 
+The laptop also runs that rebuild on its own every day at 05:00 (or at the
+next wake), after fast-forwarding `~/github/firstmate`: the
+`org.dotfiles.auto-rebuild` launchd daemon in `nix/camilo-extra.nix` runs
+[`scripts/auto-rebuild.sh`](scripts/auto-rebuild.sh) as root, logs to
+`/var/log/auto-rebuild.log`, and posts a notification on failure.
+
 ## Testing
 
 Do not run `setup/mac.sh` or `rebuild.sh`/`rebuild-total.sh` against a real machine just to test them - they install Nix, Homebrew, and activate a real system. Run the sandboxed regression tests instead; see [`tests/README.md`](tests/README.md).
