@@ -30,27 +30,25 @@
         { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "low", "provider": "agy" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "low", "provider": "grok" }
       ],
-      "why": "Cheapest tier. Grok 4.7 here is a quota fallback, not a first pick."
+      "why": "Cheapest tier. Gemini 3.8 Flash spends the separate agy quota here, where its lower coding score does not matter. Grok 4.7 here is a quota fallback, not a first pick."
     },
     {
       "when": "Ordinary implementation, bounded bug fix, tests, everyday coding with a clear path.",
       "use": [
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "medium", "provider": "codex" },
         { "harness": "claude", "model": "sonnet", "effort": "medium" },
-        { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "medium", "provider": "agy" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "medium", "provider": "grok" }
       ],
-      "why": "Workhorse tier. Gemini 3.8 Flash (Antigravity via Pi) spends the separate agy quota. Grok 4.7 here is a quota fallback, not a first pick."
+      "why": "Workhorse tier. Gemini 3.8 Flash stays out: it scores about 20 points under Sol on the Coding Agent Index. Grok 4.7 here is a quota fallback, not a first pick."
     },
     {
       "when": "Large/ambiguous multi-file change, risky refactor, work holding many moving parts at once.",
       "use": [
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "high", "provider": "codex" },
         { "harness": "claude", "model": "opus", "effort": "high" },
-        { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "high", "provider": "agy" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "high", "provider": "grok" }
       ],
-      "why": "Same Sol model as workhorse tier, more thinking budget. Gemini 3.8 Flash at high effort spends the separate agy quota and wins while it lasts. Grok 4.7 here is a quota fallback, not a first pick."
+      "why": "Same Sol model as workhorse tier, more thinking budget. Grok 4.7 here is a quota fallback, not a first pick."
     },
     {
       "when": "Hardest available work: root-cause investigation, architecture, ambiguous design, or already failed on the workhorse tier.",
@@ -65,7 +63,6 @@
   "default": [
     { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "medium", "provider": "codex" },
     { "harness": "claude", "model": "sonnet", "effort": "medium" },
-    { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "medium", "provider": "agy" },
     { "harness": "pi", "model": "xai/grok-4.7", "effort": "medium", "provider": "grok" }
   ]
 }
