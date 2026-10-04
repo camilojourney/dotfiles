@@ -20,8 +20,8 @@ in
   # as root, so it needs no sudo password; whatever is pushed to this repo's
   # main is applied unattended. The laptop rebuilds its personal-apps variant (the
   # same as ./rebuild-total.sh), the remote box the plain one (./rebuild.sh).
-  # scripts/auto-rebuild.sh holds the logic and explains why the plist points
-  # at it by path rather than through the Nix store.
+  # docs/AUTO-UPDATE.md explains the design, including why the plist points
+  # at scripts/auto-rebuild.sh by path rather than through the Nix store.
   launchd.daemons.auto-rebuild.serviceConfig = {
     Label = "org.dotfiles.auto-rebuild";
     ProgramArguments = [

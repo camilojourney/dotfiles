@@ -146,6 +146,8 @@ then runs the same rebuild as `./rebuild-total.sh` on the laptop or
 `./rebuild.sh` on the remote box. It logs to `/var/log/auto-rebuild.log` and
 posts a notification on failure. Because it pulls this repo and applies it as
 root, anything pushed to `main` reaches both machines unattended.
+See [`docs/AUTO-UPDATE.md`](docs/AUTO-UPDATE.md) for logs, enabling it, and
+the design notes.
 
 ## Testing
 
