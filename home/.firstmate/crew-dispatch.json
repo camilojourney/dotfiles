@@ -10,10 +10,19 @@
       "why": "Only the Grok TUI has live web access."
     },
     {
+      "when": "Review, audit, or second opinion on a diff/PR/design another crewmate produced. Not for writing the fix.",
+      "use": [
+        { "harness": "claude", "model": "opus", "effort": "high" },
+        { "harness": "pi", "model": "openai-codex/gpt-6-astra", "effort": "high", "provider": "codex" }
+      ],
+      "why": "Review with a different model family than the author. Codex-authored work goes to Opus, Claude-authored work goes to Astra."
+    },
+    {
       "when": "Recon-only, file gathering, narrow lookup, or a trivial mechanical edit (rename, format sweep, typo fix).",
       "use": [
         { "harness": "claude", "model": "haiku", "effort": "low" },
         { "harness": "pi", "model": "openai-codex/gpt-6-luna", "effort": "low", "provider": "codex" },
+        { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "low", "provider": "agy" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "low", "provider": "grok" }
       ],
       "why": "Cheapest tier. Grok 4.7 here is a quota fallback, not a first pick."
@@ -23,9 +32,10 @@
       "use": [
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "medium", "provider": "codex" },
         { "harness": "claude", "model": "sonnet", "effort": "medium" },
+        { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "medium", "provider": "agy" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "medium", "provider": "grok" }
       ],
-      "why": "Workhorse tier. Grok 4.7 here is a quota fallback, not a first pick."
+      "why": "Workhorse tier. Gemini 3.8 Flash (Antigravity via Pi) spends the separate agy quota. Grok 4.7 here is a quota fallback, not a first pick."
     },
     {
       "when": "Large/ambiguous multi-file change, risky refactor, work holding many moving parts at once.",
@@ -39,7 +49,7 @@
     {
       "when": "Hardest available work: root-cause investigation, architecture, ambiguous design, or already failed on the workhorse tier.",
       "use": [
-        { "harness": "pi", "model": "openai-codex/gpt-6.1-astra", "effort": "xhigh", "provider": "codex" },
+        { "harness": "pi", "model": "openai-codex/gpt-6-astra", "effort": "xhigh", "provider": "codex" },
         { "harness": "claude", "model": "opus", "effort": "xhigh" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "xhigh", "provider": "grok" }
       ],
@@ -49,6 +59,7 @@
   "default": [
     { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "medium", "provider": "codex" },
     { "harness": "claude", "model": "sonnet", "effort": "medium" },
+    { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "medium", "provider": "agy" },
     { "harness": "pi", "model": "xai/grok-4.7", "effort": "medium", "provider": "grok" }
   ]
 }
