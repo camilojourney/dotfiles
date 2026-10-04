@@ -1,8 +1,10 @@
 #!/bin/bash
-# Daily unattended update for the laptop, run as root by the
-# org.dotfiles.auto-rebuild launchd daemon (nix/camilo-extra.nix):
-#   1. fast-forward ~/github/firstmate (skips, never forces, on conflict)
-#   2. the same rebuild as ./rebuild-total.sh
+# Daily unattended update, run as root by the org.dotfiles.auto-rebuild
+# launchd daemon (nix/configuration.nix) on both machines:
+#   1. fast-forward ~/github/dotfiles and ~/github/firstmate (each skips,
+#      never forces, when it cannot fast-forward cleanly)
+#   2. the same rebuild as ./rebuild-total.sh (laptop) or ./rebuild.sh (remote)
+# Usage: auto-rebuild.sh <macOS user> <flake attr>
 # Output goes to /var/log/auto-rebuild.log; any failure posts a macOS
 # notification to the logged-in user.
 #
@@ -11,7 +13,8 @@
 # and activation would then reload the daemon and kill the rebuild running it.
 set -uo pipefail
 
-USER_NAME=camiloslaptop
+USER_NAME=${1:?usage: auto-rebuild.sh <macOS user> <flake attr>}
+FLAKE_ATTR=${2:?usage: auto-rebuild.sh <macOS user> <flake attr>}
 USER_HOME=/Users/$USER_NAME
 DOTFILES=$USER_HOME/github/dotfiles
 FIRSTMATE=$USER_HOME/github/firstmate
@@ -28,16 +31,25 @@ notify() {
     -e "display notification \"$1\" with title \"Daily rebuild\"" >/dev/null 2>&1 || true
 }
 
-log "auto-rebuild: start"
+log "auto-rebuild: start ($FLAKE_ATTR)"
 
-if as_user git -C "$FIRSTMATE" pull --ff-only --quiet origin main; then
-  log "firstmate: up to date at $(as_user git -C "$FIRSTMATE" rev-parse --short HEAD)"
-else
-  log "firstmate: pull skipped (diverged or conflicting local edits); left untouched"
-  notify "Firstmate pull skipped - see /var/log/auto-rebuild.log"
-fi
+# A repo that cannot fast-forward (diverged, or local edits that conflict)
+# is left untouched and the rebuild uses what is already checked out.
+update_repo() {  # <name> <path>
+  if [ ! -d "$2/.git" ]; then
+    log "$1: not cloned on this machine; skipped"
+  elif as_user git -C "$2" pull --ff-only --quiet origin main; then
+    log "$1: up to date at $(as_user git -C "$2" rev-parse --short HEAD)"
+  else
+    log "$1: pull skipped (diverged or conflicting local edits); left untouched"
+    notify "$1 pull skipped - see /var/log/auto-rebuild.log"
+  fi
+}
 
-if darwin-rebuild switch --flake "$DOTFILES#camilo-total"; then
+update_repo dotfiles "$DOTFILES"
+update_repo firstmate "$FIRSTMATE"
+
+if darwin-rebuild switch --flake "$DOTFILES#$FLAKE_ATTR"; then
   log "rebuild: ok"
 else
   log "rebuild: FAILED"

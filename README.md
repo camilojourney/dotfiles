@@ -138,11 +138,14 @@ same script, plus that one extra module:
 ./rebuild-total.sh
 ```
 
-The laptop also runs that rebuild on its own every day at 05:00 (or at the
-next wake), after fast-forwarding `~/github/firstmate`: the
-`org.dotfiles.auto-rebuild` launchd daemon in `nix/camilo-extra.nix` runs
-[`scripts/auto-rebuild.sh`](scripts/auto-rebuild.sh) as root, logs to
-`/var/log/auto-rebuild.log`, and posts a notification on failure.
+Both machines also update themselves every day at 05:00 (or at the next
+wake): the `org.dotfiles.auto-rebuild` launchd daemon in
+`nix/configuration.nix` runs [`scripts/auto-rebuild.sh`](scripts/auto-rebuild.sh)
+as root, which fast-forwards `~/github/dotfiles` and `~/github/firstmate`,
+then runs the same rebuild as `./rebuild-total.sh` on the laptop or
+`./rebuild.sh` on the remote box. It logs to `/var/log/auto-rebuild.log` and
+posts a notification on failure. Because it pulls this repo and applies it as
+root, anything pushed to `main` reaches both machines unattended.
 
 ## Testing
 
