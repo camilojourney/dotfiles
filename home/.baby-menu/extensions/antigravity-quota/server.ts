@@ -1,186 +1,111 @@
-import { spawn } from "node:child_process";
+import { execFile } from "node:child_process";
 
-const CAPTURE_TIMEOUT_MS = 40_000;
+const QUOTA_TIMEOUT_MS = 20_000;
 const MAX_OUTPUT_BYTES = 256 * 1024;
+// Baby Menu launches without the login shell PATH, so try known install paths.
+const AGY_BIN_CANDIDATES = [process.env.AGY_BIN, "/opt/homebrew/bin/agy", "/usr/local/bin/agy", "agy"].filter(Boolean) as string[];
 
-type QuotaBucket = {
-  id: "gemini" | "claude-gpt";
-  label: string;
-  percentUsed: number;
+type QuotaWindow = {
+  kind: "5h" | "weekly";
   percentRemaining: number;
-  windowLabel: "weekly";
-  refreshesIn?: string;
+  resetsAt?: string;
 };
 
-type CaptureResult =
-  | { ok: true; output: string }
-  | { ok: false; error: string };
+type QuotaPool = {
+  id: "gemini" | "claude-gpt";
+  label: string;
+  windows: QuotaWindow[];
+};
 
-// Antigravity's /usage screen requires a real terminal. Python's standard PTY
-// module gives the CLI one without introducing a package dependency.
-const PTY_CAPTURE_SCRIPT = String.raw`
-import base64, fcntl, os, pty, select, signal, struct, subprocess, sys, termios, time
+type RawBucket = {
+  window?: string;
+  remaining_fraction?: number;
+  reset_time?: string;
+  disabled?: boolean | null;
+};
 
-master, slave = pty.openpty()
-for fd in (master, slave):
-    fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 50, 220, 0, 0))
+type RawGroup = { name?: string; buckets?: RawBucket[] };
 
-env = os.environ.copy()
-if env.get("TERM", "").lower() in ("", "dumb", "unknown"):
-    env["TERM"] = "xterm-256color"
-
-proc = subprocess.Popen(
-    ["agy"], stdin=slave, stdout=slave, stderr=slave,
-    start_new_session=True, env=env,
-)
-os.close(slave)
-buffer = bytearray()
-sent_usage = False
-trusted = False
-deadline = time.time() + 35
-
-try:
-    while time.time() < deadline:
-        ready, _, _ = select.select([master], [], [], 0.25)
-        if ready:
-            try:
-                chunk = os.read(master, 65536)
-            except OSError:
-                break
-            if not chunk:
-                break
-            buffer.extend(chunk)
-            text = buffer.decode("utf-8", errors="ignore")
-            if not trusted and "Do you trust the contents of this project?" in text:
-                os.write(master, b"\r")
-                trusted = True
-            if not sent_usage and "? for shortcuts" in text:
-                os.write(master, b"/usage\r")
-                sent_usage = True
-            if "Models & Quota" in text and text.count("Weekly Limit") >= 2:
-                time.sleep(1)
-                ready, _, _ = select.select([master], [], [], 0.5)
-                if ready:
-                    try:
-                        buffer.extend(os.read(master, 65536))
-                    except OSError:
-                        pass
-                break
-finally:
-    try:
-        os.killpg(proc.pid, signal.SIGTERM)
-    except Exception:
-        pass
-    try:
-        proc.wait(timeout=2)
-    except Exception:
-        try:
-            os.killpg(proc.pid, signal.SIGKILL)
-        except Exception:
-            pass
-
-sys.stdout.write(base64.b64encode(bytes(buffer)).decode("ascii"))
-`;
-
-function captureUsageScreen(): Promise<CaptureResult> {
-  return new Promise((resolve) => {
-    const child = spawn("python3", ["-c", PTY_CAPTURE_SCRIPT], {
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    const chunks: Buffer[] = [];
-    let byteCount = 0;
-    let settled = false;
-
-    const finish = (result: CaptureResult) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeout);
-      resolve(result);
-    };
-
-    child.stdout.on("data", (chunk: Buffer) => {
-      byteCount += chunk.length;
-      if (byteCount > MAX_OUTPUT_BYTES) {
-        child.kill("SIGKILL");
-        finish({ ok: false, error: "Antigravity quota response was too large" });
-        return;
-      }
-      chunks.push(chunk);
-    });
-    child.once("error", (error: Error & { code?: string }) => {
-      finish({
-        ok: false,
-        error: error.code === "ENOENT" ? "Python is unavailable for the Antigravity terminal" : "Antigravity quota capture could not start",
-      });
-    });
-    child.once("exit", (code) => {
-      if (settled) return;
-      if (code !== 0) {
-        finish({ ok: false, error: "Antigravity quota capture failed" });
-        return;
-      }
-      try {
-        const encoded = Buffer.concat(chunks).toString("utf8").trim();
-        finish({ ok: true, output: Buffer.from(encoded, "base64").toString("utf8") });
-      } catch {
-        finish({ ok: false, error: "Antigravity quota response could not be decoded" });
-      }
-    });
-
-    const timeout = setTimeout(() => {
-      child.kill("SIGKILL");
-      finish({ ok: false, error: "Antigravity quota capture timed out" });
-    }, CAPTURE_TIMEOUT_MS);
+function runQuotaCommand(bin: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    // `agy -p "/quota"` is the CLI's noninteractive, read-only usage command;
+    // it does not start an agent session or spend quota.
+    execFile(
+      bin,
+      ["-p", "/quota", "--output-format", "json"],
+      { timeout: QUOTA_TIMEOUT_MS, maxBuffer: MAX_OUTPUT_BYTES },
+      (error, stdout) => (error ? reject(error) : resolve(stdout)),
+    );
   });
 }
 
-function cleanTerminal(text: string): string {
-  return text
-    .replace(/\x1b\][^\x07]*(?:\x07|\x1b\\)/g, "")
-    .replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "")
-    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "");
+async function readQuota(): Promise<string> {
+  let lastError: unknown;
+  for (const bin of AGY_BIN_CANDIDATES) {
+    try {
+      return await runQuotaCommand(bin);
+    } catch (error) {
+      lastError = error;
+      if ((error as { code?: string }).code !== "ENOENT") break;
+    }
+  }
+  const code = (lastError as { code?: string } | undefined)?.code;
+  throw new Error(code === "ENOENT" ? "Antigravity CLI (agy) is not installed" : "Antigravity quota read failed");
 }
 
-function parseQuotaScreen(raw: string): { plan?: string; buckets: QuotaBucket[] } {
-  const text = cleanTerminal(raw);
-  const planMatch = text.match(/\((Google AI [^)]+)\)/);
-  const groupPattern =
-    /(GEMINI MODELS|CLAUDE AND GPT MODELS)[\s\S]*?Weekly Limit[\s\S]*?(\d+(?:\.\d+)?)%[\s\S]*?Refreshes in ([^\n]+)/g;
-  const buckets: QuotaBucket[] = [];
-  let match: RegExpExecArray | null;
+function poolFor(name: string): Pick<QuotaPool, "id" | "label"> | undefined {
+  const lower = name.toLowerCase();
+  if (lower.includes("gemini")) return { id: "gemini", label: "Gemini models" };
+  if (lower.includes("claude") || lower.includes("gpt")) return { id: "claude-gpt", label: "Claude + GPT models" };
+  return undefined;
+}
 
-  while ((match = groupPattern.exec(text)) !== null) {
-    const percentRemaining = Math.max(0, Math.min(100, Number(match[2])));
-    const gemini = match[1] === "GEMINI MODELS";
-    buckets.push({
-      id: gemini ? "gemini" : "claude-gpt",
-      label: gemini ? "Gemini models" : "Claude + GPT models",
-      percentUsed: 100 - percentRemaining,
-      percentRemaining,
-      windowLabel: "weekly",
-      refreshesIn: match[3].trim(),
-    });
+function parseQuota(stdout: string): QuotaPool[] {
+  const payload = JSON.parse(stdout) as { status?: string; command?: { data?: { groups?: RawGroup[] } } };
+  const pools: QuotaPool[] = [];
+  for (const group of payload.command?.data?.groups ?? []) {
+    const pool = poolFor(group.name ?? "");
+    if (!pool) continue;
+    const windows: QuotaWindow[] = [];
+    for (const bucket of group.buckets ?? []) {
+      if (bucket.disabled || typeof bucket.remaining_fraction !== "number") continue;
+      const kind = bucket.window === "5h" ? "5h" : bucket.window === "weekly" ? "weekly" : undefined;
+      if (!kind) continue;
+      windows.push({
+        kind,
+        percentRemaining: Math.max(0, Math.min(100, bucket.remaining_fraction * 100)),
+        resetsAt: bucket.reset_time,
+      });
+    }
+    if (windows.length > 0) pools.push({ ...pool, windows });
   }
-
-  return { plan: planMatch?.[1], buckets };
+  return pools;
 }
 
 export const actions = {
   getQuota: async () => {
-    const capture = await captureUsageScreen();
-    if (!capture.ok) return capture;
+    let stdout: string;
+    try {
+      stdout = await readQuota();
+    } catch (error) {
+      return { ok: false as const, error: (error as Error).message };
+    }
 
-    const parsed = parseQuotaScreen(capture.output);
-    if (parsed.buckets.length === 0) {
-      return { ok: false as const, error: "Antigravity /usage did not report model quota" };
+    let pools: QuotaPool[];
+    try {
+      pools = parseQuota(stdout);
+    } catch {
+      return { ok: false as const, error: "Antigravity quota response could not be read" };
+    }
+    if (pools.length === 0) {
+      return { ok: false as const, error: "Antigravity reported no model quota (signed out?)" };
     }
 
     return {
       ok: true as const,
       data: {
-        source: "agy /usage" as const,
-        plan: parsed.plan,
-        buckets: parsed.buckets,
+        source: "agy /quota" as const,
+        pools,
         checkedAt: new Date().toISOString(),
       },
     };

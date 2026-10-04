@@ -22,26 +22,27 @@ def fetch_rows():
     payload = "".join(json.loads('"' + c + '"') for c in chunks)
     decoder = json.JSONDecoder()
     rows, seen = [], set()
-    for match in re.finditer(r'"benchmarkRows":', payload):
+    # Rows appear in several chart payloads (benchmarkRows and others), so
+    # decode every agent-result object rather than one named array.
+    for match in re.finditer(r'\{"id":"[0-9a-f]{32}","isDefault"', payload):
         try:
-            arr, _ = decoder.raw_decode(payload[match.end():])
+            row, _ = decoder.raw_decode(payload[match.start():])
         except ValueError:
             continue
-        for row in arr if isinstance(arr, list) else []:
-            if not isinstance(row, dict) or row.get("id") in seen:
-                continue
-            seen.add(row.get("id"))
-            mean = row.get("mean") or {}
-            rows.append({
-                "agent": row["display"]["agent"],
-                "model": row["display"]["model"],
-                "index": row.get("indexScore"),
-                "cost_usd_per_task": mean.get("costUsd"),
-                "minutes_per_task": (mean.get("agentWallTimeSec") or 0) / 60 or None,
-                "unavailable": row.get("isUnavailable", False),
-            })
+        if "agentName" not in row or "display" not in row or row["id"] in seen:
+            continue
+        seen.add(row["id"])
+        mean = row.get("mean") or {}
+        rows.append({
+            "agent": row["display"]["agent"],
+            "model": row["display"]["model"],
+            "index": row.get("indexScore"),
+            "cost_usd_per_task": mean.get("costUsd"),
+            "minutes_per_task": (mean.get("agentWallTimeSec") or 0) / 60 or None,
+            "unavailable": row.get("isUnavailable", False),
+        })
     if not rows:
-        sys.exit("aa-coding-agents: no benchmarkRows found - the page layout changed; read it in a browser instead")
+        sys.exit("aa-coding-agents: no agent result rows found - the page layout changed; read it in a browser instead")
     return sorted(rows, key=lambda r: -(r["index"] or 0))
 
 

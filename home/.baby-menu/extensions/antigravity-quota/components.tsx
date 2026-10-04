@@ -1,5 +1,5 @@
 import { Badge, StatusDot } from "@babymenu/ui";
-import { useAntigravityQuota } from "./store";
+import { limitingWindow, useAntigravityQuota, type AntigravityQuotaPool } from "./store";
 
 function toneFor(percentUsed: number) {
   if (percentUsed >= 90) return "danger" as const;
@@ -30,6 +30,33 @@ function UsageBar({ value }: { value: number }) {
   );
 }
 
+function formatReset(resetsAt?: string): string | undefined {
+  if (!resetsAt) return undefined;
+  const date = new Date(resetsAt);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return `resets ${date.toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })}`;
+}
+
+function PoolRow({ pool }: { pool: AntigravityQuotaPool }) {
+  const tightest = limitingWindow(pool);
+  const windows = [...pool.windows].sort((a, b) => (a.kind === "5h" ? -1 : 1) - (b.kind === "5h" ? -1 : 1));
+  const reset = formatReset(tightest.resetsAt);
+  return (
+    <div>
+      <div className="mb-1 flex justify-between gap-2 text-xxs text-ink-soft">
+        <span className="truncate">
+          {pool.label}
+          <span className="ml-1.5 text-ink-label">
+            {windows.map((window) => `${window.kind === "5h" ? "5h" : "wk"} ${Math.round(window.percentRemaining)}%`).join(" · ")}
+          </span>
+        </span>
+        {reset && <span className="whitespace-nowrap text-ink-label">{reset}</span>}
+      </div>
+      <UsageBar value={100 - tightest.percentRemaining} />
+    </div>
+  );
+}
+
 export function AntigravityQuotaView() {
   const state = useAntigravityQuota();
 
@@ -37,7 +64,7 @@ export function AntigravityQuotaView() {
     return (
       <article className="grid grid-cols-[86px_minmax(0,1fr)_72px] items-center gap-3 py-3">
         <span className="text-xs uppercase tracking-caps text-ink-strong">antigrav</span>
-        <span className="text-sm text-ink-muted">opening model quota...</span>
+        <span className="text-sm text-ink-muted">checking model quota...</span>
       </article>
     );
   }
@@ -51,49 +78,33 @@ export function AntigravityQuotaView() {
     );
   }
 
-  const { data } = state;
-  const primary = data.buckets.find((bucket) => bucket.id === "gemini") ?? data.buckets[0];
-  const secondary = data.buckets.find((bucket) => bucket.id === "claude-gpt");
-  const bestRemaining = data.buckets.length > 0 ? Math.max(...data.buckets.map((bucket) => bucket.percentRemaining)) : null;
-  const bestBucket = data.buckets.find((bucket) => bucket.percentRemaining === bestRemaining) ?? primary;
+  const { pools } = state.data;
+  // The headline is Gemini: it is the pool the crew dispatch spends.
+  const headline = pools.find((pool) => pool.id === "gemini") ?? pools[0];
+  const headlineLeft = headline ? limitingWindow(headline).percentRemaining : null;
 
   return (
     <article className="grid grid-cols-[86px_minmax(0,1fr)_72px] items-center gap-3 py-3">
       <div className="min-w-0">
         <div className="truncate text-xs uppercase tracking-caps text-ink-strong">antigrav</div>
         <div className="mt-1 flex items-center gap-1.5 text-xxs text-ink-label">
-          {data.plan && <Badge tone="neutral">{data.plan}</Badge>}
+          <Badge tone="neutral">agy</Badge>
           <StatusDot tone="live" />
         </div>
       </div>
 
       <div className="flex min-w-0 flex-col gap-1.5">
-        {primary && (
-          <div>
-            <div className="mb-1 flex justify-between gap-2 text-xxs text-ink-soft">
-              <span className="truncate">{primary.label}</span>
-              <span className="whitespace-nowrap text-ink-label">{primary.refreshesIn ? `refreshes in ${primary.refreshesIn}` : "weekly refresh"}</span>
-            </div>
-            <UsageBar value={primary.percentUsed} />
-          </div>
-        )}
-        {secondary && (
-          <div>
-            <div className="mb-1 flex justify-between gap-2 text-xxs text-ink-soft">
-              <span className="truncate">{secondary.label}</span>
-              <span className="whitespace-nowrap text-ink-label">{secondary.refreshesIn ? `refreshes in ${secondary.refreshesIn}` : "weekly refresh"}</span>
-            </div>
-            <UsageBar value={secondary.percentUsed} />
-          </div>
-        )}
+        {pools.map((pool) => (
+          <PoolRow key={pool.id} pool={pool} />
+        ))}
       </div>
 
       <div className="min-w-0 text-right">
-        <strong className={`flex justify-end font-mono text-2xl font-normal leading-none tracking-value ${bestBucket ? remainingClassName(bestBucket.percentUsed) : "text-ink-strong"}`}>
-          {bestRemaining === null ? "--" : Math.round(bestRemaining)}
-          {bestRemaining !== null && <span className="ml-0.5 mt-0.5 text-xs opacity-45">%</span>}
+        <strong className={`flex justify-end font-mono text-2xl font-normal leading-none tracking-value ${headlineLeft === null ? "text-ink-strong" : remainingClassName(100 - headlineLeft)}`}>
+          {headlineLeft === null ? "--" : Math.round(headlineLeft)}
+          {headlineLeft !== null && <span className="ml-0.5 mt-0.5 text-xs opacity-45">%</span>}
         </strong>
-        <span className="mt-1 block text-[9px] uppercase tracking-caps text-ink-label">best left</span>
+        <span className="mt-1 block text-[9px] uppercase tracking-caps text-ink-label">gemini left</span>
       </div>
     </article>
   );

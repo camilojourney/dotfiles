@@ -1,18 +1,27 @@
 import { useSyncExternalStore } from "react";
 
-export type AntigravityQuotaSnapshot = {
-  source: "agy /usage";
-  plan?: string;
-  checkedAt: string;
-  buckets: Array<{
-    id: "gemini" | "claude-gpt";
-    label: string;
-    percentUsed: number;
-    percentRemaining: number;
-    windowLabel: "weekly";
-    refreshesIn?: string;
-  }>;
+export type AntigravityQuotaWindow = {
+  kind: "5h" | "weekly";
+  percentRemaining: number;
+  resetsAt?: string;
 };
+
+export type AntigravityQuotaPool = {
+  id: "gemini" | "claude-gpt";
+  label: string;
+  windows: AntigravityQuotaWindow[];
+};
+
+export type AntigravityQuotaSnapshot = {
+  source: "agy /quota";
+  checkedAt: string;
+  pools: AntigravityQuotaPool[];
+};
+
+// A pool is only as available as its tightest window (5-hour or weekly).
+export function limitingWindow(pool: AntigravityQuotaPool): AntigravityQuotaWindow {
+  return pool.windows.reduce((tightest, window) => (window.percentRemaining < tightest.percentRemaining ? window : tightest));
+}
 
 type Result = { ok: true; data: AntigravityQuotaSnapshot } | { ok: false; error: string };
 type State =
