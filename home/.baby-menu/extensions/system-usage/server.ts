@@ -29,8 +29,23 @@ const GH_BIN_CANDIDATES = [process.env.GH_BIN, "/opt/homebrew/bin/gh", "/usr/loc
 const GIT_BIN_CANDIDATES = [process.env.GIT_BIN, "/opt/homebrew/bin/git", "/usr/bin/git", "git"].filter(Boolean) as string[];
 const SSH_BIN_CANDIDATES = [process.env.SSH_BIN, "/usr/bin/ssh", "/opt/homebrew/bin/ssh", "/usr/local/bin/ssh", "ssh"].filter(Boolean) as string[];
 
+// Daily unattended rebuild (dotfiles scripts/auto-rebuild.sh). Each run logs
+// "<date> <time> auto-rebuild: start (<flake attr>)" and then
+// "<date> <time> rebuild: ok" or "rebuild: FAILED". newsyslog rotates the log
+// uncompressed to .0, so both files are read to survive a fresh rotation.
+const REBUILD_LOGS = ["/var/log/auto-rebuild.log.0", "/var/log/auto-rebuild.log"];
+const REBUILD_PATTERN = "auto-rebuild: start|rebuild: (ok|FAILED)";
+const REBUILD_RUNNING_MAX_MS = 60 * 60_000;
+
+type RebuildStatus = {
+  state: "ok" | "failed" | "running" | "unfinished" | "never" | "unknown";
+  target: string | null;
+  atMs: number | null;
+};
+
 type RemoteSystemSample = {
   status: "online" | "offline";
+  rebuild: RebuildStatus;
   cpuPercent: number | null;
   memoryPercent: number | null;
   storagePercent: number | null;
@@ -731,6 +746,44 @@ async function readGitHubContributions(context: BabyMenuServerContext): Promise<
   return inFlight;
 }
 
+function parseLogTime(date: string, time: string): number | null {
+  const ms = new Date(`${date}T${time}`).getTime();
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function parseRebuildLog(output: string | null): RebuildStatus {
+  if (output === null) return { state: "unknown", target: null, atMs: null };
+  let start: { atMs: number | null; target: string | null } | null = null;
+  let result: { ok: boolean; atMs: number | null } | null = null;
+  for (const line of output.split("\n")) {
+    const match = line.match(/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) (auto-rebuild: start(?: \(([^)]+)\))?|rebuild: (ok|FAILED))/);
+    if (!match) continue;
+    const atMs = parseLogTime(match[1], match[2]);
+    if (match[3].startsWith("auto-rebuild: start")) {
+      start = { atMs, target: match[4] ?? null };
+      result = null;
+    } else {
+      result = { ok: match[5] === "ok", atMs };
+    }
+  }
+  if (!start) return { state: "never", target: null, atMs: null };
+  if (result) return { state: result.ok ? "ok" : "failed", target: start.target, atMs: result.atMs };
+  const running = start.atMs !== null && Date.now() - start.atMs < REBUILD_RUNNING_MAX_MS;
+  return { state: running ? "running" : "unfinished", target: start.target, atMs: start.atMs };
+}
+
+async function readLocalRebuild(): Promise<RebuildStatus> {
+  try {
+    const { stdout } = await execFileAsync("/usr/bin/grep", ["-hE", REBUILD_PATTERN, ...REBUILD_LOGS], { maxBuffer: 1024 * 1024 });
+    return parseRebuildLog(stdout);
+  } catch (error) {
+    // grep exits 1 when nothing matches and 2 when a file is missing (no .0 yet);
+    // its stdout still holds whatever the existing file matched.
+    const stdout = (error as { stdout?: string }).stdout;
+    return typeof stdout === "string" ? parseRebuildLog(stdout) : { state: "unknown", target: null, atMs: null };
+  }
+}
+
 const REMOTE_SAMPLE_COMMAND = [
   "export LC_ALL=C",
   "printf '__DISK__\\n'",
@@ -746,6 +799,8 @@ const REMOTE_SAMPLE_COMMAND = [
   "ps -A -o %cpu= | awk '{sum += $1} END {printf \"%.6f\\n\", sum}'",
   "printf '__GPU__\\n'",
   "system_profiler SPDisplaysDataType 2>/dev/null | egrep 'Chipset Model|Total Number of Cores|Metal Support' || true",
+  "printf '__REBUILD__\\n'",
+  `grep -hE '${REBUILD_PATTERN}' ${REBUILD_LOGS.join(" ")} 2>/dev/null || true`,
 ].join("; ");
 
 function sectionAfter(output: string, marker: string, nextMarker?: string): string | null {
@@ -757,7 +812,7 @@ function sectionAfter(output: string, marker: string, nextMarker?: string): stri
 }
 
 function parseGpuSummary(output: string): string | null {
-  const block = sectionAfter(output, "__GPU__") ?? output;
+  const block = sectionAfter(output, "__GPU__", "__REBUILD__") ?? output;
   if (!block) return null;
   const model = block.match(/Chipset Model:\s*(.+)/)?.[1]?.trim();
   const cores = block.match(/Total Number of Cores:\s*(\d+)/)?.[1]?.trim();
@@ -772,7 +827,7 @@ function parseRemoteSample(output: string): RemoteSystemSample | null {
   const cpuBrand = sectionAfter(output, "__CPUBRAND__", "__VMSTAT__");
   const vmStat = sectionAfter(output, "__VMSTAT__", "__CPU__");
   const cpu = sectionAfter(output, "__CPU__", "__GPU__");
-  const gpu = sectionAfter(output, "__GPU__");
+  const rebuild = parseRebuildLog(sectionAfter(output, "__REBUILD__"));
   if (!disk || !memorySize || !vmStat || !cpu) return null;
 
   const cpuParts = cpu.split(/\s+/).map(Number);
@@ -781,6 +836,7 @@ function parseRemoteSample(output: string): RemoteSystemSample | null {
   const gpuSummary = parseGpuSummary(output);
   return {
     status: "online",
+    rebuild,
     storagePercent: parseStoragePercent(disk),
     memoryPercent: memoryPercentFromVmStat(vmStat, Number(memorySize)),
     cpuPercent: Math.min(100, Math.max(0, cpuParts[1] / cpuParts[0])),
@@ -797,6 +853,7 @@ function parseRemoteSample(output: string): RemoteSystemSample | null {
 function offlineRemoteSample(): RemoteSystemSample {
   return {
     status: "offline",
+    rebuild: { state: "unknown", target: null, atMs: null },
     cpuPercent: null,
     memoryPercent: null,
     storagePercent: null,
@@ -853,15 +910,16 @@ export const background = {
 
 export const actions = {
   sample: async (_input: unknown, context: BabyMenuServerContext) => {
-    const [memoryPercent, cpuPercent, storagePercent, capacity, miniMac, githubContributions] = await Promise.all([
+    const [memoryPercent, cpuPercent, storagePercent, capacity, rebuild, miniMac, githubContributions] = await Promise.all([
       readMemoryPercent(),
       Promise.resolve(readCpuPercent(context)),
       readStoragePercent(),
       readLocalCapacity(),
+      readLocalRebuild(),
       readRemoteSystem(),
       readGitHubContributions(context),
     ]);
 
-    return { cpuPercent, memoryPercent, storagePercent, capacity, miniMac, githubContributions };
+    return { cpuPercent, memoryPercent, storagePercent, capacity, rebuild, miniMac, githubContributions };
   },
 };

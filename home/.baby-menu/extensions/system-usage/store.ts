@@ -1,5 +1,11 @@
 import { useSyncExternalStore } from "react";
 
+export type RebuildStatus = {
+  state: "ok" | "failed" | "running" | "unfinished" | "never" | "unknown";
+  target: string | null;
+  atMs: number | null;
+};
+
 export type SystemUsageSample = {
   cpuPercent: number | null;
   memoryPercent: number | null;
@@ -10,8 +16,10 @@ export type SystemUsageSample = {
     storage: string;
     gpu: string | null;
   };
+  rebuild: RebuildStatus;
   miniMac: {
     status: "online" | "offline";
+    rebuild: RebuildStatus;
     cpuPercent: number | null;
     memoryPercent: number | null;
     storagePercent: number | null;
@@ -56,8 +64,10 @@ let state: SystemUsageSample = {
   memoryPercent: null,
   storagePercent: null,
   capacity: { cpu: "--", memory: "--", storage: "--", gpu: null },
+  rebuild: { state: "unknown", target: null, atMs: null },
   miniMac: {
     status: "offline",
+    rebuild: { state: "unknown", target: null, atMs: null },
     cpuPercent: null,
     memoryPercent: null,
     storagePercent: null,

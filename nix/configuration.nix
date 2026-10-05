@@ -38,6 +38,16 @@ in
     AbandonProcessGroup = true;
   };
 
+  # Rotate the daily rebuild log with macOS's own newsyslog: at 1 MB keep up
+  # to 8 old copies (8 MB at most). Rotated copies stay uncompressed so Baby
+  # Menu's system-usage widget can still read the last run from .0 right
+  # after a rotation. B: plain-text log, add no syslog header line. N: no
+  # process to signal (launchd reopens the log on every run).
+  environment.etc."newsyslog.d/org.dotfiles.auto-rebuild.conf".text = ''
+    # logfilename                 [owner:group]  mode  count  size(KB)  when  flags
+    /var/log/auto-rebuild.log     root:wheel     644   8      1024      *     BN
+  '';
+
   homebrew = {
     enable = true;
     enableZshIntegration = true; # puts /opt/homebrew/bin on PATH for Homebrew CLIs.

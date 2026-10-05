@@ -1,5 +1,5 @@
 import { Tooltip } from "@babymenu/ui";
-import { useSystemUsage } from "./store";
+import { useSystemUsage, type RebuildStatus } from "./store";
 
 const RADIUS = 15.9155;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
@@ -174,6 +174,7 @@ function MachineCard({
   capacity,
   status = "online",
   gpuSummary,
+  rebuild,
 }: {
   name: string;
   badge: string;
@@ -188,6 +189,7 @@ function MachineCard({
   };
   status?: "online" | "offline";
   gpuSummary?: string | null;
+  rebuild: RebuildStatus;
 }) {
   return (
     <article className="min-w-0 rounded-sm border border-line-faint bg-[rgba(255,255,255,.015)] p-2.5">
@@ -206,6 +208,7 @@ function MachineCard({
             <Metric label="disk" value={storagePercent} warnAt={75} dangerAt={90} />
           </div>
           <CapacityStrip capacity={capacity} gpuSummary={gpuSummary} />
+          <RebuildLine rebuild={rebuild} />
         </>
       ) : (
         <>
@@ -213,9 +216,50 @@ function MachineCard({
             ssh target unavailable
           </div>
           <CapacityStrip capacity={capacity} gpuSummary={gpuSummary} />
+          <RebuildLine rebuild={rebuild} />
         </>
       )}
     </article>
+  );
+}
+
+const REBUILD_LABELS: Record<RebuildStatus["state"], string> = {
+  ok: "ok",
+  failed: "failed",
+  running: "running",
+  unfinished: "unfinished",
+  never: "no runs yet",
+  unknown: "unknown",
+};
+
+function rebuildToneClass(state: RebuildStatus["state"]) {
+  if (state === "ok") return "text-signal-live";
+  if (state === "failed" || state === "unfinished") return "text-signal-danger";
+  if (state === "running") return "text-signal-warn";
+  return "text-ink-muted";
+}
+
+function formatRebuildTime(atMs: number | null) {
+  if (atMs === null) return null;
+  const at = new Date(atMs);
+  const time = at.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
+  const today = new Date();
+  const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+  if (at.toDateString() === today.toDateString()) return time;
+  if (at.toDateString() === yesterday.toDateString()) return `yday ${time}`;
+  return at.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function RebuildLine({ rebuild }: { rebuild: RebuildStatus }) {
+  const time = formatRebuildTime(rebuild.atMs);
+  return (
+    <div className="mt-1.5 flex items-center justify-between gap-2 text-[9px]" title={rebuild.target ? `daily rebuild of ${rebuild.target}` : undefined}>
+      <span className="truncate uppercase tracking-caps text-ink-muted">daily update{rebuild.target ? ` · ${rebuild.target}` : ""}</span>
+      <span className={`shrink-0 font-mono ${rebuildToneClass(rebuild.state)}`}>
+        {REBUILD_LABELS[rebuild.state]}
+        {time ? ` · ${time}` : ""}
+      </span>
+    </div>
   );
 }
 
@@ -390,7 +434,7 @@ function Heatmap({ githubContributions }: { githubContributions: GitHubContribut
   );
 }
 export function SystemUsageView() {
-  const { cpuPercent, memoryPercent, storagePercent, capacity, miniMac, githubContributions } = useSystemUsage();
+  const { cpuPercent, memoryPercent, storagePercent, capacity, rebuild, miniMac, githubContributions } = useSystemUsage();
 
   return (
     <div className="flex flex-col gap-3">
@@ -407,7 +451,7 @@ export function SystemUsageView() {
           <span className={miniMac.status === "online" ? "text-signal-live" : "text-ink-muted"}>mini {miniMac.status}</span>
         </div>
         <div className="grid grid-cols-2 gap-2.5">
-          <MachineCard name="MacBook Pro" badge="local" cpuPercent={cpuPercent} memoryPercent={memoryPercent} storagePercent={storagePercent} capacity={capacity} />
+          <MachineCard name="MacBook Pro" badge="local" cpuPercent={cpuPercent} memoryPercent={memoryPercent} storagePercent={storagePercent} capacity={capacity} rebuild={rebuild} />
           <MachineCard
             name="Mac mini"
             badge={miniMac.status}
@@ -417,6 +461,7 @@ export function SystemUsageView() {
             storagePercent={miniMac.storagePercent}
             capacity={miniMac.capacity}
             gpuSummary={miniMac.gpuSummary}
+            rebuild={miniMac.rebuild}
           />
         </div>
       </div>
