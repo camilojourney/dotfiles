@@ -14,6 +14,7 @@
   "packages": [
     "npm:pi-web-access@0.32.0",
     "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.7",
+    "npm:pi-antigravity@0.9.0",
     "git:github.com/algal/pi-openai-server-compaction#8a3de2f3b0c178fdd6f73f2f94172dfc3943e466",
     "git:github.com/camilojourney/pi-cursor-provider#73fd2d75c58bfe1757a124e407fbc72f89642826"
   ],
@@ -24,7 +25,7 @@
     "high": 4096,
     "xhigh": 8192
   },
-  "lastChangelogVersion": "0.99.1",
+  "lastChangelogVersion": "1.0.2",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-6.1-sol",
   "defaultThinkingLevel": "high",

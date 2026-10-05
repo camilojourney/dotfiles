@@ -1,8 +1,13 @@
 # no-mistakes pipeline evidence should never be committed to this public repo
 .no-mistakes/
+# ...except the authored global config, symlinked to ~/.no-mistakes by Home Manager
+!home/.no-mistakes/
 
 # Ignore fetched upstream artifacts; tracked baseline files remain versioned.
 /upstream/
+
+# Claude Code per-machine local settings
+.claude/settings.local.json
 
 # macOS metadata junk
 .DS_Store
@@ -14,3 +19,4 @@ home/.config/herdr/session.json
 home/.config/herdr/.plugins.lock
 home/.config/herdr/release-notes.json
 home/.config/herdr/sessions/
+home/.config/herdr/bin/

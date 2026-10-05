@@ -14,7 +14,7 @@ jq -e --arg cursor_provider "$CURSOR_PROVIDER" '
   | ($packages | map(select(test("cursor"; "i"))) == [$cursor_provider])
   and ($packages | index("npm:pi-cursor-sdk") | not)
   and (.defaultProvider == "openai-codex")
-  and (.defaultModel == "gpt-6-sol")
+  and (.defaultModel == "gpt-6.1-sol")
   and (.defaultThinkingLevel == "high")
   and (has("llamaServerUrl") | not)
 ' "$SETTINGS" >/dev/null
