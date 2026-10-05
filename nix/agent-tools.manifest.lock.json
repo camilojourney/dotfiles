@@ -2,7 +2,7 @@
   "policy": {
     "update": "Every rebuild updates global npm agent CLIs to their registry latest release and runs declared self-updaters for external tools. Pinned external releases remain verified bootstrap fallbacks for fresh machines, and uv tool packages track latest unless explicitly pinned.",
     "npm": "Global npm CLIs install from the latest registry tag via brew node npm with --ignore-scripts. The global npm package itself is never managed here so brew node owns npm.",
-    "uv": "Isolated Python CLIs install via `uv tool install`: \"latest\" upgrades on every rebuild (graphify), a version string pins with == (the MLX libraries, whose model compatibility a silent upgrade could break). One list, same on every machine.",
+    "uv": "Isolated Python CLIs install via `uv tool install`: \"latest\" upgrades on every rebuild, a version string pins with == (the MLX libraries, whose model compatibility a silent upgrade could break). One list, same on every machine.",
     "external": "Release archives provide sha256-verified bootstrap installs. Entries with selfUpdateCommand preserve an existing installation and run that tool's supported updater after reconciliation.",
     "reproducibility": "uv and external bootstrap pins are auditable in this file. Npm CLIs and self-updating external tools intentionally trade fixed-version reproducibility for current releases on every rebuild."
   },
@@ -19,7 +19,6 @@
     "tasks-axi"
   ],
   "uv": [
-    { "name": "graphifyy", "version": "latest" },
     { "name": "mlx-lm", "version": "0.31.3" },
     { "name": "mlx-optiq", "version": "0.5.13" }
   ],
@@ -58,7 +57,7 @@
   },
   "verify": {
     "bins": [
-      "pi", "acpx", "backpass", "gh-axi", "pnpm", "quota-axi", "tasks-axi", "graphify", "tmux",
+      "pi", "acpx", "backpass", "gh-axi", "pnpm", "quota-axi", "tasks-axi", "tmux",
       "chrome-devtools-axi", "gnhf", "lavish-axi", "no-mistakes", "treehouse",
       "mlx_lm", "optiq"
     ]

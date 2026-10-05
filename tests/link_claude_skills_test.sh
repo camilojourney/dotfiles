@@ -22,23 +22,23 @@ run "$H" >/dev/null
 [ "$(readlink "$H/.claude/skills")" = "$H/.agents/skills" ] || fail "second run changed the link"
 
 # Real directory: its skills move into the shared directory, then it is linked.
-H="$SANDBOX/migrate"; mkdir -p "$H/.claude/skills/graphify" "$H/.agents/skills/no-mistakes"
-printf 'claude skill\n' > "$H/.claude/skills/graphify/SKILL.md"
+H="$SANDBOX/migrate"; mkdir -p "$H/.claude/skills/example-skill" "$H/.agents/skills/no-mistakes"
+printf 'claude skill\n' > "$H/.claude/skills/example-skill/SKILL.md"
 ln -s /elsewhere/phrona "$H/.claude/skills/phrona"
 run "$H" >/dev/null
 [ -L "$H/.claude/skills" ] || fail "migrated directory was not replaced by a link"
-[ "$(<"$H/.agents/skills/graphify/SKILL.md")" = "claude skill" ] || fail "skill was not moved to the shared directory"
+[ "$(<"$H/.agents/skills/example-skill/SKILL.md")" = "claude skill" ] || fail "skill was not moved to the shared directory"
 [ "$(readlink "$H/.agents/skills/phrona")" = "/elsewhere/phrona" ] || fail "skill symlink was not moved intact"
 [ -d "$H/.agents/skills/no-mistakes" ] || fail "existing shared skill was lost"
 
 # Same skill in both places: nothing moves and the directory stays for a human.
-H="$SANDBOX/conflict"; mkdir -p "$H/.claude/skills/graphify" "$H/.agents/skills/graphify"
-printf 'claude copy\n' > "$H/.claude/skills/graphify/SKILL.md"
-printf 'shared copy\n' > "$H/.agents/skills/graphify/SKILL.md"
+H="$SANDBOX/conflict"; mkdir -p "$H/.claude/skills/example-skill" "$H/.agents/skills/example-skill"
+printf 'claude copy\n' > "$H/.claude/skills/example-skill/SKILL.md"
+printf 'shared copy\n' > "$H/.agents/skills/example-skill/SKILL.md"
 out=$(run "$H")
 [ -d "$H/.claude/skills" ] && [ ! -L "$H/.claude/skills" ] || fail "conflicting directory was replaced"
-[ "$(<"$H/.claude/skills/graphify/SKILL.md")" = "claude copy" ] || fail "conflicting skill changed"
-[ "$(<"$H/.agents/skills/graphify/SKILL.md")" = "shared copy" ] || fail "shared skill was overwritten"
+[ "$(<"$H/.claude/skills/example-skill/SKILL.md")" = "claude copy" ] || fail "conflicting skill changed"
+[ "$(<"$H/.agents/skills/example-skill/SKILL.md")" = "shared copy" ] || fail "shared skill was overwritten"
 case "$out" in *"merge by hand"*) ;; *) fail "conflict was not reported" ;; esac
 
 # A link pointing elsewhere is repointed.

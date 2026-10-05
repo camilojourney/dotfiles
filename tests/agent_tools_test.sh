@@ -52,6 +52,10 @@ setup_sandbox() {
   cp -R "$REPO_ROOT/nix" "$sandbox/repo/"
   cp "$REPO_ROOT/scripts/agent-tools/"*.sh "$sandbox/repo/scripts/agent-tools/"
   chmod +x "$sandbox/repo/scripts/agent-tools/"*.sh
+  # No real uv tool tracks latest, so a fixture entry keeps that path covered.
+  local manifest="$sandbox/repo/nix/agent-tools.manifest.lock.json"
+  "$(command -v jq)" '.uv += [{"name": "example-latest", "version": "latest"}]' "$manifest" >"$manifest.tmp"
+  mv "$manifest.tmp" "$manifest"
 
   : >"$sandbox/uv-tool-list.txt"
   # Copying Apple's signed jq binary causes macOS to kill the copied executable.
@@ -125,7 +129,6 @@ case "${1:-}" in
         echo "${name} v${version}" >>"$list"
         mkdir -p "$HOME/.local/bin"
         case "$name" in
-          graphifyy) cmd=graphify ;;
           mlx-lm) cmd=mlx_lm ;;
           mlx-optiq) cmd=optiq ;;
           *) cmd="$name" ;;
@@ -139,7 +142,7 @@ esac
 exit 0
 STUB
 
-  for tool in gh-axi lavish-axi chrome-devtools-axi tasks-axi graphify tmux no-mistakes treehouse; do
+  for tool in gh-axi lavish-axi chrome-devtools-axi tasks-axi tmux no-mistakes treehouse; do
     cat >"$sandbox/stubs/$tool" <<EOF
 #!/usr/bin/env bash
 LOG="\${AGENT_TOOLS_HOOK_LOG:?}"
@@ -203,13 +206,12 @@ test_fresh_install() {
   assert_contains "$out" "npm: reconciling tasks-axi@latest" "fresh install updates tasks-axi from latest"
   assert_contains "$out" "no-mistakes update --yes" "fresh install self-updates no-mistakes"
   assert_contains "$out" "treehouse update" "fresh install self-updates Treehouse"
-  assert_contains "$out" "uv: reconciling graphifyy at latest" "fresh install installs graphifyy at latest"
-  assert_contains "$out" "uv tool install --force --upgrade graphifyy" "graphifyy installs unpinned with upgrade"
+  assert_contains "$out" "uv: reconciling example-latest at latest" "fresh install installs a latest uv tool"
+  assert_contains "$out" "uv tool install --force --upgrade example-latest" "a latest uv tool installs unpinned with upgrade"
   assert_contains "$out" "uv: reconciling mlx-lm==0.31.3" "fresh install installs mlx-lm on every machine"
   assert_contains "$out" "uv: reconciling mlx-optiq==0.5.13" "fresh install installs mlx-optiq on every machine"
   assert_contains "$out" "gh-axi setup hooks" "setup hooks run"
   assert_not_contains "$out" "lavish-axi setup hooks" "lavish-axi setup hooks does not run automatically"
-  assert_not_contains "$out" "graphify install" "graphify installs no global skill"
   assert_contains "$out" "reconcile complete" "fresh install completes"
 
   rm -rf "$sandbox"
@@ -234,7 +236,7 @@ test_idempotent_repeat() {
   fi
   out2=$(cat "$log/second/stdout.log" "$log/second/stderr.log" 2>/dev/null || true)
   assert_contains "$out2" "mlx-lm==0.31.3 already installed" "repeat skips unchanged pinned uv tool"
-  assert_contains "$out2" "uv: reconciling graphifyy at latest" "repeat upgrades a latest uv tool every time"
+  assert_contains "$out2" "uv: reconciling example-latest at latest" "repeat upgrades a latest uv tool every time"
   assert_contains "$out2" "preserving self-updating no-mistakes" "repeat does not downgrade no-mistakes"
   assert_contains "$out2" "preserving self-updating treehouse" "repeat does not downgrade Treehouse"
 

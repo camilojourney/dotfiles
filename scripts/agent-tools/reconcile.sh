@@ -129,16 +129,6 @@ run_setup_hooks() {
       printf 'agent-tools: setup hooks: %s failed (exit %s); will retry next rebuild\n' "$tool" "$rc" >&2
     fi
   done < <(jq -r '.setupHooks.npm[]' "$MANIFEST")
-
-  if jq -e '.setupHooks.graphify' "$MANIFEST" >/dev/null; then
-    require_cmd graphify
-    local platform
-    while IFS= read -r platform; do
-      [ -n "$platform" ] || continue
-      info "graphify install --platform ${platform}"
-      graphify install --platform "$platform"
-    done < <(jq -r '.setupHooks.graphify.platforms[]' "$MANIFEST")
-  fi
 }
 
 verify_bins() {

@@ -47,7 +47,7 @@ in
     CHROME_DEVTOOLS_AXI_USER_DATA_DIR = "${homeDirectory}/.local/state/chrome-devtools-axi-profile";
   };
 
-  # uv installs user-scoped CLI entry points, including graphify, here.
+  # uv installs user-scoped CLI entry points here.
   home.sessionPath = [
     "${homeDirectory}/.local/bin"
     "${homeDirectory}/.no-mistakes/bin"
