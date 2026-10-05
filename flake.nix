@@ -19,12 +19,14 @@
     # One configuration.nix and one home.nix for every machine - identical
     # except userName/homeDirectory, the real per-account identity nix-darwin
     # needs. hostProfile only reaches home.nix (safe-maintenance.sh's
-    # --profile flag); configuration.nix doesn't need it.
-    mkDarwin = { hostProfile, userName, homeDirectory, includeExtras ? false }:
+    # --profile flag); configuration.nix doesn't need it. flakeAttr is the
+    # target's own name, so the daily rebuild re-applies whichever target
+    # was last switched to by hand.
+    mkDarwin = flakeAttr: { hostProfile, userName, homeDirectory, includeExtras ? false }:
       nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
         specialArgs = {
-          inherit userName homeDirectory;
+          inherit userName homeDirectory flakeAttr;
         };
         modules = [
           ./nix/configuration.nix
@@ -55,12 +57,12 @@
   in {
     # Plain targets: the shared dev baseline only, never the personal extras
     # in camilo-extra.nix. Run via ./rebuild.sh on either machine.
-    darwinConfigurations.camilo = mkDarwin camilo;
-    darwinConfigurations.camilo-remote = mkDarwin camiloRemote;
+    darwinConfigurations.camilo = mkDarwin "camilo" camilo;
+    darwinConfigurations.camilo-remote = mkDarwin "camilo-remote" camiloRemote;
 
     # "Total" targets: the same host, plus camilo-extra.nix. Run via
     # ./rebuild-total.sh, typically only ever needed on the laptop.
-    darwinConfigurations.camilo-total = mkDarwin (camilo // { includeExtras = true; });
-    darwinConfigurations.camilo-remote-total = mkDarwin (camiloRemote // { includeExtras = true; });
+    darwinConfigurations.camilo-total = mkDarwin "camilo-total" (camilo // { includeExtras = true; });
+    darwinConfigurations.camilo-remote-total = mkDarwin "camilo-remote-total" (camiloRemote // { includeExtras = true; });
   };
 }

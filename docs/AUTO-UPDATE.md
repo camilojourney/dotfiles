@@ -9,13 +9,16 @@ Both machines update themselves every day, so nothing here needs a manual
 |---|---|---|
 | When | 05:00 daily, or at the next wake if asleep | same |
 | Pulls | `~/github/dotfiles`, `~/github/firstmate` | same |
-| Rebuilds | `camilo-total` (same as `./rebuild-total.sh`) | `camilo-remote` (same as `./rebuild.sh`) |
+| Rebuilds | the target last applied by hand: `camilo` (`./rebuild.sh`) or `camilo-total` (`./rebuild-total.sh`) | same: `camilo-remote` or `camilo-remote-total` |
 
 Pieces:
 
 - `nix/configuration.nix` - the `org.dotfiles.auto-rebuild` launchd daemon
   (`launchd.daemons.auto-rebuild`), shared by every flake target. It passes the
-  machine's user and flake attr to the script.
+  machine's user and the target's own flake attr (`flakeAttr` from `flake.nix`)
+  to the script, so the daily run keeps applying whichever of `./rebuild.sh` or
+  `./rebuild-total.sh` you ran last. Switching variants is just running the
+  other script once.
 - [`scripts/auto-rebuild.sh`](../scripts/auto-rebuild.sh) - the logic, run as
   root.
 
@@ -52,11 +55,11 @@ and a manual rebuild.
 
 ## Enabling it on a machine
 
-The daemon only exists after one manual rebuild that includes it. Run once on
-each machine:
+Every target includes the daemon, so one manual `./rebuild.sh` (or
+`./rebuild-total.sh`) on a machine installs everything and enables the daily
+update for that same target. On a new machine, after `setup/mac.sh`:
 
-- Laptop: `cd ~/github/dotfiles && ./rebuild-total.sh`
-- Remote box: `cd ~/github/dotfiles && git pull && ./rebuild.sh`
+    cd ~/github/dotfiles && ./rebuild.sh
 
 ## Trust trade-off
 
@@ -77,6 +80,17 @@ of not running rebuilds by hand. To stop it, remove
   `darwin-rebuild` would let any process running as the user become root by
   pointing it at its own flake. A root daemon running one fixed command does
   not open that door.
+- **The rebuild runs with `SUDO_USER`/`SUDO_UID` set to the machine's user**,
+  the same environment `./rebuild.sh` gets from `sudo`. Without them, Nix
+  running as root refuses the user-owned repo ("repository path ... is not
+  owned by current user") and every daily rebuild fails.
+- **App Store apps are upgraded by the daemon itself, before the rebuild.**
+  `mas` needs root to install or upgrade, and during activation `brew bundle`
+  runs it as the user, so any outdated App Store app would ask for a sudo
+  password nobody can type and fail the rebuild. The script runs the
+  root-owned Nix `mas upgrade` (`/run/current-system/sw/bin/mas`, from
+  `environment.systemPackages`) inside the user's login session first. Never
+  point it at Homebrew's `mas`: that binary is user-writable.
 - **`--ff-only` pulls.** The job never merges, rebases, or resets; anything
   that needs a decision is left for a human and reported.
 

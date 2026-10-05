@@ -1,4 +1,4 @@
-{ config, lib, pkgs, userName, homeDirectory, ... }:
+{ config, lib, pkgs, userName, homeDirectory, flakeAttr, ... }:
 
 let
   declaredMasAppIds = lib.concatStringsSep " " (map toString (lib.attrValues config.homebrew.masApps));
@@ -18,8 +18,9 @@ in
   # Rebuild every day at 05:00 (or at the next wake) after fast-forwarding
   # this repo and Firstmate, so neither machine needs a manual update. Runs
   # as root, so it needs no sudo password; whatever is pushed to this repo's
-  # main is applied unattended. The laptop rebuilds its personal-apps variant (the
-  # same as ./rebuild-total.sh), the remote box the plain one (./rebuild.sh).
+  # main is applied unattended. It rebuilds the same target this system was
+  # built from, so whichever of ./rebuild.sh or ./rebuild-total.sh ran last
+  # is what keeps getting applied.
   # docs/AUTO-UPDATE.md explains the design, including why the plist points
   # at scripts/auto-rebuild.sh by path rather than through the Nix store.
   launchd.daemons.auto-rebuild.serviceConfig = {
@@ -28,7 +29,7 @@ in
       "/bin/bash"
       "${homeDirectory}/github/dotfiles/scripts/auto-rebuild.sh"
       userName
-      (if userName == "camiloslaptop" then "camilo-total" else "camilo-remote")
+      flakeAttr
     ];
     StartCalendarInterval = [ { Hour = 5; Minute = 0; } ];
     StandardOutPath = "/var/log/auto-rebuild.log";
@@ -104,7 +105,10 @@ in
   '');
 
   # starship comes from Home Manager (programs.starship in home.nix)
-  environment.systemPackages = [ ];
+  # Root-owned mas for scripts/auto-rebuild.sh, which upgrades App Store apps
+  # as root before each unattended rebuild (Homebrew's mas is user-writable,
+  # so root must never run it).
+  environment.systemPackages = [ pkgs.mas ];
 
   system.primaryUser = userName;
   users.users = {

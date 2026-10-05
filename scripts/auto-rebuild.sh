@@ -49,6 +49,29 @@ update_repo() {  # <name> <path>
 update_repo dotfiles "$DOTFILES"
 update_repo firstmate "$FIRSTMATE"
 
+# Run everything below exactly as ./rebuild.sh does under sudo. Nix refuses
+# to read a git repo owned by another user unless SUDO_UID names that user
+# ("repository path ... is not owned by current user"), and mas running as
+# root needs SUDO_UID to know whose App Store account to use.
+SUDO_USER=$USER_NAME
+SUDO_UID=$(id -u "$USER_NAME")
+SUDO_GID=$(id -g "$USER_NAME")
+export SUDO_USER SUDO_UID SUDO_GID
+
+# App Store apps: mas needs root to install or upgrade. During activation
+# brew bundle runs mas as the user, where an outdated app would prompt for a
+# sudo password nobody can type and fail the whole rebuild. Upgrade them here
+# first, as root inside the user's login session, so brew bundle finds
+# nothing outdated. Root-owned mas only (see nix/configuration.nix).
+MAS=/run/current-system/sw/bin/mas
+if [ -x "$MAS" ]; then
+  if launchctl asuser "$(id -u "$USER_NAME")" "$MAS" upgrade; then
+    log "app store: up to date"
+  else
+    log "app store: upgrade failed"
+  fi
+fi
+
 if darwin-rebuild switch --flake "$DOTFILES#$FLAKE_ATTR"; then
   log "rebuild: ok"
 else
