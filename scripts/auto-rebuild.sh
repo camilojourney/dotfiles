@@ -57,20 +57,4 @@ else
   exit 1
 fi
 
-# TEMPORARY until kunchenguid/quota-axi#308 ships in an npm release: the
-# rebuild reinstalls quota-axi@latest, which cannot score Antigravity quota,
-# so Jev stops picking Antigravity models. Reinstall the local fix when the
-# released build lacks it. Retires itself once the release has the fix;
-# delete this block then.
-QUOTA_AXI_SRC=$USER_HOME/github/quota-axi
-installed_agy=$(npm root -g)/quota-axi/dist/src/providers/agy.js
-if [ -f "$installed_agy" ] && ! grep -q windowSeconds "$installed_agy" && [ -d "$QUOTA_AXI_SRC" ]; then
-  if as_user bash -c "cd '$QUOTA_AXI_SRC' && pnpm install --frozen-lockfile --silent && pnpm run build >/dev/null && tarball=\$(npm pack --silent) && npm install -g --ignore-scripts \"\$PWD/\$tarball\" >/dev/null && rm -f \"\$tarball\""; then
-    log "quota-axi: reinstalled local Antigravity fix"
-  else
-    log "quota-axi: local fix reinstall FAILED"
-    notify "quota-axi fix reinstall failed - see /var/log/auto-rebuild.log"
-  fi
-fi
-
 log "auto-rebuild: done"

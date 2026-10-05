@@ -198,6 +198,14 @@ in
     AGENT_TOOLS_MANIFEST="${./agent-tools.manifest.lock.json}" "$reconcileScript"
   '';
 
+  # TEMPORARY until quota-axi#308 is released: installAgentTools reinstalls
+  # quota-axi@latest, which cannot score Antigravity quota; put the local fix
+  # back. The script explains when to delete this entry.
+  home.activation.quotaAxiAgyFix = lib.hm.dag.entryAfter [ "installAgentTools" ] ''
+    export PATH="$PATH:/opt/homebrew/bin:/usr/bin:/bin"
+    "${dotfilesDir}/scripts/agent-tools/quota-axi-agy-fix.sh" || true
+  '';
+
   home.activation.updatePiPackages = lib.hm.dag.entryAfter [ "installAgentTools" ] ''
     export PATH="$PATH:/opt/homebrew/bin:/usr/bin:/bin"
     pi update --extensions

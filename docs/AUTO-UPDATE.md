@@ -27,7 +27,6 @@ Each run:
    rebuild then uses what is already checked out. A repo that is not cloned is
    skipped.
 2. Runs `darwin-rebuild switch` for the machine's flake attr.
-3. Temporary: reinstalls the local quota-axi Antigravity fix (see below).
 
 A rebuild already updates everything else on every run:
 
@@ -85,7 +84,9 @@ of not running rebuilds by hand. To stop it, remove
 
 `quota-axi@latest` cannot score Antigravity quota, so Firstmate's Jev resolver
 never picks Antigravity models (see `kunchenguid/quota-axi#308`). Until that
-fix ships in an npm release, the script rebuilds and reinstalls it from
-`~/github/quota-axi` whenever the installed build lacks it. Once a release
-contains the fix the block does nothing; delete it then, along with this
-section.
+fix ships in an npm release, every rebuild - manual or daily - runs
+[`scripts/agent-tools/quota-axi-agy-fix.sh`](../scripts/agent-tools/quota-axi-agy-fix.sh)
+from the `quotaAxiAgyFix` activation in `nix/home.nix`, which rebuilds and
+reinstalls the fix from `~/github/quota-axi` whenever the installed build lacks
+it. Once a release contains the fix it does nothing; delete the script, the
+activation entry, and this section then.
