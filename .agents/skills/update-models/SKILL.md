@@ -37,7 +37,7 @@ Build the list of runnable models from each harness's own catalog. Each catalog 
 |---|---|---|
 | Pi | `pi --list-models <search>` | Refresh first with `pi update --models`; the daily rebuild does not. A provider extension's list can lag the vendor: Pi still listed `antigravity/claude-sonnet-4-6` after Antigravity retired it, and did not list Sonnet/Opus 5.5. Pi accepts an unlisted `provider/id` with a "Using custom model id" warning, so check the vendor's own catalog for those. |
 | Antigravity (`agy`) | `agy models` | Authoritative for Antigravity. It also serves Claude/GPT models (e.g. `claude-opus-5-5-high`) from a separate, smaller pool (see placement rules). Ids carry the effort suffix; effort caps at `high`. |
-| Claude Code | `opus`, `sonnet`, `haiku` aliases | Always the latest. Never dispatch `fable`: it stalls unattended on a usage-credit prompt. |
+| Claude Code | `claude --model <id> -p "Reply with exactly the model name you are" </dev/null` | Use exact model ids, never the `opus`/`sonnet`/`haiku` aliases, so the config names the model that runs: `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-4-5-20251001` (2026-10-04). Aliases silently move to a new model; exact ids move only when this skill bumps them after the step 2 release check. Never dispatch `fable`: it stalls unattended on a usage-credit prompt. |
 | Codex models via Pi | `pi --list-models openai-codex` | |
 | Grok TUI | `grok models` | |
 | Cursor via Pi | `pi --list-models cursor` | On this plan only `cursor/auto` is accepted (named models return `resource_exhausted`), and it stalls on any tool call (`UNHANDLED exec case`). Not dispatchable until the `pi-cursor-provider` fork fixes that. |

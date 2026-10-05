@@ -5,7 +5,7 @@
       "use": [
         { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "medium", "provider": "agy" },
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "medium", "provider": "codex" },
-        { "harness": "claude", "model": "sonnet", "effort": "medium" },
+        { "harness": "claude", "model": "claude-sonnet-5-5", "effort": "medium" },
         { "harness": "grok", "model": "grok-4.7", "effort": "medium" }
       ],
       "why": "Every candidate can search the live web: Pi through the pi-web-access extension (Codex-backed OpenAI search for openai-codex models, Exa otherwise), Claude Code through its built-in web search, and the Grok TUI natively (plus live X data). Research is not coding, so Gemini 3.8 Flash's coding score does not hold it back here and it spends the spare agy quota. Quota picks among them."
@@ -18,16 +18,16 @@
     {
       "when": "Review, audit, or second opinion on a diff/PR/design another crewmate produced. Not for writing the fix.",
       "use": [
-        { "harness": "claude", "model": "opus", "effort": "high" },
+        { "harness": "claude", "model": "claude-opus-5-5", "effort": "high" },
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "high", "provider": "codex" },
         { "harness": "agy", "model": "claude-opus-5-5-high", "effort": "high" }
       ],
-      "why": "Review with a different model family than the author. Codex-authored work goes to Opus, Claude-authored work goes to Sol. agy Opus 5.5 high is the same model as claude:opus on Antigravity's separate claude_gpt quota; that pool is small (about 1.4% of its 5-hour window per short call), so it is used only here, where tasks are short and infrequent, and its spendPriority drops it out once it drains."
+      "why": "Review with a different model family than the author. Codex-authored work goes to Opus, Claude-authored work goes to Sol. agy Opus 5.5 high is the same model as claude:claude-opus-5-5 on Antigravity's separate claude_gpt quota; that pool is small (about 1.4% of its 5-hour window per short call), so it is used only here, where tasks are short and infrequent, and its spendPriority drops it out once it drains."
     },
     {
       "when": "Recon-only, file gathering, narrow lookup, or a trivial mechanical edit (rename, format sweep, typo fix).",
       "use": [
-        { "harness": "claude", "model": "haiku", "effort": "low" },
+        { "harness": "claude", "model": "claude-haiku-4-5-20251001", "effort": "low" },
         { "harness": "pi", "model": "openai-codex/gpt-6-luna", "effort": "low", "provider": "codex" },
         { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "low", "provider": "agy" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "low", "provider": "grok" }
@@ -38,7 +38,7 @@
       "when": "Ordinary implementation, bounded bug fix, tests, everyday coding with a clear path.",
       "use": [
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "medium", "provider": "codex" },
-        { "harness": "claude", "model": "sonnet", "effort": "medium" },
+        { "harness": "claude", "model": "claude-sonnet-5-5", "effort": "medium" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "medium", "provider": "grok" }
       ],
       "why": "Workhorse tier. Gemini 3.8 Flash stays out: it scores about 20 points under Sol. Grok 4.7 here is a quota fallback, not a first pick."
@@ -47,7 +47,7 @@
       "when": "Large/ambiguous multi-file change, risky refactor, work holding many moving parts at once.",
       "use": [
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "high", "provider": "codex" },
-        { "harness": "claude", "model": "opus", "effort": "high" },
+        { "harness": "claude", "model": "claude-opus-5-5", "effort": "high" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "high", "provider": "grok" }
       ],
       "why": "Same Sol model as workhorse tier, more thinking budget. Grok 4.7 here is a quota fallback, not a first pick."
@@ -56,7 +56,7 @@
       "when": "Hardest available work: root-cause investigation, architecture, ambiguous design, or already failed on the workhorse tier.",
       "use": [
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "xhigh", "provider": "codex" },
-        { "harness": "claude", "model": "opus", "effort": "xhigh" },
+        { "harness": "claude", "model": "claude-opus-5-5", "effort": "xhigh" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "xhigh", "provider": "grok" }
       ],
       "why": "Frontier tier, reserve for this only. GPT-6.1 Sol replaces GPT-6 Astra: it matches or beats Astra on the Artificial Analysis Coding Agent Index at a fraction of the cost per task. Never Claude fable: it stalls unattended on a usage-credit prompt."
@@ -64,7 +64,7 @@
   ],
   "default": [
     { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "medium", "provider": "codex" },
-    { "harness": "claude", "model": "sonnet", "effort": "medium" },
+    { "harness": "claude", "model": "claude-sonnet-5-5", "effort": "medium" },
     { "harness": "pi", "model": "xai/grok-4.7", "effort": "medium", "provider": "grok" }
   ]
 }
