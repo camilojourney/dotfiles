@@ -188,7 +188,13 @@ in
   # setupLaunchAgents), which depend on Nix's GNU coreutils (already earlier
   # in $PATH) for flags like `readlink -m` that BSD's /usr/bin/readlink
   # doesn't support. Prepending shadowed those and broke setupLaunchAgents.
-  home.activation.installAgentTools = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+  # One shared skills directory: ~/.claude/skills links to ~/.agents/skills,
+  # which Pi reads natively.
+  home.activation.linkClaudeSkills = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+    ${pkgs.bash}/bin/bash "${dotfilesDir}/scripts/agent-tools/link-claude-skills.sh"
+  '';
+
+  home.activation.installAgentTools = lib.hm.dag.entryAfter [ "linkClaudeSkills" ] ''
     export PATH="$PATH:/opt/homebrew/bin:/usr/bin:/bin"
     reconcileScript="${dotfilesDir}/scripts/agent-tools/reconcile.sh"
     if [ ! -x "$reconcileScript" ]; then

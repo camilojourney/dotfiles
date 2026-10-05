@@ -209,8 +209,7 @@ test_fresh_install() {
   assert_contains "$out" "uv: reconciling mlx-optiq==0.5.13" "fresh install installs mlx-optiq on every machine"
   assert_contains "$out" "gh-axi setup hooks" "setup hooks run"
   assert_not_contains "$out" "lavish-axi setup hooks" "lavish-axi setup hooks does not run automatically"
-  assert_contains "$out" "graphify install --platform pi" "graphify platform hook"
-  assert_contains "$out" "graphify install --platform claude" "graphify installs its Claude Code skill"
+  assert_not_contains "$out" "graphify install" "graphify installs no global skill"
   assert_contains "$out" "reconcile complete" "fresh install completes"
 
   rm -rf "$sandbox"
