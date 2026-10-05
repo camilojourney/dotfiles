@@ -1,6 +1,6 @@
 ---
 name: update-models
-description: Use when changing or re-checking which AI models the agent fleet uses - a new model release, a retired model, a new provider or harness (e.g. Antigravity via agy or Pi), or a periodic "are we on the newest, best-placed models?" review. Covers finding every model each harness can actually run, checking for newer releases, placing each model in the right Firstmate dispatch tier from coding benchmarks (and the right special-purpose rule for web research and images), verifying each one really works with tools, and editing every file that names a model.
+description: Use when changing or re-checking which AI models the agent fleet uses - a new model release, a retired model, a new provider or harness (e.g. Antigravity via Pi), or a periodic "are we on the newest, best-placed models?" review. Covers finding every model each harness can actually run, checking for newer releases, placing each model in the right Firstmate dispatch tier from coding benchmarks (and the right special-purpose rule for web research and images), verifying each one really works with tools, and editing every file that names a model.
 ---
 
 # update-models
@@ -36,7 +36,7 @@ Build the list of runnable models from each harness's own catalog. Each catalog 
 | Harness | Catalog command | Notes |
 |---|---|---|
 | Pi | `pi --list-models <search>` | Refresh first with `pi update --models`; the daily rebuild does not. A provider extension's list can lag the vendor: Pi still listed `antigravity/claude-sonnet-4-6` after Antigravity retired it, and did not list Sonnet/Opus 5.5. Pi accepts an unlisted `provider/id` with a "Using custom model id" warning, so check the vendor's own catalog for those. |
-| Antigravity (`agy`) | `agy models` | Authoritative for Antigravity. It also serves Claude/GPT models (e.g. `claude-opus-5-5-high`) from a separate, smaller pool (see placement rules). Ids carry the effort suffix; effort caps at `high`. |
+| Antigravity | `agy models` | Authoritative list of what Antigravity serves, including Claude/GPT models from a separate, smaller pool (see placement rules). Dispatch them through Pi only, never the `agy` harness: strip the effort suffix (`claude-opus-5-5-high` is `antigravity/claude-opus-5-5`) and let Pi's `--thinking` set effort. |
 | Claude Code | `claude --model <id> -p "Reply with exactly the model name you are" </dev/null` | Use exact model ids, never the `opus`/`sonnet`/`haiku` aliases, so the config names the model that runs: `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-4-5-20251001` (2026-10-04). Aliases silently move to a new model; exact ids move only when this skill bumps them after the step 2 release check. Never dispatch `fable`: it stalls unattended on a usage-credit prompt. |
 | Codex models via Pi | `pi --list-models openai-codex` | |
 | Grok TUI | `grok models` | |
@@ -58,12 +58,11 @@ Coding tiers (recon, everyday, large, hardest, review, default) are placed from 
 2. Cross-check any tier change with one independent source (SWE-Bench Pro, vendor release post). One benchmark alone misleads: Gemini 3.8 Flash reports 61.6% SWE-Bench Pro but scores 41.9 on the index, about 20 under GPT-6.1 Sol.
 3. Rules:
    - Quality first: a tier's candidates are the highest-scoring runnable models. Cost per task breaks ties only within about 2 points.
-   - Effort is a cost knob: when a higher effort does not score higher (Sol medium 61.4, high 60.1, max 60.1), use the cheaper one, except in the hardest tier (Sol xhigh 62.9 at $1.04).
+   - Effort is chosen per model from its own index rows, never by "higher is better". The same step up helps one model a lot and another not at all (2026-10-04: Sonnet 5.5 medium 45.9, high 55.0, xhigh 62.9; Sol medium 61.4, high 60.1, xhigh 62.9). For each candidate, use the cheapest effort within about 2 points of that model's best in a tier where cost matters (everyday, default), and its best-scoring effort in the large and hardest tiers. Never use an effort that scores below a cheaper one (Sol high). An effort with no index row keeps its current setting; say so in the report.
    - A newer, cheaper model that matches an older one replaces it (Sol 6.1 xhigh 62.9 at $1.04 replaced Astra max 61.6 at $7.47).
-   - The same model through a different harness is the same quality, but size its quota pool before choosing tiers. Antigravity's two pools are separate: `gemini` is large (a dozen calls left it at 99%), `claude_gpt` is small (five short tool calls used about 7% of its 5-hour window on 2026-10-04). So Gemini serves the high-volume rules (recon, web research, images), and agy Claude is limited to one short, infrequent job - review - where it adds capacity without draining. Jev's `spendPriority` also drops a fast-draining pool out of the ranking on its own.
+   - The same model through a different harness is the same quality, but size its quota pool before choosing tiers. Antigravity's two pools are separate: `gemini` is large (a dozen calls left it at 99%), `claude_gpt` is small (five short tool calls used about 7% of its 5-hour window on 2026-10-04). So Gemini serves the high-volume rules (recon, web research, images), and Antigravity Claude is limited to one short, infrequent job - review - where it adds capacity without draining. Jev's `spendPriority` also drops a fast-draining pool out of the ranking on its own.
    - A model below a tier's best (more than about 2 points) goes in only as a deliberate, user-approved trade, because spare quota will make it win that tier. Record the trade in the rule's `why`.
-   - A harness that caps effort below a tier's effort (agy caps at `high`) stays out of that tier (the hardest tier runs `xhigh`).
-   - Scores come from each vendor's own agent (Codex CLI, Claude Code, Antigravity SDK); the fleet often runs the model through Pi or agy. Treat them as directional.
+   - Scores come from each vendor's own agent (Codex CLI, Claude Code, Antigravity SDK); the fleet often runs the model through Pi. Treat them as directional.
 
 Special-purpose rules are placed by capability, not the coding index:
 
@@ -81,7 +80,7 @@ Show the user the relevant benchmark rows (score, $/task, minutes) and the propo
 For every model you add or move, through the exact harness and effort the config will use:
 
 - **Pi**: `pi --model <provider/id> --thinking <effort> -p "Use your bash tool to run: ls | head -2. Then reply DONE" </dev/null`
-- **agy**: `agy -p "Use your shell tool to run: ls | head -2. Then reply DONE" --model <id> --effort <effort> --dangerously-skip-permissions </dev/null`
+- **Claude Code**: `claude --model <id> --effort <effort> --dangerously-skip-permissions -p "Use your Bash tool to run: ls | head -2. Then reply DONE" </dev/null` (without the skip flag it waits on a permission prompt forever)
 
 Pass means it ran the tool, printed `DONE`, and exited within seconds. A plain "reply OK" test is not enough: `cursor/auto` answers that and still hangs on the first tool call. For the special-purpose rules also exercise the capability (a `web_search` for a current fact you can check, a `generate_image` call). Without `</dev/null`, `pi -p` waits on stdin forever. If Pi prints the reply but never exits, an extension is holding the process open: find it with `pi --no-extensions -e <path> ...` one extension at a time (this is how the `pi-cursor-provider` proxy bug was found); until fixed, every no-mistakes step stalls to its timeout.
 
@@ -90,7 +89,8 @@ Pass means it ran the tool, printed `DONE`, and exited within seconds. A plain "
 Dispatch profile shape:
 
 - `pi` profiles must declare `provider` as `quota-axi` names it, not the Pi model prefix: `openai-codex/...` is `codex`, `xai/...` is `grok`, `antigravity/...` is `agy`, `cursor/...` is `cursor`.
-- Native `agy` profiles need no `provider` (Firstmate maps `agy` itself) and use the suffixed ids from `agy models`.
+- Only `pi`, `claude`, and `grok` harnesses. Antigravity models go through Pi (`antigravity/...`), never the native `agy` harness.
+- `why` is optional. Firstmate reads it as a hint only when Jev is not deciding, and people read it when editing; Jev never sees it. Write one or two sentences, only for a choice a future editor would otherwise undo: a capability limit ("only Pi with pi-antigravity can generate images"), a deliberate restriction (Antigravity Opus only in review, small pool), or a surprising effort ("Sol high scores below Sol medium"). Leave out benchmark numbers (they go stale; they belong in the step 6 report), history ("replaces Astra"), models that are not in the rule, quota mechanics (Jev handles quota), and anything the `when` or `use` already says. A rule with nothing surprising gets no `why`.
 
 Then:
 
