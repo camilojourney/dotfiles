@@ -15,6 +15,8 @@
 # Herdr runtime state (lives under home/.config/herdr via HM symlink)
 home/.config/herdr/*.log
 home/.config/herdr/*.sock
+home/.config/herdr/*.sock.agent
+home/.config/herdr/session-snapshots/
 home/.config/herdr/session.json
 home/.config/herdr/.plugins.lock
 home/.config/herdr/release-notes.json

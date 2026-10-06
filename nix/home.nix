@@ -66,6 +66,7 @@ in
       color.ui = true;
       push.autoSetupRemote = true;
       pull.rebase = true;
+      rebase.autoStash = true;
       rebase.updateRefs = true;
     };
   };
