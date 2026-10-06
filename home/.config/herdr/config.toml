@@ -12,16 +12,7 @@ close_tab = "prefix+ampersand"
 workspace_picker = "prefix+w"
 goto             = "prefix+g"
 copy_mode  = "prefix+y"  # herdr's copy-mode entry key; copy-mode's own internal keys (v/space select, y/Enter copy, q/Esc cancel) aren't configurable
-focus_workspace_1 = "alt+1"
-focus_workspace_2 = "alt+2"
-focus_workspace_3 = "alt+3"
-focus_workspace_4 = "alt+4"
-focus_workspace_5 = "alt+5"
-focus_workspace_6 = "alt+6"
-focus_workspace_7 = "alt+7"
-focus_workspace_8 = "alt+8"
-focus_workspace_9 = "alt+9"
-focus_workspace_10 = "alt+0"
+switch_workspace = "alt+1..9"
 
 [ui]
 mouse_capture = false
