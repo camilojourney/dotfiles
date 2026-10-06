@@ -4,6 +4,7 @@ Deliberate decisions in this repo - do NOT silently revert them:
 
 - homebrew.onActivation.cleanup = "uninstall" in nix/configuration.nix is intentional, on both machines. It forces the good habit of declaring every Homebrew package in the Nix config instead of installing things ad-hoc, which keeps the machine reproducible, while leaving removed apps' user data in place (unlike "zap"). Do not soften it to "none".
 - Both machines pull this repo's main and rebuild as root every day at 05:00 (docs/AUTO-UPDATE.md). Anything pushed to main reaches both machines unattended, so only push config you would run a rebuild with.
+- For missing Nix, an unmounted store, or daemon connection failures, follow [Nix recovery](docs/RECOVERY.md#nix-is-missing-or-unavailable) before rerunning setup or considering reinstallation.
 - Never commit .no-mistakes/ validation evidence to this public repo. .no-mistakes/ is gitignored; if a validation pipeline stages evidence into a branch, drop it before merging.
 
 # Maintaining this file

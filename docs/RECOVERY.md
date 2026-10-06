@@ -2,6 +2,127 @@
 
 What to do if you lose your normal way of reaching or fixing a machine.
 
+## Nix is missing or unavailable
+
+Both machines use Determinate Nix. The `nix.enable = false` setting is
+intentional: nix-darwin must not take over management of that installation.
+A missing command can mean an unmounted store or a stale shell; a working
+Nix executable does not prove its daemon is available.
+
+In the October 2026 incident, the installation was intact, but macOS
+background task management marked both the store-mount and daemon jobs as
+disallowed. Manually registering the existing jobs restored that session;
+background permission and a successful reboot are separate checks.
+
+### Check macOS background permission
+
+Open **System Settings > General > Login Items & Extensions > App Background
+Activity** (called **Allow in the Background** on older macOS versions).
+Allow **Determinate Systems, Inc.**; use the information button to identify
+the item associated with `/usr/local/bin/determinate-nixd` and its store
+and daemon plists. This is a local user setting: do not reset the background
+task database or attempt to bypass approval through scripts or Nix config.
+
+```sh
+sudo /usr/bin/sfltool dumpbtm |
+  /usr/bin/grep -B 8 -A 6 -E 'Identifier:.*systems[.]determinate[.]nix-(store|daemon)'
+```
+
+Check the actual legacy-daemon records for
+`systems.determinate.nix-store` and `systems.determinate.nix-daemon`, not
+just the developer grouping. Each must be **allowed**; **enabled** alone
+does not establish approval. Notification flags can differ. If the toggle
+appears on but either entry remains disallowed, resolve that discrepancy
+before treating the repair as persistent. An empty filtered result is
+inconclusive, not proof of approval.
+
+### Restore the installed services when they are unregistered
+
+Check the mount job first:
+
+```sh
+sudo /bin/launchctl print system/systems.determinate.nix-store
+```
+
+Only if launchctl reports that it cannot find this service, validate and
+register its existing plist:
+
+```sh
+/usr/bin/plutil -lint /Library/LaunchDaemons/systems.determinate.nix-store.plist &&
+sudo /bin/launchctl bootstrap system /Library/LaunchDaemons/systems.determinate.nix-store.plist
+```
+
+Confirm the store is mounted and its installed executable works:
+
+```sh
+/sbin/mount | /usr/bin/grep ' on /nix '
+/nix/var/nix/profiles/default/bin/nix --version
+```
+
+If the mount job is already registered but the store remains unmounted,
+inspect `/var/log/determinate-nix-init.log` locally before changing service
+registration. A completed mount job with no running PID and exit status
+zero is normal. If a plist or executable is missing, investigate the
+existing installation; do not manufacture a replacement plist.
+
+Next check the daemon job:
+
+```sh
+sudo /bin/launchctl print system/systems.determinate.nix-daemon
+```
+
+Again, only if this service is unregistered:
+
+```sh
+/usr/bin/plutil -lint /Library/LaunchDaemons/systems.determinate.nix-daemon.plist &&
+sudo /bin/launchctl bootstrap system /Library/LaunchDaemons/systems.determinate.nix-daemon.plist
+```
+
+The installed plist manages daemon startup and sockets. Do not create a
+socket manually or restart a healthy job. A bootstrap failure needs its
+actual error investigated, not repeated installation attempts.
+
+### Refresh a stale shell and verify recovery
+
+If the absolute executable works but the current zsh session still cannot
+find Nix, reload its existing profile in that session:
+
+```sh
+unset __ETC_PROFILE_NIX_SOURCED
+. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+rehash
+```
+
+Test a fresh login shell with inherited Nix initialization guards removed,
+including an actual connection to the daemon:
+
+```sh
+/usr/bin/env -u __ETC_PROFILE_NIX_SOURCED \
+  -u __NIX_DARWIN_SET_ENVIRONMENT_DONE PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+  /bin/zsh -lic '
+    command -v nix &&
+    nix --version &&
+    nix --extra-experimental-features nix-command store info --store daemon &&
+    printf "%s\n" "Nix shell and daemon OK"
+  '
+```
+
+Require successful command completion; a store URL or partial JSON printed
+before an error is not success. A restricted-setting warning can coexist
+with a successful connection and does not justify granting trusted-user
+privileges. Save work, plan a normal reboot when you can reach the machine
+again, then repeat the mount check and fresh-shell test. Success before
+reboot alone does not establish that startup is repaired.
+
+Do not erase the Nix volume, extract or share its unlock password, reinstall
+Nix, or rerun setup merely because the command or daemon is unavailable.
+Recover the existing installation first.
+
+References: [Determinate's nix-darwin integration](https://docs.determinate.systems/guides/nix-darwin/),
+Apple's [Login Items & Extensions guide](https://support.apple.com/guide/mac-help/change-login-items-extensions-settings-mtusr003/mac),
+[background task management documentation](https://support.apple.com/en-gb/guide/deployment/depdca572563/1/web/1.0),
+and the Nix [store connectivity command](https://nix.dev/manual/nix/2.35/command-ref/new-cli/nix3-store-info.html).
+
 ## Locked out of `camilo-remote` (the mac-mini) because Tailscale is down
 
 Tailscale is currently the *only* configured way to reach the mac-mini

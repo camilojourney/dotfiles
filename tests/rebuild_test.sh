@@ -36,11 +36,13 @@ PROFILE=camilo
 [ "$ACCOUNT" != camilo_mini ] || PROFILE=camilo-remote
 rm -f "$SANDBOX/darwin-rebuild"
 
-# Not yet bootstrapped: fail loudly and point at setup/mac.sh instead of
-# trying to install Nix itself.
+# A missing binary may mean /nix is unavailable: point to recovery as well as
+# fresh-machine setup without trying to install or activate anything.
 status=0
-run_helper || status=$?
+out=$(run_helper 2>&1) || status=$?
 test "$status" -eq 1
+printf '%s\n' "$out" | grep -qF "docs/RECOVERY.md"
+printf '%s\n' "$out" | grep -qF "setup/mac.sh"
 [ ! -f "$SANDBOX/log" ]
 
 # Installed nix-darwin uses the normal activation path.

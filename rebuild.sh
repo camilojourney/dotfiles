@@ -22,7 +22,9 @@ esac
 # Absolute path: sudo does not inherit interactive PATH.
 : "${DARWIN_REBUILD_BIN:=/run/current-system/sw/bin/darwin-rebuild}"
 if [ ! -x "$DARWIN_REBUILD_BIN" ]; then
-  printf 'rebuild.sh: darwin-rebuild not found at %s - run setup/mac.sh first to bootstrap this machine.\n' "$DARWIN_REBUILD_BIN" >&2
+  printf 'rebuild.sh: darwin-rebuild not found at %s.\n' "$DARWIN_REBUILD_BIN" >&2
+  printf 'If this machine was already set up, follow %s/docs/RECOVERY.md first; /nix may be unavailable.\n' "$DIR" >&2
+  printf 'Use setup/mac.sh only to bootstrap a machine that has not been set up.\n' >&2
   exit 1
 fi
 sudo "$DARWIN_REBUILD_BIN" switch --flake "$DIR#$FLAKE_ATTR"

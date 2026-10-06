@@ -13,23 +13,58 @@ if grep -R -n -E 'yourname|/Users/yourname|Your Name|you@example.com' \
   exit 1
 fi
 
-# Install Nix via Determinate if missing
-if ! command -v nix &> /dev/null; then
-  curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm
+# These paths are overridable so tests never inspect the host installation.
+: "${NIX_DAEMON_PROFILE:=/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh}"
+: "${NIX_LAUNCH_DAEMONS_DIR:=/Library/LaunchDaemons}"
 
-  # The installer wires Nix into new shells, but this script is still running
-  # in the shell that started before Nix existed. Source the daemon profile
-  # now so `nix` works for the rest of this run instead of needing a second
-  # session. The profile script isn't written to be `set -u` safe, so relax
-  # that guard just around the source. (Overridable so tests can point at a
-  # sandboxed profile instead of the real one.)
-  : "${NIX_DAEMON_PROFILE:=/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh}"
-  if [ -f "$NIX_DAEMON_PROFILE" ]; then
+nix_recovery_required() {
+  printf 'setup/mac.sh: %s\n' "$1" >&2
+  printf 'See %s/docs/RECOVERY.md before retrying setup.\n' "$DOTFILES_DIR" >&2
+  exit 1
+}
+
+load_nix_profile() {
+  if [ -r "$NIX_DAEMON_PROFILE" ]; then
+    # A shell started while /nix was unavailable can inherit this stale guard.
+    # The installed profile also needs nounset disabled while it is sourced.
+    unset __ETC_PROFILE_NIX_SOURCED
     set +u
     # shellcheck disable=SC1090
     . "$NIX_DAEMON_PROFILE"
     set -u
   fi
+}
+
+if ! command -v nix &> /dev/null; then
+  load_nix_profile
+fi
+
+# A missing PATH entry or unmounted store does not mean Nix is uninstalled.
+if ! command -v nix &> /dev/null; then
+  for marker in \
+    "$NIX_DAEMON_PROFILE" \
+    "$NIX_LAUNCH_DAEMONS_DIR/systems.determinate.nix-store.plist" \
+    "$NIX_LAUNCH_DAEMONS_DIR/systems.determinate.nix-daemon.plist" \
+    "$NIX_LAUNCH_DAEMONS_DIR/org.nixos.darwin-store.plist" \
+    "$NIX_LAUNCH_DAEMONS_DIR/org.nixos.nix-daemon.plist"; do
+    if [ -e "$marker" ] || [ -L "$marker" ]; then
+      nix_recovery_required "An existing Nix installation is unavailable ($marker); refusing to reinstall it."
+    fi
+  done
+
+  curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm
+  load_nix_profile
+fi
+
+if ! NIX_BIN=$(command -v nix); then
+  nix_recovery_required "Nix is still unavailable after installation."
+fi
+
+# A working client binary does not establish that the daemon is available.
+# Check its exit status: even a failed connection can print partial output.
+if ! NIX_STORE_STATUS=$("$NIX_BIN" --extra-experimental-features nix-command store info --store daemon 2>&1); then
+  printf '%s\n' "$NIX_STORE_STATUS" >&2
+  nix_recovery_required "The Nix daemon is unavailable; check /nix and Determinate background permissions."
 fi
 
 # Install Homebrew if missing
@@ -51,7 +86,6 @@ else
   # path since sudo won't inherit the PATH this script just sourced, and
   # enable the experimental features it needs in case nix.conf doesn't
   # already have them.
-  NIX_BIN=$(command -v nix || echo /nix/var/nix/profiles/default/bin/nix)
   sudo "$NIX_BIN" --extra-experimental-features "nix-command flakes" \
     run nix-darwin/master#darwin-rebuild -- switch --flake "$DOTFILES_DIR#$DARWIN_FLAKE_ATTR"
 fi

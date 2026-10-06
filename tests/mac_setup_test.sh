@@ -290,6 +290,12 @@ set -euo pipefail
 . "${SANDBOX_GUARD:?}" || exit 1
 guard_write_path "$STUB_LOG"
 echo "nix $*" >> "$STUB_LOG"
+if [ "${STUB_DAEMON_UNAVAILABLE:-0}" = "1" ] &&
+   [ "$*" = "--extra-experimental-features nix-command store info --store daemon" ]; then
+  echo '{"url":"daemon"}'
+  echo "error: cannot connect to daemon socket" >&2
+  exit 1
+fi
 exit 0
 NIXBIN
 chmod +x "$STUB_NIX_BIN_DIR/nix"
@@ -336,7 +342,7 @@ EOF
 
 run_scenario() {
   local name="$1"
-  local sandbox stub_bin fixture home_dir log startup_env_hook startup_env_sentinel
+  local sandbox stub_bin fixture home_dir log startup_env_hook startup_env_sentinel nix_stub
   sandbox=$(mktemp -d "${TMPDIR:-/tmp}/mac-setup-test-${name}.XXXXXX")
   if [ -z "${DEBUG_KEEP_SANDBOX:-}" ]; then
     trap 'rm -rf "$sandbox"' RETURN
@@ -361,6 +367,8 @@ run_scenario() {
   export STUB_LOG="$log"
   export STUB_NIX_BIN_DIR="$sandbox/fake-nix/var/nix/profiles/default/bin"
   export NIX_DAEMON_PROFILE="$sandbox/fake-nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
+  export NIX_LAUNCH_DAEMONS_DIR="$sandbox/Library/LaunchDaemons"
+  export STUB_DAEMON_UNAVAILABLE=0
   export HOME="$home_dir"
   # Re-home NVM_DIR: an inherited absolute NVM_DIR (e.g. from hm-session-vars.sh)
   # would otherwise leak writes out of the sandbox when the bash stub runs.
@@ -375,16 +383,26 @@ HOOK
   local ENV="$startup_env_hook"
   export BASH_ENV ENV
 
-  if [ "$name" = "already-installed" ]; then
+  if [ "$name" = "already-installed" ] || [ "$name" = "stale-shell" ] || [ "$name" = "daemon-unavailable" ]; then
     # Simulate a machine that has already been bootstrapped once: nix and
     # darwin-rebuild are already resolvable, so the installer must not run.
-    write_stub "$stub_bin/nix" <<'EOF'
+    nix_stub="$stub_bin/nix"
+    if [ "$name" = "stale-shell" ]; then
+      nix_stub="$STUB_NIX_BIN_DIR/nix"
+    fi
+    write_stub "$nix_stub" <<'EOF'
 #!/bin/bash
 set -euo pipefail
 # shellcheck source=/dev/null
 . "${SANDBOX_GUARD:?}" || exit 1
 guard_write_path "$STUB_LOG"
 echo "nix $*" >> "$STUB_LOG"
+if [ "${STUB_DAEMON_UNAVAILABLE:-0}" = "1" ] &&
+   [ "$*" = "--extra-experimental-features nix-command store info --store daemon" ]; then
+  echo '{"url":"daemon"}'
+  echo "error: cannot connect to daemon socket" >&2
+  exit 1
+fi
 exit 0
 EOF
     export DARWIN_REBUILD_BIN="$sandbox/current-system/sw/bin/darwin-rebuild"
@@ -403,11 +421,74 @@ EOF
     export DARWIN_REBUILD_BIN="$sandbox/current-system/sw/bin/darwin-rebuild"
   fi
 
+  case "$name" in
+    stale-shell)
+      assert_path_under_sandbox "$NIX_DAEMON_PROFILE"
+      mkdir -p "$(dirname "$NIX_DAEMON_PROFILE")"
+      cat > "$NIX_DAEMON_PROFILE" <<'PROFILE'
+if [ -n "${__ETC_PROFILE_NIX_SOURCED:-}" ]; then
+  return
+fi
+export __ETC_PROFILE_NIX_SOURCED=1
+# Real Nix profiles are not nounset-safe; make this fixture exercise that too.
+: "$STUB_PROFILE_UNSET"
+export PATH="$STUB_NIX_BIN_DIR:$PATH"
+PROFILE
+      ;;
+    unmounted-store)
+      assert_path_under_sandbox "$NIX_LAUNCH_DAEMONS_DIR/systems.determinate.nix-store.plist"
+      mkdir -p "$NIX_LAUNCH_DAEMONS_DIR"
+      : > "$NIX_LAUNCH_DAEMONS_DIR/systems.determinate.nix-store.plist"
+      ;;
+    daemon-marker)
+      assert_path_under_sandbox "$NIX_LAUNCH_DAEMONS_DIR/systems.determinate.nix-daemon.plist"
+      mkdir -p "$NIX_LAUNCH_DAEMONS_DIR"
+      ln -s "$sandbox/missing-daemon.plist" "$NIX_LAUNCH_DAEMONS_DIR/systems.determinate.nix-daemon.plist"
+      ;;
+    broken-profile)
+      assert_path_under_sandbox "$NIX_DAEMON_PROFILE"
+      mkdir -p "$(dirname "$NIX_DAEMON_PROFILE")"
+      ln -s "$sandbox/missing-profile.sh" "$NIX_DAEMON_PROFILE"
+      ;;
+    daemon-unavailable)
+      export STUB_DAEMON_UNAVAILABLE=1
+      ;;
+  esac
+
   local out status
   set +e
-  out=$(env -u BASH_ENV -u ENV PATH="$stub_bin:/usr/bin:/bin:/usr/sbin:/sbin" "$REAL_BASH" "$fixture/setup/mac.sh" 2>&1)
+  out=$(env -u BASH_ENV -u ENV -u STUB_PROFILE_UNSET __ETC_PROFILE_NIX_SOURCED=1 PATH="$stub_bin:/usr/bin:/bin:/usr/sbin:/sbin" "$REAL_BASH" "$fixture/setup/mac.sh" 2>&1)
   status=$?
   set -e
+
+  local invocations
+  invocations=$(cat "$log")
+  case "$name" in
+    unmounted-store|daemon-marker|broken-profile|daemon-unavailable)
+      if [ "$status" -eq 0 ]; then
+        fail "$name: an unavailable existing installation must stop setup"
+        return
+      fi
+      assert_contains "$out" "docs/RECOVERY.md" \
+        "$name: points to recovery" && pass "$name: points to recovery"
+      assert_not_contains "$invocations" "curl " \
+        "$name: no installer or Homebrew download" && pass "$name: no installer or Homebrew download"
+      assert_not_contains "$invocations" "sh -s -- install" \
+        "$name: no reinstallation" && pass "$name: no reinstallation"
+      assert_not_contains "$invocations" "sudo " \
+        "$name: no privileged activation" && pass "$name: no privileged activation"
+      assert_not_contains "$invocations" "bash " \
+        "$name: no nvm installation" && pass "$name: no nvm installation"
+      if [ "$name" = "daemon-unavailable" ]; then
+        assert_contains "$out" "cannot connect to daemon socket" \
+          "$name: preserves the daemon error despite partial JSON" && pass "$name: preserves the daemon error despite partial JSON"
+      fi
+      if [ -e "$startup_env_sentinel" ]; then
+        fail "$name: inherited shell startup env was sourced"
+      fi
+      return
+      ;;
+  esac
 
   if [ "$status" -ne 0 ]; then
     fail "$name: setup/mac.sh exited $status. Output:"$'\n'"$out"
@@ -421,8 +502,8 @@ EOF
   fi
   pass "$name: inherited shell startup env was ignored"
 
-  local invocations
-  invocations=$(cat "$log")
+  assert_line_count "$invocations" "nix --extra-experimental-features nix-command store info --store daemon$" 1 \
+    "$name: checks daemon access" && pass "$name: checks daemon access"
 
   if [ "$name" = "fresh-machine" ]; then
     assert_contains "$invocations" "curl --proto =https --tlsv1.2 -sSf -L https://install.determinate.systems/nix" \
@@ -454,6 +535,11 @@ EOF
 test_sandbox_guard
 run_scenario "fresh-machine"
 run_scenario "already-installed"
+run_scenario "stale-shell"
+run_scenario "unmounted-store"
+run_scenario "daemon-marker"
+run_scenario "broken-profile"
+run_scenario "daemon-unavailable"
 
 echo
 if [ "$FAILURES" -eq 0 ]; then

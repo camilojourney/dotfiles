@@ -112,6 +112,9 @@ DARWIN_FLAKE_ATTR=camilo-remote bash setup/mac.sh
 
 It installs Nix and Homebrew if missing, applies the `nix-darwin` + Home Manager config, and installs `nvm` - designed to complete in one run on a truly fresh Mac, no second shell needed. See [`setup/README.md`](setup/README.md) for what it does step by step and its environment variables.
 
+If Nix stops working on a machine that was already set up, start with
+[Nix recovery](docs/RECOVERY.md#nix-is-missing-or-unavailable) before rerunning bootstrap.
+
 ## Making changes later
 
 After the initial bootstrap, the usual workflow is: edit the Nix config, then run:
