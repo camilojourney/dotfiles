@@ -6,7 +6,7 @@
         { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "medium", "provider": "agy" },
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "medium", "provider": "codex" },
         { "harness": "claude", "model": "claude-sonnet-5-5", "effort": "medium" },
-        { "harness": "grok", "model": "grok-4.7", "effort": "medium" }
+        { "harness": "pi", "model": "xai/grok-4.7", "effort": "medium", "provider": "grok" }
       ],
       "why": "Every candidate has a live web search tool. Research is not coding, so Gemini Flash's low coding score does not matter here."
     },
