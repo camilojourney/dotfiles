@@ -36,6 +36,10 @@ in
 
   home.sessionVariables = {
     EDITOR = "nvim";
+    # Refuse ad-hoc `pip install` outside a virtualenv: project libraries live
+    # in each project's uv environment, CLIs are uv tools, and the few global
+    # python3 libraries are declared in agent-tools.manifest.lock.json.
+    PIP_REQUIRE_VIRTUALENV = "1";
     # Point chrome-devtools-axi's default headless launches at Chrome Canary
     # instead of stable Chrome, so they never collide with the daily-driver
     # browser (same app bundle = macOS Launch Services treats a headless

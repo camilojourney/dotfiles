@@ -74,6 +74,41 @@ install_uv_tools() {
   done < <(jq -r '.uv[] | [.name, .version] | @tsv' "$MANIFEST")
 }
 
+# Homebrew's python3 holds only the libraries declared under .python, for
+# scripts run with plain python3 (skills). Anything else pip put there is
+# removed, the same way homebrew cleanup removes undeclared formulae. A
+# failure warns instead of aborting the rebuild; the next rebuild retries.
+reconcile_python_globals() {
+  local py=${AGENT_TOOLS_PYTHON:-$BREW_BIN/python3}
+  if [ ! -x "$py" ]; then
+    info "python: ${py} not found; skipped"
+    return 0
+  fi
+  # home.nix sets PIP_REQUIRE_VIRTUALENV=1 so nothing else installs here.
+  export PIP_REQUIRE_VIRTUALENV=0
+  local -a declared=() undeclared=()
+  local name
+  while IFS= read -r name; do
+    [ -n "$name" ] && declared+=("$name")
+  done < <(jq -r '.python[].name' "$MANIFEST")
+
+  if [ "${#declared[@]}" -gt 0 ]; then
+    info "python: reconciling ${declared[*]} at latest"
+    if ! "$py" -m pip install --quiet --upgrade --break-system-packages "${declared[@]}"; then
+      printf 'agent-tools: python: install failed; skipping cleanup, the next rebuild will retry\n' >&2
+      return 0
+    fi
+  fi
+
+  while IFS= read -r name; do
+    [ -n "$name" ] && undeclared+=("$name")
+  done < <("$py" "$REPO_ROOT/scripts/agent-tools/python-undeclared.py" ${declared[@]+"${declared[@]}"})
+  [ "${#undeclared[@]}" -gt 0 ] || return 0
+  info "python: removing undeclared ${undeclared[*]}"
+  "$py" -m pip uninstall --quiet --yes --break-system-packages "${undeclared[@]}" \
+    || printf 'agent-tools: python: cleanup failed; the next rebuild will retry\n' >&2
+}
+
 install_external_tools() {
   local tool
   while IFS= read -r tool; do
@@ -153,6 +188,7 @@ main() {
   info "reconciling agent tool inventory"
   install_npm_globals
   install_uv_tools
+  reconcile_python_globals
   install_external_tools
   self_update_external_tools
   run_setup_hooks

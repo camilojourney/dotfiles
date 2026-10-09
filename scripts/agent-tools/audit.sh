@@ -79,17 +79,30 @@ for pkg in "${actual_uv[@]:-}"; do
   grep -qxF "$pkg" <<<"$declared_uv" || unmanaged_uv+=("$pkg")
 done
 
-# brew formulas (top-level only)
+# brew formulas (top-level only: dependencies of declared formulae are not
+# unmanaged, and cleanup keeps them while something needs them)
 actual_brew_formulas=()
 if command -v brew >/dev/null 2>&1; then
   while IFS= read -r f; do
     actual_brew_formulas+=("$f")
-  done < <(brew list --formula 2>/dev/null | sort)
+  done < <(brew leaves 2>/dev/null | sort)
 fi
 unmanaged_brew_formulas=()
 for f in "${actual_brew_formulas[@]:-}"; do
   grep -qxF "$f" <<<"$declared_brew" || unmanaged_brew_formulas+=("$f")
 done
+
+# Homebrew python3 packages nothing declared needs (rebuild removes these)
+declared_python=()
+while IFS= read -r pkg; do
+  [ -n "$pkg" ] && declared_python+=("$pkg")
+done < <(jq -r '.python[].name' "$MANIFEST")
+undeclared_python=()
+if [ -x "$BREW_BIN/python3" ]; then
+  while IFS= read -r pkg; do
+    [ -n "$pkg" ] && undeclared_python+=("$pkg")
+  done < <("$BREW_BIN/python3" "$REPO_ROOT/scripts/agent-tools/python-undeclared.py" ${declared_python[@]+"${declared_python[@]}"} 2>/dev/null || true)
+fi
 
 missing_external=()
 for tool in $declared_external; do
@@ -99,9 +112,10 @@ done
 report_section "Unmanaged npm globals (not in manifest)" "${unmanaged_npm[@]:-}"
 report_section "Unmanaged uv tool apps (not in manifest)" "${unmanaged_uv[@]:-}"
 report_section "Unmanaged Homebrew formulas (not in declared brew set)" "${unmanaged_brew_formulas[@]:-}"
+report_section "Undeclared Homebrew python3 packages (not in manifest .python)" "${undeclared_python[@]:-}"
 report_section "Declared external tools missing from PATH" "${missing_external[@]:-}"
 
 echo "=== Notes ==="
 echo "- This script reports only; it never deletes or uninstalls."
-echo "- Homebrew cleanup removes undeclared brew packages on rebuild; npm/uv tool/external extras stay until removed manually."
+echo "- Rebuilds remove undeclared brew packages and undeclared Homebrew python3 packages; npm/uv tool/external extras stay until removed manually."
 echo "- Add new required tools via nix/agent-tools.manifest.lock.json and nix/configuration.nix (brew), then rebuild."

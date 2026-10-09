@@ -13,6 +13,7 @@ bash tests/link_claude_skills_test.sh
 
 `agent_tools_test.sh` exercises the agent-tool reconciliation and audit scripts with stubbed `npm`, `uv`, external installers, and Homebrew.
 It proves fresh activation installs the one declared inventory identically on every machine (no per-host profiles), repeat activation does not downgrade self-updating tools, npm tools follow their latest channel, external updaters run safely, setup hooks run, and missing package managers fail clearly.
+It also proves the declared global python3 libraries install at latest, undeclared ones are removed, a failed install skips cleanup without aborting the rebuild, and the undeclared-package helper keeps declared packages, their runtime dependencies, and Homebrew's own.
 It never touches the real network or host package state.
 
 `baby_menu_config_test.sh` proves a rebuild preserves conflicting starter configuration, restores the three authored Baby Menu links, leaves runtime state untouched, and remains idempotent.

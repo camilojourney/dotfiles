@@ -37,6 +37,7 @@ A rebuild already updates everything else on every run:
 |---|---|
 | Homebrew formulae and casks | `homebrew.onActivation.upgrade = true` |
 | Pi, quota-axi, gh-axi, tasks-axi, and the other npm CLIs | reinstalled at `@latest` from `nix/agent-tools.manifest.lock.json` |
+| Global `python3` libraries (only those in the manifest's `python` list; anything else pip installed is removed) | `pip install --upgrade` |
 | Pi extensions | `pi update --extensions` |
 | no-mistakes, treehouse | their own self-updaters |
 

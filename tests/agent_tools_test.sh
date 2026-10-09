@@ -50,7 +50,7 @@ setup_sandbox() {
     "$sandbox/log" "$sandbox/stubs" "$sandbox/repo/scripts/agent-tools"
 
   cp -R "$REPO_ROOT/nix" "$sandbox/repo/"
-  cp "$REPO_ROOT/scripts/agent-tools/"*.sh "$sandbox/repo/scripts/agent-tools/"
+  cp "$REPO_ROOT/scripts/agent-tools/"*.sh "$REPO_ROOT/scripts/agent-tools/"*.py "$sandbox/repo/scripts/agent-tools/"
   chmod +x "$sandbox/repo/scripts/agent-tools/"*.sh
   # No real uv tool tracks latest, so a fixture entry keeps that path covered.
   local manifest="$sandbox/repo/nix/agent-tools.manifest.lock.json"
@@ -94,7 +94,7 @@ STUB
   cat >"$sandbox/stubs/brew" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
-if [ "${1:-}" = list ] && [ "${2:-}" = --formula ]; then
+if [ "${1:-}" = leaves ]; then
   echo uv
 fi
 STUB
@@ -157,6 +157,20 @@ exit 0
 EOF
   done
 
+  # Homebrew python3: logs pip calls; the undeclared-package helper reports
+  # one stray package. fail-python-install makes `pip install` fail.
+  cat >"$sandbox/stubs/python3" <<'STUB'
+#!/usr/bin/env bash
+case "${1:-}" in
+  *python-undeclared.py) echo stray-pkg; exit 0 ;;
+esac
+echo "python3 $* PIP_REQUIRE_VIRTUALENV=${PIP_REQUIRE_VIRTUALENV:-unset}" >>"${AGENT_TOOLS_UV_LOG:?}"
+if [ "${3:-}" = install ] && [ -e "$HOME/fail-python-install" ]; then
+  exit 1
+fi
+exit 0
+STUB
+
   chmod +x "$sandbox/stubs/"*
   printf '#!/usr/bin/env bash\necho stub-tmux\n' >"$sandbox/stubs/tmux"
   chmod +x "$sandbox/stubs/tmux"
@@ -210,6 +224,10 @@ test_fresh_install() {
   assert_contains "$out" "uv tool install --force --upgrade example-latest" "a latest uv tool installs unpinned with upgrade"
   assert_contains "$out" "uv: reconciling mlx-lm==0.31.3" "fresh install installs mlx-lm on every machine"
   assert_contains "$out" "uv: reconciling mlx-optiq==0.5.13" "fresh install installs mlx-optiq on every machine"
+  assert_contains "$out" "python3 -m pip install --quiet --upgrade --break-system-packages pymupdf pypdf PIP_REQUIRE_VIRTUALENV=0" \
+    "declared global python3 libraries install at latest, bypassing the virtualenv guard"
+  assert_contains "$out" "python3 -m pip uninstall --quiet --yes --break-system-packages stray-pkg" \
+    "undeclared global python3 packages are removed"
   assert_contains "$out" "gh-axi setup hooks" "setup hooks run"
   assert_not_contains "$out" "lavish-axi setup hooks" "lavish-axi setup hooks does not run automatically"
   assert_contains "$out" "reconcile complete" "fresh install completes"
@@ -345,6 +363,57 @@ test_audit_runs_with_no_arguments() {
   pass "audit runs identically with no host-profile argument"
 }
 
+test_failed_python_install_does_not_block_rebuild() {
+  local sandbox log out rc=0
+  sandbox=$(setup_sandbox)
+  log="$sandbox/log/failed-python"
+  touch "$sandbox/home/fail-python-install"
+
+  run_reconcile "$log" "$sandbox" || rc=$?
+  [ "$rc" -eq 0 ] || fail "a failed python3 install blocked the whole rebuild (rc=$rc)"
+  out=$(cat "$log/stdout.log" "$log/stderr.log" "$log/uv.log" 2>/dev/null || true)
+  assert_contains "$out" "python: install failed; skipping cleanup" "a failed python3 install is surfaced as a warning"
+  assert_not_contains "$out" "pip uninstall" "cleanup is skipped when the declared install failed"
+  assert_contains "$out" "reconcile complete" "reconciliation still completes after a failed python3 install"
+
+  rm -rf "$sandbox"
+  pass "a failed python3 install skips cleanup and does not abort the rebuild"
+}
+
+# Runs the real helper against fake dist-info metadata: declared packages and
+# their runtime dependencies stay, as do packages Homebrew installed itself
+# and their dependencies;
+# extras-only and other-platform requirements do not keep anything.
+test_python_undeclared_helper() {
+  local py=/opt/homebrew/bin/python3 site out
+  if [ ! -x "$py" ]; then
+    pass "python-undeclared helper (skipped: no Homebrew python3)"
+    return 0
+  fi
+  site=$(mktemp -d "${TMPDIR:-/tmp}/python-undeclared.XXXXXX")
+  fake_dist() {  # <name> <installer> [Requires-Dist ...]
+    local dir="$site/$1-1.0.dist-info" req
+    mkdir -p "$dir"
+    printf 'Metadata-Version: 2.1\nName: %s\nVersion: 1.0\n' "$1" >"$dir/METADATA"
+    for req in "${@:3}"; do printf 'Requires-Dist: %s\n' "$req" >>"$dir/METADATA"; done
+    printf '%s\n' "$2" >"$dir/INSTALLER"
+  }
+  fake_dist Declared_Lib pip 'dep-a>=1' 'only-extra; extra == "docs"' 'only-windows; sys_platform == "win32"'
+  fake_dist dep-a pip dep-b
+  fake_dist dep-b pip
+  fake_dist only-extra pip
+  fake_dist only-windows pip
+  fake_dist stray pip
+  fake_dist wheel brew brew-dep
+  fake_dist brew-dep pip
+
+  out=$("$py" "$REPO_ROOT/scripts/agent-tools/python-undeclared.py" --path "$site" declared-lib)
+  rm -rf "$site"
+  [ "$out" = "$(printf 'only-extra\nonly-windows\nstray')" ] \
+    || fail "python-undeclared helper kept or dropped the wrong packages: $(echo "$out" | tr '\n' ' ')"
+  pass "python-undeclared helper keeps declared packages, their dependencies, and Homebrew's own"
+}
+
 test_fresh_install
 test_idempotent_repeat
 test_missing_npm_fails
@@ -352,6 +421,8 @@ test_manifest_json_valid
 test_deferred_no_mistakes_update_does_not_block_rebuild
 test_failed_setup_hook_does_not_block_rebuild
 test_audit_runs_with_no_arguments
+test_failed_python_install_does_not_block_rebuild
+test_python_undeclared_helper
 
 if [ "$FAILURES" -gt 0 ]; then
   echo "$FAILURES test(s) failed" >&2

@@ -4,7 +4,8 @@
     "npm": "Global npm CLIs install from the latest registry tag via brew node npm with --ignore-scripts. The global npm package itself is never managed here so brew node owns npm.",
     "uv": "Isolated Python CLIs install via `uv tool install`: \"latest\" upgrades on every rebuild, a version string pins with == (the MLX libraries, whose model compatibility a silent upgrade could break). One list, same on every machine.",
     "external": "Release archives provide sha256-verified bootstrap installs. Entries with selfUpdateCommand preserve an existing installation and run that tool's supported updater after reconciliation.",
-    "reproducibility": "uv and external bootstrap pins are auditable in this file. Npm CLIs and self-updating external tools intentionally trade fixed-version reproducibility for current releases on every rebuild."
+    "reproducibility": "uv and external bootstrap pins are auditable in this file. Npm CLIs and self-updating external tools intentionally trade fixed-version reproducibility for current releases on every rebuild.",
+    "python": "Homebrew's python3 holds only the libraries listed under python, for scripts run with plain python3 (skills). Every rebuild upgrades them to latest and uninstalls anything else pip put there. Projects keep their libraries in their own uv environment and CLIs go under uv; PIP_REQUIRE_VIRTUALENV=1 (home.nix) blocks ad-hoc global pip installs."
   },
   "npm": [
     "@earendil-works/pi-coding-agent",
@@ -20,7 +21,13 @@
   ],
   "uv": [
     { "name": "mlx-lm", "version": "0.31.3" },
-    { "name": "mlx-optiq", "version": "0.5.13" }
+    { "name": "mlx-optiq", "version": "0.5.13" },
+    { "name": "py-spy", "version": "latest" },
+    { "name": "ruff", "version": "latest" }
+  ],
+  "python": [
+    { "name": "pymupdf", "usedBy": "bookstore book-hunter skill (import fitz)" },
+    { "name": "pypdf", "usedBy": "pdf skill scripts" }
   ],
   "external": {
     "no-mistakes": {
