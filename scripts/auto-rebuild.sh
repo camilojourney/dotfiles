@@ -5,7 +5,8 @@
 #      never forces, when it cannot fast-forward cleanly)
 #   2. the same rebuild as ./rebuild-total.sh (laptop) or ./rebuild.sh (remote)
 # Usage: auto-rebuild.sh <macOS user> <flake attr>
-# Output goes to /var/log/auto-rebuild.log; any failure posts a macOS
+# Output goes to /var/log/auto-rebuild.log; any failure, including a single
+# Homebrew package that could not be installed or upgraded, posts a macOS
 # notification to the logged-in user.
 #
 # The daemon runs this file by path instead of from the Nix store on purpose:
@@ -72,12 +73,26 @@ if [ -x "$MAS" ]; then
   fi
 fi
 
-if darwin-rebuild switch --flake "$DOTFILES#$FLAKE_ATTR"; then
+# A Homebrew package that fails to install or upgrade only warns during
+# activation (nix/configuration.nix), so the rebuild still succeeds. Keep a
+# copy of the output to name those packages in the log and a notification.
+REBUILD_OUT=$(mktemp)
+trap 'rm -f "$REBUILD_OUT"' EXIT
+darwin-rebuild switch --flake "$DOTFILES#$FLAKE_ATTR" 2>&1 | tee "$REBUILD_OUT"
+rebuild_status=${PIPESTATUS[0]}
+brew_failed=$(sed -nE 's/^(Installing|Upgrading) (.+) has failed!$/\2/p' "$REBUILD_OUT" | sort -u | paste -sd, - | sed 's/,/, /g')
+
+if [ "$rebuild_status" -eq 0 ]; then
   log "rebuild: ok"
 else
   log "rebuild: FAILED"
   notify "Rebuild failed - see /var/log/auto-rebuild.log"
   exit 1
+fi
+
+if [ -n "$brew_failed" ]; then
+  log "homebrew: could not install or upgrade: $brew_failed (everything else applied; retried next run)"
+  notify "Homebrew could not update $brew_failed - everything else applied"
 fi
 
 log "auto-rebuild: done"

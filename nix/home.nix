@@ -109,6 +109,8 @@ in
       lg = "git log --oneline --graph";
       # Matches Kun's alias: explicitly bypasses Claude Code permission prompts.
       cc = "claude --dangerously-skip-permissions";
+      # Homebrew names the Fabric binary fabric-ai (see nix/configuration.nix).
+      fabric = "fabric-ai";
       # One script for both hosts: rebuild.sh detects the account and picks
       # the right flake attr, so this alias never needs a host override.
       rebuild = "~/github/dotfiles/rebuild.sh";
@@ -216,13 +218,5 @@ in
   home.activation.updatePiPackages = lib.hm.dag.entryAfter [ "installAgentTools" ] ''
     export PATH="$PATH:/opt/homebrew/bin:/usr/bin:/bin"
     pi update --extensions
-  '';
-
-  home.activation.installFabric = lib.hm.dag.entryAfter [ "updatePiPackages" ] ''
-    export PATH="$PATH:/opt/homebrew/bin:/usr/bin:/bin"
-    # Install fabric via Homebrew if not already installed
-    if ! command -v fabric &> /dev/null; then
-      /opt/homebrew/bin/brew install danielmiessler/fabric/fabric 2>/dev/null || true
-    fi
   '';
 }

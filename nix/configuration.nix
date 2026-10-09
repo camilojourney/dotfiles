@@ -67,6 +67,7 @@ in
     ];
     brews = [
       "espeak-ng" # optional text-to-speech support
+      "fabric-ai" # danielmiessler/fabric AI pattern CLI; binary is fabric-ai (aliased to fabric in home.nix)
       "curl" # downloads pinned external agent releases during activation
       "fswatch" # used by Invoz watch loops
       "gh" # GitHub CLI
@@ -104,6 +105,25 @@ in
       "orbstack"
     ];
   };
+
+  # One Homebrew package that cannot be installed or upgraded (a vendor pulling
+  # a release, e.g. the ChatGPT cask 404 on 2026-10-08) must not abort the
+  # whole activation. nix-darwin runs brew bundle under `set -e`, so a single
+  # failure used to skip Home Manager, the MAS cleanup, and linking the new
+  # generation. This is nix-darwin's own Homebrew step (modules/homebrew.nix)
+  # with the failure downgraded to a warning; scripts/auto-rebuild.sh reports
+  # which packages failed. Re-check it against upstream when bumping flake.lock.
+  system.activationScripts.homebrew.text = lib.mkForce ''
+    # Homebrew Bundle
+    echo >&2 "Homebrew bundle..."
+    if [ -f "${config.homebrew.prefix}/bin/brew" ]; then
+      if ! ${config.homebrew.onActivation.brewBundleCmd { onlyCheck = false; }}; then
+        printf >&2 '\e[1;33mwarning: brew bundle had failures (lines ending "has failed!" above); continuing activation\e[0m\n'
+      fi
+    else
+      echo -e "\e[1;31merror: Homebrew is not installed, skipping...\e[0m" >&2
+    fi
+  '';
 
   # Homebrew Bundle does not remove MAS apps that disappear from masApps.
   # Run the cleanup as the primary user after Bundle has installed declared

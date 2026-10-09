@@ -47,8 +47,13 @@ and a manual rebuild.
 ## Logs and failures
 
 - Log: `/var/log/auto-rebuild.log` (`tail -50 /var/log/auto-rebuild.log`).
-- A skipped pull, a failed rebuild, or a failed quota-axi reinstall posts a
-  macOS notification titled "Daily rebuild" to the logged-in user.
+- A skipped pull, a failed rebuild, a failed quota-axi reinstall, or a
+  Homebrew package that could not be installed or upgraded posts a macOS
+  notification titled "Daily rebuild" to the logged-in user.
+- One Homebrew package failing (say, a cask whose download the vendor pulled)
+  does not fail the rebuild: everything else is still applied, the log gets a
+  `homebrew: could not install or upgrade: <names>` line, and the next run
+  retries it.
 - Run it now instead of waiting:
   `sudo launchctl kickstart system/org.dotfiles.auto-rebuild`.
 - Check it is loaded: `sudo launchctl print system/org.dotfiles.auto-rebuild`.
@@ -91,6 +96,14 @@ of not running rebuilds by hand. To stop it, remove
   root-owned Nix `mas upgrade` (`/run/current-system/sw/bin/mas`, from
   `environment.systemPackages`) inside the user's login session first. Never
   point it at Homebrew's `mas`: that binary is user-writable.
+- **Homebrew failures warn instead of aborting activation.** nix-darwin runs
+  `brew bundle` under `set -e`, so one failed download used to stop activation
+  before Home Manager, the MAS cleanup, and linking the new generation
+  (ChatGPT's cask 404, 2026-10-08/09). `nix/configuration.nix` replaces
+  nix-darwin's Homebrew step with the same `brew bundle` command whose failure
+  only warns; the script parses the `... has failed!` lines to report them.
+  Re-check that override against nix-darwin's `modules/homebrew.nix` when
+  bumping `flake.lock`.
 - **`--ff-only` pulls.** The job never merges, rebases, or resets; anything
   that needs a decision is left for a human and reported.
 
