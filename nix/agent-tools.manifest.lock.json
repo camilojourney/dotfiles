@@ -23,7 +23,8 @@
     { "name": "mlx-lm", "version": "0.31.3" },
     { "name": "mlx-optiq", "version": "0.5.13" },
     { "name": "py-spy", "version": "latest" },
-    { "name": "ruff", "version": "latest" }
+    { "name": "ruff", "version": "latest" },
+    { "name": "yt-dlp", "version": "latest" }
   ],
   "python": [
     { "name": "pymupdf", "usedBy": "bookstore book-hunter skill (import fitz)" },
