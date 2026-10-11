@@ -41,5 +41,25 @@
   "autoCompactWindow": 500000,
   "skipDangerousModePermissionPrompt": true,
   "theme": "dark-ansi",
-  "agentPushNotifEnabled": true
+  "agentPushNotifEnabled": true,
+  "disableClaudeAiConnectors": true,
+  "enabledPlugins": {
+    "figma@knowledge-work-plugins": false
+  },
+  "skillOverrides": {
+    "built-in-browser": "off",
+    "chrome-browser": "off",
+    "computer-use": "off",
+    "cv": "off",
+    "deep-research": "off",
+    "docs": "off",
+    "docx": "off",
+    "google-workspace": "off",
+    "import-memory": "off",
+    "morning": "off",
+    "pdf": "off",
+    "pptx": "off",
+    "skill-creator": "off",
+    "xlsx": "off"
+  }
 }

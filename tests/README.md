@@ -8,7 +8,7 @@ bash tests/rebuild_test.sh
 bash tests/agent_tools_test.sh
 bash tests/baby_menu_config_test.sh
 bash tests/pi_settings_test.sh
-bash tests/link_claude_skills_test.sh
+bash tests/link_skills_test.sh
 ```
 
 `agent_tools_test.sh` exercises the agent-tool reconciliation and audit scripts with stubbed `npm`, `uv`, external installers, and Homebrew.
@@ -18,7 +18,7 @@ It never touches the real network or host package state.
 
 `baby_menu_config_test.sh` proves a rebuild preserves conflicting starter configuration, restores the three authored Baby Menu links, leaves runtime state untouched, and remains idempotent.
 
-`link_claude_skills_test.sh` proves `~/.claude/skills` becomes a link to the shared `~/.agents/skills`: a fresh home gets the link, a real directory's skills move into the shared one, a skill present in both stops the migration untouched, and a stale link is repointed.
+`link_skills_test.sh` proves only the fleet skills declared in fleet-system's `system/skills/links.json` are linked, each only into its declared directory (`~/.claude/skills` or `~/.agents/skills`): the old shared link becomes two directories, undeclared fleet links are removed, entries other tools install stay, and missing skills, blocking directories and a missing manifest are reported without failing the rebuild.
 
 `pi_settings_test.sh` is a regression test for the declarative Pi settings and model overrides.
 It ensures the package list retains only the intended Cursor provider, keeps GPT-6 Sol with high thinking as the default, removes the fixed llama.cpp URL, and limits custom model metadata to DeepSeek's 500,000-token context overrides.
