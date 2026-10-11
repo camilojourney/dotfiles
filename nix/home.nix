@@ -49,6 +49,13 @@ in
     # persists across every later invocation instead of starting from a
     # fresh, signed-out profile each time.
     CHROME_DEVTOOLS_AXI_USER_DATA_DIR = "${homeDirectory}/.local/state/chrome-devtools-axi-profile";
+    # Pi traces go to the local Langfuse (scripts/agent-tools/langfuse-up.sh).
+    # The PI_ prefix keeps these from reaching other OTel programs; the auth
+    # header is set in zsh from the secrets file. Tags arrive per run in the
+    # standard OTEL_RESOURCE_ATTRIBUTES (fleet-system system/skills/TRACING.md).
+    PI_OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:3000/api/public/otel";
+    PI_OTEL_METRICS_EXPORTER = "none";
+    PI_OTEL_SERVICE_NAME = "pi";
   };
 
   # uv installs user-scoped CLI entry points here.
@@ -129,6 +136,9 @@ in
     initContent = ''
       bindkey '^f' autosuggest-accept
     '';
+    envExtra = ''
+      export PI_OTEL_EXPORTER_OTLP_HEADERS="$(${dotfilesDir}/scripts/agent-tools/langfuse-otel-headers.sh --env)"
+    '';
   };
 
   # Baby Menu may recreate starter files after its managed links disappear.
@@ -195,11 +205,16 @@ in
   # setupLaunchAgents), which depend on Nix's GNU coreutils (already earlier
   # in $PATH) for flags like `readlink -m` that BSD's /usr/bin/readlink
   # doesn't support. Prepending shadowed those and broke setupLaunchAgents.
-  # Global skills cost tokens on every turn, so ~/.claude/skills and
-  # ~/.agents/skills are separate and hold only the fleet skills declared in
-  # fleet-system's system/skills/links.json.
+  # The Fleet owns which skills load globally: its system/skills/ACTIVE list
+  # and link-skills.sh, which makes ~/.claude/skills a link to ~/.agents/skills
+  # and links only the listed skills there. /usr/bin is appended for `trash`.
   home.activation.linkSkills = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-    JQ="${pkgs.jq}/bin/jq" ${pkgs.bash}/bin/bash "${dotfilesDir}/scripts/agent-tools/link-skills.sh"
+    linkSkills="${homeDirectory}/github/fleet-system/system/skills/link-skills.sh"
+    if [ -f "$linkSkills" ]; then
+      PATH="$PATH:/usr/bin" ${pkgs.bash}/bin/bash "$linkSkills"
+    else
+      echo "linkSkills: $linkSkills not found; skills left unchanged" >&2
+    fi
   '';
 
   home.activation.installAgentTools = lib.hm.dag.entryAfter [ "linkSkills" ] ''
