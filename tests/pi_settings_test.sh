@@ -7,8 +7,8 @@ set -euo pipefail
 REPO_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." &>/dev/null && pwd)
 SETTINGS="$REPO_ROOT/home/.pi/agent/settings.json"
 MODELS="$REPO_ROOT/home/.pi/agent/models.json"
-CURSOR_PROVIDER="git:github.com/camilojourney/pi-cursor-provider#73fd2d75c58bfe1757a124e407fbc72f89642826"
-OTEL_PACKAGE="git:github.com/camilojourney/pi-opentelemetry#9cf23282c3f7ebf315a04b95c9135cd2a4290334"
+CURSOR_PROVIDER="git:github.com/camilojourney/pi-cursor-provider@73fd2d75c58bfe1757a124e407fbc72f89642826"
+OTEL_PACKAGE="git:github.com/camilojourney/pi-opentelemetry@9cf23282c3f7ebf315a04b95c9135cd2a4290334"
 
 jq -e --arg cursor_provider "$CURSOR_PROVIDER" --arg otel_package "$OTEL_PACKAGE" '
   .packages as $packages
