@@ -75,6 +75,9 @@ in
       "gnupg" # GPG key generation and commit signing
       "herdr" # agent multiplexer for SSH remote machines
       "just" # task runner for Invoz and other projects
+      "jscpd" # copy/paste detector used by the /code skill's duplication check
+      "lychee" # offline link checker; required by the /specs spec_check
+      "markdownlint-cli2" # Markdown linter; required by the /specs spec_check
       "mas" # Mac App Store CLI and MAS cleanup
       "node" # owns npm; never install a separate global npm
       "pass" # password-store CLI
@@ -82,6 +85,7 @@ in
       "starship" # nixpkgs starship currently fails to link on Darwin
       "tmux" # runtime backend for terminal-multiplexed agent sessions
       "uv"
+      "vale" # prose linter; skill-creator and /doctor prose gate, advisory in /specs
     ];
     casks = [
       "wezterm"
