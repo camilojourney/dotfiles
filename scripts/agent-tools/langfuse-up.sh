@@ -12,6 +12,18 @@ secrets="$HOME/.config/secrets/langfuse.env"
 mkdir -p "$dir" "$(dirname "$secrets")"
 chmod 700 "$(dirname "$secrets")"
 curl -fsSL "https://raw.githubusercontent.com/langfuse/langfuse/$LANGFUSE_REF/docker-compose.yml" -o "$dir/docker-compose.yml"
+# The official file publishes the web UI and MinIO on every interface; keep
+# both on loopback like the other services.
+cat > "$dir/loopback.yml" <<'LOOPBACK'
+services:
+  langfuse-web:
+    ports: !override
+      - 127.0.0.1:3000:3000
+  minio:
+    ports: !override
+      - 127.0.0.1:9090:9000
+      - 127.0.0.1:9091:9001
+LOOPBACK
 
 if [ ! -f "$secrets" ]; then
   r() { openssl rand -hex "${1:-16}"; }
@@ -41,5 +53,6 @@ SECRETS
   echo "langfuse-up: wrote $secrets"
 fi
 
-docker compose --project-name langfuse --env-file "$secrets" -f "$dir/docker-compose.yml" up -d
+docker compose --project-name langfuse --env-file "$secrets" \
+  -f "$dir/docker-compose.yml" -f "$dir/loopback.yml" up -d
 echo "langfuse-up: http://localhost:3000 (login: LANGFUSE_INIT_USER_EMAIL / LANGFUSE_INIT_USER_PASSWORD in $secrets)"

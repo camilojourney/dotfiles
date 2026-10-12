@@ -135,6 +135,18 @@ in
     };
     initContent = ''
       bindkey '^f' autosuggest-accept
+
+      # Tag agent traces with the Fleet commit (plus -dirty for local edits):
+      # every linked skill is read from that checkout, so it pins their
+      # versions. Refreshed at each prompt; other tags in the variable stay.
+      _fleet_trace_tag() {
+        local sha
+        sha=$(git -C ${homeDirectory}/github/fleet-system describe --always --dirty --abbrev=7 2>/dev/null) || return 0
+        local -a tags=(''${(s:,:)OTEL_RESOURCE_ATTRIBUTES})
+        tags=("fleet.sha=$sha" ''${tags:#fleet.sha=*})
+        export OTEL_RESOURCE_ATTRIBUTES=''${(j:,:)tags}
+      }
+      precmd_functions+=(_fleet_trace_tag)
     '';
     envExtra = ''
       export PI_OTEL_EXPORTER_OTLP_HEADERS="$(${dotfilesDir}/scripts/agent-tools/langfuse-otel-headers.sh --env)"
