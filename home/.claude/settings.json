@@ -55,22 +55,39 @@
   "agentPushNotifEnabled": true,
   "disableClaudeAiConnectors": true,
   "enabledPlugins": {
-    "figma@knowledge-work-plugins": false
+    "figma@synced": false
   },
   "skillOverrides": {
+    "artifact-capabilities": "off",
+    "artifact-design": "off",
+    "artifact-diagramming": "off",
     "built-in-browser": "off",
     "chrome-browser": "off",
+    "claude-api": "off",
+    "claude-in-chrome": "off",
+    "code-review": "off",
     "computer-use": "off",
     "cv": "off",
+    "dataviz": "off",
     "deep-research": "off",
     "docs": "off",
     "docx": "off",
+    "fewer-permission-prompts": "off",
     "google-workspace": "off",
     "import-memory": "off",
+    "init": "off",
+    "keybindings-help": "off",
+    "loop": "off",
     "morning": "off",
     "pdf": "off",
+    "plugin-authoring": "off",
     "pptx": "off",
+    "run": "off",
+    "schedule": "off",
+    "security-review": "off",
+    "simplify": "off",
     "skill-creator": "off",
+    "update-config": "off",
     "xlsx": "off"
   }
 }
