@@ -61,6 +61,7 @@
     "artifact-capabilities": "off",
     "artifact-design": "off",
     "artifact-diagramming": "off",
+    "batch": "off",
     "built-in-browser": "off",
     "chrome-browser": "off",
     "claude-api": "off",
@@ -69,7 +70,10 @@
     "computer-use": "off",
     "cv": "off",
     "dataviz": "off",
+    "debug": "off",
     "deep-research": "off",
+    "design": "off",
+    "design-sync": "off",
     "docs": "off",
     "docx": "off",
     "fewer-permission-prompts": "off",
@@ -83,11 +87,24 @@
     "plugin-authoring": "off",
     "pptx": "off",
     "run": "off",
+    "run-skill-generator": "off",
     "schedule": "off",
     "security-review": "off",
     "simplify": "off",
     "skill-creator": "off",
     "update-config": "off",
+    "verify": "off",
     "xlsx": "off"
+  },
+  "permissions": {
+    "deny": [
+      "CronCreate",
+      "CronDelete",
+      "CronList",
+      "DesignSync",
+      "NotebookEdit",
+      "RemoteTrigger",
+      "ReportFindings"
+    ]
   }
 }
