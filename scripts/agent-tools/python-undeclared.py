@@ -33,7 +33,10 @@ def main():
 
     dists = {}
     for dist in md.distributions(path=args.path) if args.path else md.distributions():
-        dists.setdefault(canonical(dist.metadata["Name"]), dist)
+        # A half-removed package can leave a dist-info with no METADATA; skip it.
+        name = dist.metadata["Name"]
+        if name:
+            dists.setdefault(canonical(name), dist)
 
     keep = set()
     pending = [canonical(name) for name in args.declared]
