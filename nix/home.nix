@@ -49,13 +49,6 @@ in
     # persists across every later invocation instead of starting from a
     # fresh, signed-out profile each time.
     CHROME_DEVTOOLS_AXI_USER_DATA_DIR = "${homeDirectory}/.local/state/chrome-devtools-axi-profile";
-    # Pi traces go to the local Langfuse (scripts/agent-tools/langfuse-up.sh).
-    # The PI_ prefix keeps these from reaching other OTel programs; the auth
-    # header is set in zsh from the secrets file. Tags arrive per run in the
-    # standard OTEL_RESOURCE_ATTRIBUTES (fleet-system system/skills/TRACING.md).
-    PI_OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:3000/api/public/otel";
-    PI_OTEL_METRICS_EXPORTER = "none";
-    PI_OTEL_SERVICE_NAME = "pi";
   };
 
   # uv installs user-scoped CLI entry points here.
@@ -151,7 +144,16 @@ in
       }
       precmd_functions+=(_fleet_trace_tag)
     '';
+    # Pi traces go to the local Langfuse (scripts/agent-tools/langfuse-up.sh).
+    # Set in envExtra, not sessionVariables: agent panes start login shells that
+    # skip the session-vars file, so Pi fell back to localhost:4318 and sent
+    # nothing. The PI_ prefix keeps these from reaching other OTel programs.
+    # Tags arrive per run in the standard OTEL_RESOURCE_ATTRIBUTES
+    # (fleet-system system/skills/TRACING.md).
     envExtra = ''
+      export PI_OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:3000/api/public/otel"
+      export PI_OTEL_METRICS_EXPORTER="none"
+      export PI_OTEL_SERVICE_NAME="pi"
       export PI_OTEL_EXPORTER_OTLP_HEADERS="$(${dotfilesDir}/scripts/agent-tools/langfuse-otel-headers.sh --env)"
     '';
   };
