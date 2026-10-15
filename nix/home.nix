@@ -202,7 +202,6 @@ in
     # Runtime (auth, sessions, ~/.pi/agent/npm|git) stays unmanaged.
     ".pi/agent/themes".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.pi/agent/themes";
     ".pi/agent/extensions".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.pi/agent/extensions";
-    ".pi/agent/models.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.pi/agent/models.json";
     ".pi/agent/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.pi/agent/settings.json";
 
     "github/vault".source = config.lib.file.mkOutOfStoreSymlink vaultPath;
