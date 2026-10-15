@@ -113,9 +113,9 @@ in
       lg = "git log --oneline --graph";
       # Matches Kun's alias: explicitly bypasses Claude Code permission prompts.
       cc = "claude --dangerously-skip-permissions";
-      # Lean cc: only the six tools a coding agent needs and no MCP servers, about
-      # a third less context on every turn.
-      ccl = "claude --dangerously-skip-permissions --tools Read,Edit,Write,Bash,Grep,Glob --strict-mcp-config";
+      # Lean cc: no MCP servers and only the tools a Firstmate mate uses: coding,
+      # global skills, subagents, web research, background tasks and questions.
+      ccl = "claude --dangerously-skip-permissions --tools Read,Edit,Write,Bash,Grep,Glob,Skill,Agent,WebSearch,WebFetch,Monitor,TaskStop,AskUserQuestion,ToolSearch --strict-mcp-config";
       # Homebrew names the Fabric binary fabric-ai (see nix/configuration.nix).
       fabric = "fabric-ai";
       # One script for both hosts: rebuild.sh detects the account and picks
