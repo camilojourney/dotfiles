@@ -11,7 +11,8 @@ bash tests/pi_settings_test.sh
 python3 tests/agent_platform_test.py
 ```
 
-`agent_platform_test.py` exercises the fail-closed SSD gate in isolated fixtures;
+`agent_platform_test.py` exercises the encrypted, unlocked, ownership-enabled
+SSD gate and dedicated central terminal job wiring in isolated fixtures;
 it never changes a mount or starts a service. The separate opt-in Durable trial
 uses `npm ci --ignore-scripts --prefix services/agent-platform/pilot`, followed by
 `npm --prefix services/agent-platform/pilot test`. It uses only public fixtures,
@@ -26,7 +27,7 @@ It never touches the real network or host package state.
 `baby_menu_config_test.sh` proves a rebuild preserves conflicting starter configuration, restores the three authored Baby Menu links, leaves runtime state untouched, and remains idempotent.
 
 `pi_settings_test.sh` is a regression test for the declarative Pi settings and model overrides.
-It ensures the package list retains only the intended Cursor provider, keeps GPT-6 Sol with high thinking as the default, removes the fixed llama.cpp URL, and limits custom model metadata to DeepSeek's 500,000-token context overrides.
+It ensures the package list retains only the intended Cursor provider, keeps GPT-6.1 Sol with high thinking as the default, removes the fixed llama.cpp URL, and limits custom model metadata to DeepSeek's 500,000-token context overrides.
 
 `mac_setup_test.sh` is a regression test for `setup/mac.sh`.
 `rebuild_test.sh` checks the one shared `rebuild.sh` helper's account-based

@@ -18,6 +18,7 @@ const instruction = 'PILOT_INSTRUCTION: use only the supplied public fixture too
 const fixtures = { 'alpha.txt': 'alpha public fixture\nblue sky\n', 'beta.txt': 'beta public fixture\ngreen field\n' };
 const digest = value => createHash('sha256').update(value).digest('hex');
 const PilotDoc = defineDoc({ kind: 'app.pilot', version: 1, scope: 'conversation', history: 'latest', fork: 'initial', initial: () => ({}) });
+export class AdmissionConflictError extends Error {}
 export const scenarios = ['read', 'search', 'stream', 'admission', 'steering', 'keyed', 'unsafe', 'compaction', 'delay', 'real'];
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -180,8 +181,11 @@ export async function openPilot(root, options = {}) {
         const hash = digest(content);
         await conversation.commit(async tx => {
           const doc = await tx.doc(PilotDoc, conversation.id);
-          if (doc.requests[key] && doc.requests[key].digest !== hash) throw new Error('request payload mismatch');
-          doc.requests[key] ??= { digest: hash };
+          if (Object.hasOwn(doc.requests, key)) {
+            if (doc.requests[key].digest !== hash) throw new AdmissionConflictError('request payload mismatch');
+          } else {
+            doc.requests[key] = { digest: hash };
+          }
         }, context);
         const submission = await conversation.submit({ type: 'input', content, requestId: key, ...(whenBusy ? { whenBusy } : {}) }, context);
         await conversation.commit(async tx => { (await tx.doc(PilotDoc, conversation.id)).requests[key].id = submission.id; }, context);

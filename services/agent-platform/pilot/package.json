@@ -5,8 +5,8 @@
   "type": "module",
   "engines": { "node": ">=22.19.0" },
   "scripts": {
-    "test": "node --test --test-concurrency=1 pilot.test.mjs",
-    "check": "node --check host.mjs && node --check cli.mjs && node --check backup.mjs && node --check real-model.mjs && node --check pilot.test.mjs"
+    "test": "node --test --test-concurrency=1 pilot.test.mjs central.test.mjs",
+    "check": "node --check host.mjs && node --check cli.mjs && node --check backup.mjs && node --check real-model.mjs && node --check pilot.test.mjs && node --check central.mjs && node --check central.test.mjs"
   },
   "dependencies": {
     "@earendil-works/chord": "1.3.0",

@@ -46,7 +46,7 @@ def private_path(path, directory=False):
     return info
 
 
-# [impl->req~agent-platform.storage-gate~1]
+# [impl->req~agent-platform.storage-gate~2]
 def check(config_path):
     private_path(config_path)
     config = json.loads(config_path.read_text())
@@ -72,12 +72,26 @@ def check(config_path):
         or info.get("FilesystemType") != "apfs"
     ):
         raise GateError("expected APFS volume is not mounted here")
+    if (
+        info.get("Encryption") is not True
+        or info.get("EncryptionThisVolumeProper") is not True
+        or info.get("Locked") is not False
+    ):
+        raise GateError("encrypted unlocked volume required")
     if info.get("GlobalPermissionsEnabled") is not True:
         raise GateError("SSD ownership is disabled; private service startup refused")
     if os.statvfs(mountpoint).f_flag & os.ST_RDONLY:
         raise GateError("SSD is read-only")
     device = mountpoint.stat().st_dev
-    for relative in (".", "state", "state/pi", "state/langfuse", "artifacts", "logs"):
+    for relative in (
+        ".",
+        "state",
+        "state/pi",
+        "state/pi/terminal",
+        "state/langfuse",
+        "artifacts",
+        "logs",
+    ):
         if private_path(root / relative, directory=True).st_dev != device:
             raise GateError("storage crosses the verified volume")
     if shutil.disk_usage(mountpoint).free < minimum:

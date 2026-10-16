@@ -1,23 +1,25 @@
-# Agent platform storage gate
+# Private agent platform
 
 ## Scope
 
 Kind: technical
 Capability: agent-platform
-Owns: Opt-in storage prerequisites and the isolated public-fixture Durable pilot.
+Owns: Opt-in storage prerequisites, the isolated pilot and its restricted central terminal.
 
 This capability gates startup and hosts one isolated public-fixture Pi Durable
-trial on macOS. It does not migrate native agents or monitor a running mount.
+trial and restricted central terminal on macOS. It does not migrate native agents
+or monitor a running mount.
 Host identity and evidence belong in private storage, not dotfiles.
 
 ## Requirements
 
 ### Verify storage before executing
 
-`req~agent-platform.storage-gate~1`
+`req~agent-platform.storage-gate~2`
 
 WHEN invoked, the gate SHALL refuse execution unless the configured APFS volume
-UUID and mountpoint match, ownership is enabled, and storage is writable.
+UUID and mountpoint match, that volume is encrypted and unlocked, ownership is
+enabled, and storage is writable.
 
 The gate SHALL require owner-only, same-volume, non-symlinked state directories,
 an owner-only configuration file, and the configured free-space reserve before
@@ -73,6 +75,19 @@ dispatching pending model or tool operations.
 
 Needs: impl, utest
 
+### Own the central terminal
+
+`req~agent-platform.central-terminal~1`
+
+The central host SHALL admit keyed instructions through the same upstream
+submission and payload-identity boundary, expose only public-fixture read/search,
+and keep execution alive independently of the attaching SSH terminal.
+
+Startup SHALL require an existing compatible store on the verified encrypted
+volume; it SHALL NOT initialize a replacement store on restart.
+
+Needs: impl, utest
+
 ## Storage gate interface
 
 ```text
@@ -83,7 +98,8 @@ python3 scripts/agent-platform/require-ssd.py /absolute/private/volume.json -- c
 The JSON object supplies `mountpoint`, `volume_uuid`, `root`, and
 `minimum_free_bytes`. The root must be the mountpoint's direct `agent-platform`
 child. Required directories are `state`, `state/pi`, `state/langfuse`, `artifacts`
-and `logs`. Configuration and directory ownership must match the invoking UID;
+and `logs`, plus `state/pi/terminal` for the dedicated terminal socket.
+Configuration and directory ownership must match the invoking UID;
 no group/other mode bits are allowed. Missing identity fields fail closed.
 
 The gate reads the mounted device with macOS `/usr/sbin/diskutil info -plist`.
@@ -127,7 +143,26 @@ forge and fleet operations remain unavailable. Do not import old native sessions
 Real-model mode uses the existing installed credential-store API and exact
 OpenAI Codex GPT 6.1 model, without loading native extension resources. Its read
 tool terminates the run after one result. Real-model replay requires separate
-reconciliation and is refused by the one-shot CLI.
+reconciliation and is refused by the one-shot CLI. The central terminal is a
+separate explicitly authorized read/search-only host for a fresh store; it
+resumes its safe pending work with the existing model/registry. It never loads
+historical sessions or enables the artifact tool.
+
+`central.mjs ROOT init|serve` reuses the pilot's real-model public-fixture registry.
+Initialization is an explicit separate operation and admits no work. Serve opens
+an existing store and calls upstream `harness.resume()`. Input is `status` or a
+1-64-character lowercase/digit/dash key, one space, and 1-4096 instruction
+characters. Changed bytes under a key refuse; admission precedes acknowledgment.
+The terminal processes commands serially. Unacknowledged input is not a durable
+queue, and no arbitrary shell/paths/native tools are available.
+
+The central launchd template runs the gate, then foreground native screen with an
+isolated SSD socket directory, no user screen configuration, 200-line in-memory
+scrollback and no persistent stdout/stderr logs. KeepAlive restarts any exit,
+throttled to 30 seconds. It does not unlock encrypted volumes. SSH attachment
+only views/types into this dedicated terminal. Stop only the new launchd label
+before backup or unmounting; a locked/missing volume refuses rather than writing
+elsewhere. No monitor, auto-backup, runtime quota or reboot guarantee is implied.
 
 `backup.mjs SOURCE NEW_DESTINATION` holds the source lock, creates an offline
 SQLite backup and copies bounded private fixture/artifact files. It refuses

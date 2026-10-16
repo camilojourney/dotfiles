@@ -12,11 +12,13 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+# Dynamic imports must not leave bytecode in the real checkout.
+sys.dont_write_bytecode = True
 REPO = Path(__file__).resolve().parents[1]
 SCRIPT = REPO / "scripts/agent-platform/require-ssd.py"
 
 
-# [utest->req~agent-platform.storage-gate~1]
+# [utest->req~agent-platform.storage-gate~2]
 class StorageGateTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -24,7 +26,14 @@ class StorageGateTest(unittest.TestCase):
         self.mount = Path(self.tmp.name).resolve()
         self.root = self.mount / "agent-platform"
         self.root.mkdir(mode=0o700)
-        for name in ("state", "state/pi", "state/langfuse", "artifacts", "logs"):
+        for name in (
+            "state",
+            "state/pi",
+            "state/pi/terminal",
+            "state/langfuse",
+            "artifacts",
+            "logs",
+        ):
             (self.root / name).mkdir(mode=0o700)
         self.config = self.mount / "volume.json"
         self.config.write_text(
@@ -43,6 +52,9 @@ class StorageGateTest(unittest.TestCase):
             "VolumeUUID": "fixture-uuid",
             "FilesystemType": "apfs",
             "GlobalPermissionsEnabled": True,
+            "Encryption": True,
+            "EncryptionThisVolumeProper": True,
+            "Locked": False,
         }
         spec = importlib.util.spec_from_file_location("storage_gate", SCRIPT)
         self.gate = importlib.util.module_from_spec(spec)
@@ -81,8 +93,22 @@ class StorageGateTest(unittest.TestCase):
                 self.assertEqual(result, 1)
                 execute.assert_not_called()
 
+    def test_unencrypted_or_locked_volume_never_executes(self):
+        for change in (
+            {"Encryption": False},
+            {"EncryptionThisVolumeProper": False},
+            {"Locked": True},
+            {"Locked": None},
+        ):
+            with self.subTest(change=change):
+                result, execute = self.invoke(
+                    info={**self.info, **change}, command=("/usr/bin/true",)
+                )
+                self.assertEqual(result, 1)
+                execute.assert_not_called()
+
     def test_permission_and_path_fail_closed(self):
-        private = self.root / "state/pi"
+        private = self.root / "state/pi/terminal"
         private.chmod(0o750)
         self.assertEqual(self.invoke()[0], 1)
         private.chmod(0o700)
@@ -152,7 +178,7 @@ class StorageGateTest(unittest.TestCase):
         for good in (False, True):
             info = self.info if good else {**self.info, "VolumeUUID": "wrong"}
             code = (
-                "import importlib.util; from unittest.mock import patch; "
+                "import sys; sys.dont_write_bytecode=True; import importlib.util; "
                 f"s=importlib.util.spec_from_file_location('gate', {str(SCRIPT)!r}); "
                 "m=importlib.util.module_from_spec(s); s.loader.exec_module(m); "
                 f"m.disk_info=lambda _: {info!r}; "
@@ -166,6 +192,43 @@ class StorageGateTest(unittest.TestCase):
             )
             self.assertEqual(run.returncode, 0 if good else 1)
             self.assertEqual(effect.exists(), good)
+
+    # [utest->req~agent-platform.central-terminal~1]
+    def test_central_job_is_guarded_foreground_terminal_without_persistent_logs(self):
+        text = (REPO / "services/agent-platform/central-job.plist.in").read_text()
+        for token, value in {
+            "PYTHON": "/python",
+            "CODE": "/private/code",
+            "CONFIG": str(self.config),
+            "ROOT": str(self.root),
+            "NODE": "/node",
+        }.items():
+            text = text.replace(f"@{token}@", value)
+        job = plistlib.loads(text.encode())
+        arguments = job["ProgramArguments"]
+        self.assertEqual(
+            arguments[:4],
+            ["/python", "/private/code/require-ssd.py", str(self.config), "--"],
+        )
+        self.assertIn(f"SCREENDIR={self.root}/state/pi/terminal", arguments)
+        self.assertEqual(
+            arguments[arguments.index("/usr/bin/screen") + 1 :][:2], ["-D", "-m"]
+        )
+        self.assertEqual(
+            arguments[-4:],
+            [
+                "/node",
+                "/private/code/central.mjs",
+                f"{self.root}/state/pi/central",
+                "serve",
+            ],
+        )
+        self.assertTrue(job["KeepAlive"])
+        self.assertEqual(job["StandardOutPath"], "/dev/null")
+        self.assertEqual(job["StandardErrorPath"], "/dev/null")
+        self.assertNotIn(
+            "HardResourceLimits", job
+        )  # FileSize also limits SQLite, not just logs.
 
     def test_launch_definition_uses_guard_without_ssd_log_side_effects(self):
         template = REPO / "services/agent-platform/storage-check.plist.in"

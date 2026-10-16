@@ -1,4 +1,4 @@
-# Isolated Pi Durable pilot
+# Private Pi Durable installation and pilot
 
 This is an opt-in infrastructure trial, not a replacement for native Pi,
 Firstmate, second mates, or their authority/delivery records. Do not import old
@@ -120,7 +120,129 @@ has mode 0700. It must not receive private pilot state while ownership is ignore
 The authored [storage gate](../scripts/agent-platform/require-ssd.py) validates the
 actual mounted UUID before executing any supplied command and creates no paths
 or logs before checking. Its check-only launchd template is not an agent service.
-Encrypted central storage is a separate, explicitly gated deployment phase.
+The encrypted central installation below is a separate, explicitly gated phase.
+The gate also requires that the volume itself is encrypted and unlocked; container
+or sibling-volume encryption does not satisfy it.
+
+## Central mini installation
+
+The small central terminal uses the same pinned Durable package, model and
+public-fixture read/search boundary. It is a useful infrastructure workbench,
+not a general coding agent or a transparent replacement for native Pi. No
+historical session or artifact-writing tool is loaded. It admits commands
+straight into upstream submissions, not a second execution queue.
+
+### Storage and initialization
+
+Create a **new encrypted APFS volume** in the verified external container, not a
+folder on the old noowners volume. Have the operator run `diskutil apfs addVolume
+CONTAINER APFS AgentPlatform -passprompt` interactively with the required admin
+authority, then `sudo diskutil enableOwnership /Volumes/AgentPlatform`. Reverify
+the physical device/container immediately before creation. Do not change the old
+volume, put a passphrase in argv, or store it in dotfiles/logs. Record the new
+volume UUID, encryption/unlocked state and ownership by reading back `diskutil
+info -plist /Volumes/AgentPlatform`. A locked volume requires operator unlock;
+this installation does not store an unlock secret or promise unattended reboot.
+
+Only after that readback, create a new owner-only `agent-platform` child and its
+`state`, `state/pi`, `state/pi/terminal`, `state/langfuse`, `artifacts`, `logs` and
+`plans` directories. All must be canonical, owned by the service account and on
+the same verified device. The `state/langfuse` placeholder starts no tracing
+service. Save the private plan under `plans/rollout.md` on this **new** volume,
+not the original SSD volume.
+
+Install the exact pilot package/lock into a new private mini code directory,
+along with `require-ssd.py`; do not modify the pilot installation for this phase.
+Keep code/config on private internal storage so missing-SSD refusal is executable.
+Create a new mode-0600 private `volume.json` outside Git:
+
+```json
+{
+  "mountpoint": "/Volumes/AgentPlatform",
+  "volume_uuid": "REPLACE_WITH_READ_BACK_UUID",
+  "root": "/Volumes/AgentPlatform/agent-platform",
+  "minimum_free_bytes": 2147483648
+}
+```
+
+Initialize explicitly once, with real paths substituted:
+
+```sh
+python3 "$CODE/require-ssd.py" "$CONFIG" -- \
+  "$NODE" "$CODE/central.mjs" "$ROOT/state/pi/central" init
+```
+
+`init` admits no model request. Restart uses only `serve`, which refuses a missing
+store and never silently initializes elsewhere. Read/search are replay-safe;
+central recovery deliberately resumes only this fresh restricted store. The
+one-shot pilot's automatic real-model resume restriction stays unchanged.
+
+### Start, connect, stop
+
+Render [`central-job.plist.in`](../services/agent-platform/central-job.plist.in)
+with XML-escaped absolute `PYTHON`, `NODE`, `CODE`, `CONFIG` and `ROOT` paths into a
+**new** owner-only `~/Library/LaunchAgents/dev.agent-platform.durable.plist`.
+Never overwrite a pre-existing job. Validate with `plutil -lint` before loading.
+
+```sh
+launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/dev.agent-platform.durable.plist"
+launchctl print "gui/$(id -u)/dev.agent-platform.durable"
+```
+
+The guard runs before native `/usr/bin/screen -D -m` creates its terminal. Screen
+stays in the foreground of launchd; the dedicated socket directory is on the
+verified volume. No network listener, server API, shared screen namespace or
+network SQLite mount is introduced. KeepAlive restarts the new job, throttled to
+30 seconds. Missing/locked/wrong/noowners storage refuses every start without
+creating fallback paths. Mount removal **after** startup is not monitored; stop
+the service before unmounting. Filesystem free-space checks are startup reserves,
+not a runtime storage quota.
+
+Connect from the laptop, including over the existing Tailscale SSH route:
+
+```sh
+ssh -t mac-mini 'env SCREENDIR=/Volumes/AgentPlatform/agent-platform/state/pi/terminal /usr/bin/screen -r agent-platform'
+```
+
+Enter `status` for correlated metadata, or a stable request key and public-fixture
+instruction, such as `check-1 Read alpha.txt using read.` Repeating an identical
+key and payload reuses its upstream submission; changing bytes refuses. Only
+public-fixture instructions belong in this terminal. Output suppresses model
+responses and raw provider errors. Detach with `Ctrl-a d`, or disconnect SSH;
+neither is the owner. The mini must remain powered, awake, online and mounted.
+Laptop-only applications/files still need the laptop awake.
+
+Persistent stdout/stderr are discarded (zero disk-log growth); screen scrollback
+is bounded to 200 lines in memory. Status and the Durable store are the results
+interface. A per-process file-size limit would also cap SQLite and is deliberately
+not used as log rotation. This is not Langfuse qualification.
+
+Stop **only** the new service before maintenance:
+
+```sh
+launchctl bootout "gui/$(id -u)/dev.agent-platform.durable"
+```
+
+Archive its task-owned definition outside LaunchAgents if disabling future login
+startup. Do not stop screen globally, alter other agents, delete the volume, or
+remove a lock to bypass ownership. Starting again uses the same rendered job and
+existing store. Reboot/re-unlock acceptance needs separate coordination.
+
+### Central backup and rollback
+
+Stop the new service, use `backup.mjs` to create an unused snapshot directory on
+the verified volume, and transfer that closed snapshot to a new mode-0700 laptop
+backup directory using the SSH/COPYFILE_DISABLE procedure above. Compare hashes
+and restore into another new owner-only laptop directory; use the same pinned
+`cli.mjs RESTORED inspect real` with no effects dispatched. Verify identities,
+requests, entries, fixture hashes, pending tasks and SQLite integrity before any
+resume. A backup command refuses while another owner holds the source.
+
+Bootstrap the service again after backup. This manual procedure requires the
+laptop online; no scheduled/offline backup or automatic retention is claimed.
+Keep original pilot/central stores and receipts intact. Rollback unloads only the
+new job and preserves its definition/state for reconciliation; native agents,
+original SSD data and existing tracing remain unaffected.
 
 The [technical contract](../specs/agent-platform.md) owns these interfaces.
 Private host inventories, source hashes, actual test history and operational
