@@ -6,6 +6,9 @@
 # Ignore fetched upstream artifacts; tracked baseline files remain versioned.
 /upstream/
 
+# Task-local pilot dependencies; runtime state is always outside this repository.
+/services/agent-platform/pilot/node_modules/
+
 # Claude Code per-machine local settings
 .claude/settings.local.json
 

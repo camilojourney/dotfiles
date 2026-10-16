@@ -8,7 +8,15 @@ bash tests/rebuild_test.sh
 bash tests/agent_tools_test.sh
 bash tests/baby_menu_config_test.sh
 bash tests/pi_settings_test.sh
+python3 tests/agent_platform_test.py
 ```
+
+`agent_platform_test.py` exercises the fail-closed SSD gate in isolated fixtures;
+it never changes a mount or starts a service. The separate opt-in Durable trial
+uses `npm ci --ignore-scripts --prefix services/agent-platform/pilot`, followed by
+`npm --prefix services/agent-platform/pilot test`. It uses only public fixtures,
+owned child processes and temporary local stores, never real credentials/models.
+See [the pilot guide](../docs/AGENT-PLATFORM.md) for the operational boundary.
 
 `agent_tools_test.sh` exercises the agent-tool reconciliation and audit scripts with stubbed `npm`, `uv`, external installers, and Homebrew.
 It proves fresh activation installs the one declared inventory identically on every machine (no per-host profiles), repeat activation does not downgrade self-updating tools, npm tools follow their latest channel, external updaters run safely, setup hooks run, and missing package managers fail clearly.

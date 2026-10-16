@@ -168,6 +168,12 @@ Agent npm globals, uv tool apps, and external tools (`no-mistakes`, `treehouse`)
 
 A good setup does not force every tool through one package manager. It just makes the ownership of each layer clear.
 
+## Isolated agent-platform trial
+
+The opt-in [Pi Durable pilot](docs/AGENT-PLATFORM.md) uses task-local pinned
+dependencies and private runtime state. It does not replace native agent sessions,
+activate services during rebuild, or migrate tracing/fleet storage.
+
 ## Related
 
 - GitHub repo: <https://github.com/camilojourney/dotfiles>

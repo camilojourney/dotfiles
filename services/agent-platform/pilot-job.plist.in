@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>@LABEL@</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/node</string>
+    <string>@PILOT@/code/cli.mjs</string>
+    <string>@PILOT@/stores/disconnect</string>
+    <string>resume</string><string>delay</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
+  <key>ThrottleInterval</key><integer>2</integer>
+  <key>ExitTimeOut</key><integer>5</integer>
+  <key>StandardOutPath</key><string>@PILOT@/proof/disconnect.jsonl</string>
+  <key>StandardErrorPath</key><string>@PILOT@/proof/disconnect-stderr.txt</string>
+  <key>SoftResourceLimits</key><dict><key>FileSize</key><integer>1048576</integer></dict>
+  <key>HardResourceLimits</key><dict><key>FileSize</key><integer>1048576</integer></dict>
+</dict>
+</plist>
