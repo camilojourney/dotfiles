@@ -43,6 +43,18 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/github/dotfiles/scripts/agent-tools/require-code-skill.py",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
