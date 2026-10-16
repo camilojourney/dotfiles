@@ -226,7 +226,32 @@ launchctl bootout "gui/$(id -u)/dev.agent-platform.durable"
 Archive its task-owned definition outside LaunchAgents if disabling future login
 startup. Do not stop screen globally, alter other agents, delete the volume, or
 remove a lock to bypass ownership. Starting again uses the same rendered job and
-existing store. Reboot/re-unlock acceptance needs separate coordination.
+existing store. Reboot acceptance needs separate coordination.
+
+### After a mini restart with the volume locked
+
+This is a user LaunchAgent: it loads when the service account logs in, not before
+login. If the encrypted volume is still locked or absent, the guard refuses and
+launchd retries at most once per 30 seconds. No empty store or terminal socket is
+created on internal storage. Existing committed work stays on the encrypted
+volume, but cannot resume while that volume is locked. SSH detachment during
+normal mounted operation does not have this limitation.
+
+An operator holding the passphrase must unlock the **recorded volume UUID**, not
+a possibly renumbered `diskNsM`, using an interactive command. Never supply
+`-passphrase`, pipe a secret through this agent, or add an unlock secret to Git:
+
+```sh
+ssh -t mac-mini 'sudo diskutil apfs unlockVolume RECORDED_VOLUME_UUID'
+```
+
+Then read back mountpoint, UUID, encryption and ownership; run the storage check
+with the installed private config. If the job is already loaded, its next retry
+opens the same existing store; `launchctl kickstart gui/UID/dev.agent-platform.durable`
+can request an immediate retry. If it was not loaded after login, use the normal
+bootstrap command instead. This is not unattended boot recovery, automatic
+unlock, or a tested host-reboot guarantee. Laptop-offline periods also mean no
+laptop backup, even if the mini continues executing normally.
 
 ### Central backup and rollback
 

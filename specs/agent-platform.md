@@ -159,7 +159,10 @@ queue, and no arbitrary shell/paths/native tools are available.
 The central launchd template runs the gate, then foreground native screen with an
 isolated SSD socket directory, no user screen configuration, 200-line in-memory
 scrollback and no persistent stdout/stderr logs. KeepAlive restarts any exit,
-throttled to 30 seconds. It does not unlock encrypted volumes. SSH attachment
+throttled to 30 seconds. The user agent loads at service-account login, not before
+login. It does not unlock encrypted volumes: after restart while locked it
+refuses, retains the existing encrypted state and awaits an operator's interactive
+UUID-targeted unlock before retrying. SSH attachment
 only views/types into this dedicated terminal. Stop only the new launchd label
 before backup or unmounting; a locked/missing volume refuses rather than writing
 elsewhere. No monitor, auto-backup, runtime quota or reboot guarantee is implied.
