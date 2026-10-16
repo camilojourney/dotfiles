@@ -91,7 +91,12 @@ node backup.mjs /absolute/private/source /absolute/private/new-snapshot
 ```
 
 This holds the same owner lock and uses Node's SQLite backup API, including
-committed WAL state. Do not hot-copy a bare live SQLite file. Transfer only the
+committed WAL state. The isolated backup regression keeps a synthetic writer
+connection open with a nonempty committed WAL and verifies that the restored
+snapshot contains that commit without scheduling effects. This is not permission
+to run two Harness owners against one store.
+
+Do not hot-copy a bare live SQLite file. Transfer only the
 closed snapshot to a separate device over existing SSH. For example, with
 private paths chosen on each host:
 

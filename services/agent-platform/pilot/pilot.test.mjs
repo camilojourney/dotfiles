@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtempSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -147,6 +148,29 @@ test('single owner, store identity, fixture scope, and payload mismatch refuse',
     writeFileSync(file, 'changed fixture');
     await assert.rejects(reopened.verifyFixtures(), /fixture identity/);
   } finally { await reopened.close(); }
+});
+
+// [utest->req~agent-platform.pilot-backup~1]
+test('backup includes committed nonempty WAL while fixture writer remains open', async t => {
+  if (!readOnlyPassed) { t.skip('read-only recovery has not passed'); return; }
+  const root = directory('wal-source'), destination = directory('wal-restored');
+  const host = await openPilot(root, { initialize: true, scenario: 'read' });
+  await host.close();
+  const writer = new DatabaseSync(join(root, 'store.sqlite'));
+  try {
+    writer.exec("PRAGMA journal_mode=WAL; PRAGMA wal_autocheckpoint=0; CREATE TABLE backup_probe(value TEXT); INSERT INTO backup_probe VALUES ('committed public fixture');");
+    assert.ok(statSync(join(root, 'store.sqlite-wal')).size > 0);
+    await backupPilot(root, destination);
+    const restored = new DatabaseSync(join(destination, 'store.sqlite'), { readOnly: true });
+    try {
+      assert.equal(restored.prepare('SELECT value FROM backup_probe').get().value, 'committed public fixture');
+      assert.equal(restored.prepare('PRAGMA integrity_check').get().integrity_check, 'ok');
+    } finally { restored.close(); }
+  } finally { writer.close(); }
+  const inspected = await child(destination, 'inspect', 'read').done;
+  assert.equal(inspected.code, 0);
+  assert.deepEqual(inspected.rows[0].requests, {});
+  assert.deepEqual(inspected.rows[0].pending.tasks, []);
 });
 
 console.log(`pilot test evidence retained at ${scratch}`);
