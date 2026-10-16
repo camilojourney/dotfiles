@@ -4,7 +4,7 @@
 <plist version="1.0"><dict>
   <key>Label</key><string>dev.agent-platform.durable</string>
   <key>ProgramArguments</key><array>
-    <string>@PYTHON@</string><string>@CODE@/require-ssd.py</string><string>@CONFIG@</string><string>--</string>
+    <string>@LAUNCHER@</string><string>@PYTHON@</string><string>@CODE@/require-ssd.py</string><string>@CONFIG@</string><string>--</string>
     <string>/usr/bin/env</string><string>SCREENDIR=@ROOT@/state/pi/terminal</string><string>STY=</string><string>TERM=xterm-256color</string>
     <string>/usr/bin/screen</string><string>-D</string><string>-m</string><string>-c</string><string>/dev/null</string>
     <string>-h</string><string>200</string><string>-S</string><string>agent-platform</string>

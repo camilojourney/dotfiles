@@ -13,7 +13,10 @@ python3 tests/agent_platform_test.py
 
 `agent_platform_test.py` exercises the encrypted, unlocked, ownership-enabled
 SSD gate and dedicated central terminal job wiring in isolated fixtures;
-it never changes a mount or starts a service. The separate opt-in Durable trial
+it never changes a mount or starts a service. It also compiles the dedicated
+exec-only launcher in a temporary directory using `/usr/bin/clang` (Command Line
+Tools required), checking PID/argument/status preservation and refusal paths.
+The separate opt-in Durable trial
 uses `npm ci --ignore-scripts --prefix services/agent-platform/pilot`, followed by
 `npm --prefix services/agent-platform/pilot test`. It uses only public fixtures,
 owned child processes and temporary local stores, never real credentials/models.

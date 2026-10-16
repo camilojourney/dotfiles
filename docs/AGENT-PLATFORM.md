@@ -152,7 +152,8 @@ service. Save the private plan under `plans/rollout.md` on this **new** volume,
 not the original SSD volume.
 
 Install the exact pilot package/lock into a new private mini code directory,
-along with `require-ssd.py`; do not modify the pilot installation for this phase.
+along with `require-ssd.py` and `launch.c`; do not modify the pilot installation
+for this phase.
 Keep code/config on private internal storage so missing-SSD refusal is executable.
 Create a new mode-0600 private `volume.json` outside Git:
 
@@ -179,8 +180,29 @@ one-shot pilot's automatic real-model resume restriction stays unchanged.
 
 ### Start, connect, stop
 
+Build a dedicated launcher into a **new** private runtime directory inside this
+installation. Do not make a shared Homebrew Python/Node executable the job's
+responsible program or grant it broad access. With real private paths selected:
+
+```sh
+mkdir -m 700 "$INSTALL/runtime"
+/usr/bin/clang -std=c17 -Wall -Wextra -Werror -pedantic \
+  "$CODE/launch.c" -o "$INSTALL/runtime/agent-platform-durable"
+/usr/bin/codesign --force --sign - --identifier local.agent-platform.durable \
+  --timestamp=none "$INSTALL/runtime/agent-platform-durable"
+chmod 500 "$INSTALL/runtime/agent-platform-durable"
+/usr/bin/codesign --verify --strict "$INSTALL/runtime/agent-platform-durable"
+shasum -a 256 "$CODE/launch.c" "$INSTALL/runtime/agent-platform-durable"
+```
+
+Record the source head/hash, compiler identity and final signed binary hash in a
+private receipt; verify the installed hash before loading its job. This tiny
+exec-only launcher preserves PID and arguments. It is a responsibility identity,
+not an OS sandbox, agent API or durability engine. A dedicated identity keeps the
+one-time macOS permission separate from shared interpreters and other services.
+
 Render [`central-job.plist.in`](../services/agent-platform/central-job.plist.in)
-with XML-escaped absolute `PYTHON`, `NODE`, `CODE`, `CONFIG` and `ROOT` paths into a
+with XML-escaped absolute `LAUNCHER`, `PYTHON`, `NODE`, `CODE`, `CONFIG` and `ROOT` paths into a
 **new** owner-only `~/Library/LaunchAgents/dev.agent-platform.durable.plist`.
 Never overwrite a pre-existing job. Validate with `plutil -lint` before loading.
 
@@ -188,6 +210,16 @@ Never overwrite a pre-existing job. Validate with `plutil -lint` before loading.
 launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/dev.agent-platform.durable.plist"
 launchctl print "gui/$(id -u)/dev.agent-platform.durable"
 ```
+
+On the first launchd start, macOS can ask on the mini's display whether
+`agent-platform-durable` may access files on a removable volume. An operator must
+approve that single **Removable Volumes** prompt for the dedicated installed
+binary, using Screen Sharing if necessary. Do not change privacy settings or the
+TCC database automatically, grant shared Python/Node Full Disk Access, or assume
+SSH access grants launchd the same permission. Until approval the native process
+can wait without creating a worker/socket; this is not evidence of Durable
+corruption. Verify the responsible binary in scoped TCC logs before asking for
+approval; no secret or encryption passphrase is needed for this permission.
 
 The guard runs before native `/usr/bin/screen -D -m` creates its terminal. Screen
 stays in the foreground of launchd; the dedicated socket directory is on the

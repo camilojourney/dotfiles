@@ -197,6 +197,7 @@ class StorageGateTest(unittest.TestCase):
     def test_central_job_is_guarded_foreground_terminal_without_persistent_logs(self):
         text = (REPO / "services/agent-platform/central-job.plist.in").read_text()
         for token, value in {
+            "LAUNCHER": "/private/runtime/agent-platform-durable",
             "PYTHON": "/python",
             "CODE": "/private/code",
             "CONFIG": str(self.config),
@@ -207,8 +208,14 @@ class StorageGateTest(unittest.TestCase):
         job = plistlib.loads(text.encode())
         arguments = job["ProgramArguments"]
         self.assertEqual(
-            arguments[:4],
-            ["/python", "/private/code/require-ssd.py", str(self.config), "--"],
+            arguments[:5],
+            [
+                "/private/runtime/agent-platform-durable",
+                "/python",
+                "/private/code/require-ssd.py",
+                str(self.config),
+                "--",
+            ],
         )
         self.assertIn(f"SCREENDIR={self.root}/state/pi/terminal", arguments)
         self.assertEqual(
@@ -246,6 +253,78 @@ class StorageGateTest(unittest.TestCase):
         self.assertNotIn("KeepAlive", job)
         self.assertNotIn("StandardOutPath", job)
         self.assertNotIn("StandardErrorPath", job)
+
+
+# [utest->req~agent-platform.central-privacy-identity~1]
+class DedicatedLauncherTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(cls.tmp.cleanup)
+        cls.binary = Path(cls.tmp.name).resolve() / "agent-platform-durable"
+        subprocess.run(
+            [
+                "/usr/bin/clang",
+                "-std=c17",
+                "-Wall",
+                "-Wextra",
+                "-Werror",
+                "-pedantic",
+                str(REPO / "services/agent-platform/launch.c"),
+                "-o",
+                str(cls.binary),
+            ],
+            check=True,
+            capture_output=True,
+        )
+
+    def test_exec_preserves_pid_arguments_and_child_status(self):
+        child = subprocess.Popen(
+            [
+                str(self.binary),
+                sys.executable,
+                "-c",
+                "import json,os,sys; print(json.dumps([os.getpid(),sys.argv[1:]])); sys.exit(7)",
+                "literal argument",
+                "$(never a shell)",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            stdout, stderr = child.communicate(timeout=10)
+        finally:
+            if child.poll() is None:
+                child.kill()
+                child.wait(timeout=10)
+        self.assertEqual(child.returncode, 7)
+        self.assertEqual(stderr, "")
+        self.assertEqual(
+            json.loads(stdout), [child.pid, ["literal argument", "$(never a shell)"]]
+        )
+
+    def test_invalid_or_missing_exec_target_refuses(self):
+        denied = self.binary.parent / "not-executable"
+        denied.write_text("public non-executable fixture")
+        denied.chmod(0o600)
+        for args, expected in (
+            ([], 64),
+            (["relative-command"], 64),
+            ([""], 64),
+            ([str(self.binary.parent / "missing")], 127),
+            ([str(denied)], 126),
+        ):
+            with self.subTest(args=args):
+                result = subprocess.run(
+                    [str(self.binary), *args],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                self.assertEqual(result.returncode, expected)
+                self.assertNotIn(str(self.binary.parent), result.stderr)
 
 
 if __name__ == "__main__":

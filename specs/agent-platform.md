@@ -88,6 +88,21 @@ volume; it SHALL NOT initialize a replacement store on restart.
 
 Needs: impl, utest
 
+### Scope the macOS privacy identity
+
+`req~agent-platform.central-privacy-identity~1`
+
+The central LaunchAgent SHALL start through a dedicated task-owned binary rather
+than a shared interpreter as its responsible program. The installation SHALL
+record the final binary hash and source identity before requesting approval.
+
+The launcher SHALL exec an absolute argument vector without a shell or fork,
+preserve the process identity and propagate the executed program's exit status.
+Removable Volumes permission SHALL require explicit operator approval; the
+installation SHALL NOT change privacy settings or store an unlock secret.
+
+Needs: impl, utest
+
 ## Storage gate interface
 
 ```text
@@ -156,14 +171,22 @@ characters. Changed bytes under a key refuse; admission precedes acknowledgment.
 The terminal processes commands serially. Unacknowledged input is not a durable
 queue, and no arbitrary shell/paths/native tools are available.
 
-The central launchd template runs the gate, then foreground native screen with an
-isolated SSD socket directory, no user screen configuration, 200-line in-memory
-scrollback and no persistent stdout/stderr logs. KeepAlive restarts any exit,
-throttled to 30 seconds. The user agent loads at service-account login, not before
-login. It does not unlock encrypted volumes: after restart while locked it
+The central launchd template first execs through the dedicated `launch.c` binary.
+It runs the gate before foreground native screen, using an isolated SSD socket
+directory and no user screen configuration. Scrollback is limited to 200 lines
+in memory; stdout/stderr are not persisted. KeepAlive restarts any exit,
+throttled to 30 seconds.
+
+The launcher is a macOS responsibility identity, not an OS sandbox.
+Trusted job arguments still own the command. Its installed binary is private, ad-hoc signed
+with the dedicated identifier and hash-pinned in a private build receipt. The
+operator approves the single Removable Volumes prompt for that installed binary,
+not shared Homebrew Python or Node. Retaining screen supplies the SSH terminal;
+no new API or durable execution queue is introduced.
+
+The user agent loads at service-account login, not before login. It does not unlock encrypted volumes: after restart while locked it
 refuses, retains the existing encrypted state and awaits an operator's interactive
-UUID-targeted unlock before retrying. SSH attachment
-only views/types into this dedicated terminal. Stop only the new launchd label
+UUID-targeted unlock before retrying. SSH attachment only views/types into this dedicated terminal. Stop only the new launchd label
 before backup or unmounting; a locked/missing volume refuses rather than writing
 elsewhere. No monitor, auto-backup, runtime quota or reboot guarantee is implied.
 
