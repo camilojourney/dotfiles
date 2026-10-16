@@ -52,7 +52,7 @@ A provider error like `X is no longer available. Please switch to Y` is a retire
 
 When a catalog lists a model the vendor no longer serves, find the cause before working around it. Read the extension's catalog code and compare it with the vendor's raw list. Fix it upstream or in our fork, and record it under Gaps until the fix ships. Example (2026-10-11): pi-antigravity 0.10.0 appends its built-in model list to the server's. So Pi listed `claude-sonnet-4-6` after the server dropped it.
 
-The reverse gap also happens: a model the vendor serves that the extension cannot route. pi-antigravity maps each id to an internal backend code, and sends an unmapped id as-is. The server then answers `429 ResourceExhausted` with `matched=none` even with quota to spare. So a 429 on a custom id, while the vendor's own CLI runs the model (`agy --model <id>-high -p ...`), is a missing mapping, not quota: record it under Gaps until the extension adds the model. Example (2026-10-16): Gemini 4 Argon ran in `agy` but not through pi-antigravity 0.9.0 or 0.10.0.
+The reverse gap also happens: a model the vendor serves that the extension cannot reach. The server answers `429 ResourceExhausted` with `matched=none` even with quota to spare. So a 429 on a custom id, while the vendor's own CLI runs the model (`agy --model <id>-high -p ...`), is an extension gap, not quota. Search the extension's open issues and pull requests before debugging, and record it under Gaps until a fix ships. Example (2026-10-16): pi-antigravity 0.9.0 and 0.10.0 announced an old Antigravity client version, so the backend hid Gemini 4 Argon (pi-antigravity issues #93 and #94).
 
 ## 2. Newer models: is anything better released?
 
