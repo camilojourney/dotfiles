@@ -1,0 +1,104 @@
+{
+  "name": "agent-platform-langfuse",
+  "x-agent-platform-requirement": "[impl->req~agent-platform.langfuse-isolation~1] [impl->req~agent-platform.langfuse-credentials~1]",
+  "services": {
+    "web": {
+      "extends": {"file": "./common.json", "service": "langfuse"},
+      "image": "docker.langfuse.com/langfuse/langfuse@sha256:b1948c7c0931f277975b985e30e73536b1bca5822705ddd9a89ba7c1ed79b3ee",
+      "mem_limit": 1342177280,
+      "cpus": 1,
+      "ports": ["127.0.0.1:3000:3000"],
+      "environment": {
+        "NODE_OPTIONS": "--max-old-space-size=896",
+        "NEXTAUTH_SECRET": "${NEXTAUTH_SECRET:?required}",
+        "LANGFUSE_INIT_ORG_ID": "agent-platform-trial",
+        "LANGFUSE_INIT_ORG_NAME": "Agent Platform Trial",
+        "LANGFUSE_INIT_PROJECT_ID": "agent-platform-trial",
+        "LANGFUSE_INIT_PROJECT_NAME": "Mini synthetic trial",
+        "LANGFUSE_INIT_PROJECT_RETENTION": "7",
+        "LANGFUSE_INIT_PROJECT_PUBLIC_KEY": "${LANGFUSE_PUBLIC_KEY:?required}",
+        "LANGFUSE_INIT_PROJECT_SECRET_KEY": "${LANGFUSE_SECRET_KEY:?required}",
+        "LANGFUSE_INIT_USER_EMAIL": "agent-platform-trial@example.invalid",
+        "LANGFUSE_INIT_USER_NAME": "Trial operator",
+        "LANGFUSE_INIT_USER_PASSWORD": "${LANGFUSE_USER_PASSWORD:?required}"
+      }
+    },
+    "worker": {
+      "extends": {"file": "./common.json", "service": "langfuse"},
+      "image": "docker.langfuse.com/langfuse/langfuse-worker@sha256:3f7571ff3a725ebdcdf4c35e06bdf8c3f8325770691c673793ad61b328265e13",
+      "mem_limit": 1073741824,
+      "cpus": 1
+    },
+    "postgres": {
+      "extends": {"file": "./common.json", "service": "container"},
+      "image": "postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3",
+      "mem_limit": 536870912,
+      "cpus": 0.5,
+      "environment": {
+        "POSTGRES_USER": "postgres",
+        "POSTGRES_PASSWORD": "${POSTGRES_PASSWORD:?required}",
+        "POSTGRES_DB": "postgres",
+        "TZ": "UTC",
+        "PGTZ": "UTC"
+      },
+      "volumes": ["postgres:/var/lib/postgresql/data"],
+      "healthcheck": {
+        "test": ["CMD-SHELL", "pg_isready -U postgres"],
+        "interval": "10s", "timeout": "5s", "retries": 30, "start_period": "30s"
+      }
+    },
+    "clickhouse": {
+      "extends": {"file": "./common.json", "service": "container"},
+      "image": "clickhouse/clickhouse-server@sha256:8a790dd3468db22b1d4e7b18a176f378ff5ff6053b9c48dd4ea1fa71a24c5ba6",
+      "mem_limit": 1610612736,
+      "cpus": 2,
+      "user": "101:101",
+      "environment": {
+        "CLICKHOUSE_DB": "default",
+        "CLICKHOUSE_USER": "langfuse",
+        "CLICKHOUSE_PASSWORD": "${CLICKHOUSE_PASSWORD:?required}"
+      },
+      "volumes": [
+        "clickhouse:/var/lib/clickhouse",
+        "clickhouse-logs:/var/log/clickhouse-server",
+        "./clickhouse-memory.xml:/etc/clickhouse-server/config.d/memory.xml:ro"
+      ],
+      "ulimits": {"nofile": {"soft": 262144, "hard": 262144}},
+      "healthcheck": {
+        "test": ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"],
+        "interval": "10s", "timeout": "5s", "retries": 30, "start_period": "30s"
+      }
+    },
+    "redis": {
+      "extends": {"file": "./common.json", "service": "container"},
+      "image": "redis@sha256:4fa24486b8bcca8eec45ee0eb166edc674795e53a2b53d1a9ef263eecebaac85",
+      "mem_limit": 201326592,
+      "cpus": 0.25,
+      "environment": {"REDIS_AUTH": "${REDIS_AUTH:?required}"},
+      "command": ["sh", "-c", "set -eu; umask 077; printf 'requirepass %s\nmaxmemory 128mb\nmaxmemory-policy noeviction\nappendonly yes\n' \"$$REDIS_AUTH\" > /data/redis-private.conf; chown redis:redis /data/redis-private.conf; exec /usr/local/bin/docker-entrypoint.sh redis-server /data/redis-private.conf"],
+      "volumes": ["redis:/data"],
+      "healthcheck": {
+        "test": ["CMD", "redis-cli", "ping"],
+        "interval": "10s", "timeout": "5s", "retries": 30, "start_period": "30s"
+      }
+    },
+    "minio": {
+      "extends": {"file": "./common.json", "service": "container"},
+      "image": "cgr.dev/chainguard/minio@sha256:dc455cdd4db6e390b1b26514f15ff37681a777bf8dab41aac445a0259f751e56",
+      "mem_limit": 402653184,
+      "cpus": 0.5,
+      "entrypoint": "sh",
+      "command": ["-c", "mkdir -p /data/langfuse && minio server --address \":9000\" --console-address \":9001\" /data"],
+      "environment": {
+        "MINIO_ROOT_USER": "${MINIO_ROOT_USER:?required}",
+        "MINIO_ROOT_PASSWORD": "${MINIO_ROOT_PASSWORD:?required}"
+      },
+      "volumes": ["minio:/data"],
+      "healthcheck": {
+        "test": ["CMD", "mc", "ready", "local"],
+        "interval": "10s", "timeout": "5s", "retries": 30, "start_period": "30s"
+      }
+    }
+  },
+  "volumes": {"postgres": {}, "clickhouse": {}, "clickhouse-logs": {}, "redis": {}, "minio": {}}
+}

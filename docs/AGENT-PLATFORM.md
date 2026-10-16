@@ -1,5 +1,9 @@
 # Private Pi Durable installation and pilot
 
+For current everyday use, start with the [quickstart](AGENT-PLATFORM-QUICKSTART.md).
+The separate [fresh Langfuse runbook](AGENT-PLATFORM-LANGFUSE.md) covers its
+SSD-backed container VM and synthetic-only tracing boundary.
+
 This is an opt-in infrastructure trial, not a replacement for native Pi,
 Firstmate, second mates, or their authority/delivery records. Do not import old
 sessions or replay their tools. Existing services and global settings stay intact.
@@ -152,8 +156,9 @@ this installation does not store an unlock secret or promise unattended reboot.
 Only after that readback, create a new owner-only `agent-platform` child and its
 `state`, `state/pi`, `state/pi/terminal`, `state/langfuse`, `artifacts`, `logs` and
 `plans` directories. All must be canonical, owned by the service account and on
-the same verified device. The `state/langfuse` placeholder starts no tracing
-service. Save the private plan under `plans/rollout.md` on this **new** volume,
+the same verified device. The `state/langfuse` compatibility directory starts no tracing
+service; fresh tracing storage belongs in `langfuse/engine` as described by the
+separate runbook. Save the private plan under `plans/rollout.md` on this **new** volume,
 not the original SSD volume.
 
 Install the exact pilot package/lock into a new private mini code directory,
@@ -302,7 +307,10 @@ resume. A backup command refuses while another owner holds the source.
 
 Bootstrap the service again after backup. This manual procedure requires the
 laptop online; no scheduled/offline backup or automatic retention is claimed.
-Keep original pilot/central stores and receipts intact. Rollback unloads only the
+Keep original central stores and receipts intact. A synthetic pilot may be retired
+only with explicit authority, no remaining references and independently verified
+archival of its stores/evidence. Keep the archived pilot source and laptop backups.
+Rollback unloads only the
 new job and preserves its definition/state for reconciliation; native agents,
 original SSD data and existing tracing remain unaffected.
 

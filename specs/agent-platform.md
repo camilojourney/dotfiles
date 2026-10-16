@@ -4,11 +4,11 @@
 
 Kind: technical
 Capability: agent-platform
-Owns: Opt-in storage prerequisites, the isolated pilot and its restricted central terminal.
+Owns: Opt-in storage prerequisites, the restricted Durable terminal and fresh Langfuse trial.
 
-This capability gates startup and hosts one isolated public-fixture Pi Durable
-trial and restricted central terminal on macOS. It does not migrate native agents
-or monitor a running mount.
+This capability gates startup and hosts an isolated public-fixture Pi Durable
+terminal plus a fresh synthetic Langfuse stack on macOS. It does not migrate
+native agents or monitor a running mount.
 Host identity and evidence belong in private storage, not dotfiles.
 
 ## Requirements
@@ -102,6 +102,94 @@ Removable Volumes permission SHALL require explicit operator approval; the
 installation SHALL NOT change privacy settings or store an unlock secret.
 
 Needs: impl, utest
+
+### Isolate and bound fresh tracing
+
+`req~agent-platform.langfuse-isolation~1`
+
+The fresh Langfuse trial SHALL publish only web access on mini loopback port 3000,
+with digest-pinned images, container memory limits totaling at most 5 GiB and bounded logs.
+
+The trial SHALL NOT migrate existing data, switch producers, expose database ports
+or enable its vendor telemetry.
+
+Needs: impl, utest
+
+### Keep service credentials out of process arguments
+
+`req~agent-platform.langfuse-credentials~1`
+
+The fresh stack SHALL supply secrets through private files or container environment,
+not expanded process arguments; Redis SHALL read its password from an owner-only
+configuration file.
+
+Needs: impl, utest
+
+### Preserve query worker progress
+
+`req~agent-platform.langfuse-query-pool~1`
+
+The trial SHALL retain ClickHouse's vendor global-thread-pool default, bounding
+server/container memory and concurrent-query admission separately rather than
+constraining query workers beneath reserved background workers.
+
+Needs: impl, utest
+
+### Isolate the container engine
+
+`req~agent-platform.langfuse-engine~1`
+
+The trial VM SHALL use task-local SSD state and cache, a pinned base image,
+4 CPUs, 6 GiB memory, no host-directory mounts and no additional network interfaces.
+
+The VM SHALL forward only TCP port 3000 to host loopback and ignore other guest ports.
+
+Needs: impl, utest
+
+### Verify synthetic OTLP without content
+
+`req~agent-platform.synthetic-otlp~1`
+
+The probe SHALL send complete private metadata-only OTLP observations once over
+loopback HTTP using internally read owner-only credentials and the v4 header,
+without proxies or redirects.
+
+The probe SHALL verify identities, hierarchy, source and absent input/output through
+loopback v2 API readback, refusing responses above 2,000,000 bytes and never retrying
+POST.
+
+Needs: impl, utest
+
+## Fresh Langfuse interface
+
+`services/agent-platform/langfuse/compose.json` is a fresh, synthetic-only stack;
+native Compose `extends` in adjacent `common.json` owns shared logging and app
+connection settings. Its adjacent XML bounds ClickHouse beneath its container limit. Required secrets
+are supplied through an owner-only untracked `.env`, never command arguments.
+Docker Compose interprets this JSON as its native configuration format.
+Application web/worker are 4.56.0, PostgreSQL 17.11, ClickHouse 25.12.11.4,
+Redis 7 and MinIO, pinned to immutable image digests. Media upload through the
+browser is not qualified: object storage remains internal to the container network.
+
+`lima.yaml` is JSON-compatible YAML for task-local Lima 2.2.1, using native Apple
+Virtualization and Docker 29.8.2 in a separate Linux guest. Set `LIMA_HOME`, `HOME`
+and `TMPDIR` beneath the encrypted Langfuse engine directory for every invocation;
+the Go download cache uses that process HOME. Linux named volumes reside inside
+the SSD VM disk, not misleading empty host database directories. Guest root does
+not authorize host root. Starting this trial is explicit, after the storage gate;
+no shared OrbStack configuration or global Docker context is changed.
+
+`scripts/agent-platform/synthetic-trace.py ENV_PATH BASE_URL mini|laptop` sends
+one root plus two synthetic children to the fresh trial only. BASE_URL accepts
+only `http://127.0.0.1:3000` or `http://127.0.0.1:3300`. It reads fresh keys from
+an invoking-user-owned regular file with no group/other permissions, constructs
+authentication internally and never prints it. No provider/model/tool payload is
+instrumented. A successful POST followed by readback failure must be reconciled
+with GET, not another POST: v4 does not supply arbitrary repeated-export deduplication.
+
+Host memory pressure and existing application health are acceptance observations,
+not an automatic runtime governor. A ten-minute synthetic test is not a production
+sizing guarantee or evidence of native Firstmate integration.
 
 ## Storage gate interface
 

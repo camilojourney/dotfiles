@@ -1,0 +1,28 @@
+{
+  "minimumLimaVersion": "2.2.1",
+  "vmType": "vz",
+  "arch": "aarch64",
+  "cpus": 4,
+  "memory": "6GiB",
+  "disk": "48GiB",
+  "mounts": [],
+  "propagateProxyEnv": false,
+  "images": [{
+    "location": "https://cloud-images.ubuntu.com/releases/resolute/release-20260927/ubuntu-26.04-server-cloudimg-arm64.img",
+    "arch": "aarch64",
+    "digest": "sha256:63a93bd5a8d76e33b15ceb5daa3657bd79be804748051ab178e643b0f5da22e7"
+  }],
+  "containerd": {"system": false, "user": false},
+  "param": {"internal_netplanOptional": "true"},
+  "provision": [{
+    "mode": "system",
+    "script": "#!/bin/bash\n# [impl->req~agent-platform.langfuse-engine~1]\nset -eu -o pipefail\ncommand -v docker >/dev/null 2>&1 && exit 0\nexport DEBIAN_FRONTEND=noninteractive\ncurl -fsSL https://get.docker.com -o /tmp/install-docker.sh\nVERSION=29.8.2 sh /tmp/install-docker.sh\napt-get install -y containerd.io=2.4.2-2~ubuntu.26.04~resolute docker-buildx-plugin=0.38.0-1~ubuntu.26.04~resolute docker-compose-plugin=5.6.0-1~ubuntu.26.04~resolute\nrm /tmp/install-docker.sh\n"
+  }],
+  "probes": [{
+    "script": "#!/bin/sh\nset -eu\ntimeout 120 sh -c 'until sudo docker info >/dev/null 2>&1; do sleep 3; done'\nsudo docker compose version\n"
+  }],
+  "portForwards": [
+    {"guestPort": 3000, "hostPort": 3000, "hostIP": "127.0.0.1", "proto": "tcp"},
+    {"guestPortRange": [1, 65535], "proto": "any", "ignore": true}
+  ]
+}

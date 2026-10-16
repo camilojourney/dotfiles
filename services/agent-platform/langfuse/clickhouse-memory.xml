@@ -1,0 +1,18 @@
+<!-- [impl->req~agent-platform.langfuse-isolation~1] -->
+<!-- [impl->req~agent-platform.langfuse-query-pool~1] -->
+<clickhouse>
+    <logger>
+        <level>warning</level>
+        <size>5M</size>
+        <count>3</count>
+    </logger>
+    <max_server_memory_usage>1073741824</max_server_memory_usage>
+    <max_concurrent_queries>8</max_concurrent_queries>
+    <background_pool_size>16</background_pool_size>
+    <background_schedule_pool_size>8</background_schedule_pool_size>
+    <background_buffer_flush_schedule_pool_size>2</background_buffer_flush_schedule_pool_size>
+    <background_message_broker_schedule_pool_size>2</background_message_broker_schedule_pool_size>
+    <background_distributed_schedule_pool_size>2</background_distributed_schedule_pool_size>
+    <mark_cache_size>134217728</mark_cache_size>
+    <uncompressed_cache_size>67108864</uncompressed_cache_size>
+</clickhouse>

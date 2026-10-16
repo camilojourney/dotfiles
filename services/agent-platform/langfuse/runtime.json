@@ -1,0 +1,7 @@
+{
+  "lima": {
+    "version": "2.2.1",
+    "url": "https://github.com/lima-vm/lima/releases/download/v2.2.1/lima-2.2.1-Darwin-arm64.tar.gz",
+    "sha256": "9e9eacce88f37e185c346bad73aa6136f738d8cdf8c3bb23cd42b071824bc66e"
+  }
+}

@@ -9,6 +9,7 @@ bash tests/agent_tools_test.sh
 bash tests/baby_menu_config_test.sh
 bash tests/pi_settings_test.sh
 python3 tests/agent_platform_test.py
+python3 tests/agent_platform_langfuse_test.py
 ```
 
 `agent_platform_test.py` exercises the encrypted, unlocked, ownership-enabled
@@ -21,6 +22,12 @@ uses `npm ci --ignore-scripts --prefix services/agent-platform/pilot`, followed 
 `npm --prefix services/agent-platform/pilot test`. It uses only public fixtures,
 owned child processes and temporary local stores, never real credentials/models.
 See [the pilot guide](../docs/AGENT-PLATFORM.md) for the operational boundary.
+
+`agent_platform_langfuse_test.py` checks the fresh stack's digest pins, private
+ports, memory/log limits, isolated VM definition, query-worker regression and
+metadata-only OTLP probe. Transport is mocked: tests never read real credentials,
+contact a backend, start a VM or claim browser/load acceptance. The independent
+operational proof is private, not committed here.
 
 `agent_tools_test.sh` exercises the agent-tool reconciliation and audit scripts with stubbed `npm`, `uv`, external installers, and Homebrew.
 It proves fresh activation installs the one declared inventory identically on every machine (no per-host profiles), repeat activation does not downgrade self-updating tools, npm tools follow their latest channel, external updaters run safely, setup hooks run, and missing package managers fail clearly.

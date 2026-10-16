@@ -1,0 +1,53 @@
+{
+  "services": {
+    "container": {
+      "restart": "unless-stopped",
+      "logging": {
+        "driver": "json-file",
+        "options": {"max-size": "5m", "max-file": "3"}
+      }
+    },
+    "langfuse": {
+      "extends": {"service": "container"},
+      "depends_on": {
+        "postgres": {"condition": "service_healthy"},
+        "clickhouse": {"condition": "service_healthy"},
+        "redis": {"condition": "service_healthy"},
+        "minio": {"condition": "service_healthy"}
+      },
+      "environment": {
+        "NEXTAUTH_URL": "http://127.0.0.1:3300",
+        "DATABASE_URL": "postgresql://postgres:${POSTGRES_PASSWORD:?required}@postgres:5432/postgres",
+        "SALT": "${SALT:?required}",
+        "ENCRYPTION_KEY": "${ENCRYPTION_KEY:?required}",
+        "TELEMETRY_ENABLED": "false",
+        "LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES": "false",
+        "CLICKHOUSE_MIGRATION_URL": "clickhouse://clickhouse:9000",
+        "CLICKHOUSE_URL": "http://clickhouse:8123",
+        "CLICKHOUSE_USER": "langfuse",
+        "CLICKHOUSE_PASSWORD": "${CLICKHOUSE_PASSWORD:?required}",
+        "CLICKHOUSE_CLUSTER_ENABLED": "false",
+        "LANGFUSE_S3_EVENT_UPLOAD_BUCKET": "langfuse",
+        "LANGFUSE_S3_EVENT_UPLOAD_REGION": "auto",
+        "LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID": "${MINIO_ROOT_USER:?required}",
+        "LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY": "${MINIO_ROOT_PASSWORD:?required}",
+        "LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT": "http://minio:9000",
+        "LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE": "true",
+        "LANGFUSE_S3_EVENT_UPLOAD_PREFIX": "events/",
+        "LANGFUSE_S3_MEDIA_UPLOAD_BUCKET": "langfuse",
+        "LANGFUSE_S3_MEDIA_UPLOAD_REGION": "auto",
+        "LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID": "${MINIO_ROOT_USER:?required}",
+        "LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY": "${MINIO_ROOT_PASSWORD:?required}",
+        "LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT": "http://minio:9000",
+        "LANGFUSE_S3_MEDIA_UPLOAD_INTERNAL_ENDPOINT": "http://minio:9000",
+        "LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE": "true",
+        "LANGFUSE_S3_MEDIA_UPLOAD_PREFIX": "media/",
+        "LANGFUSE_S3_BATCH_EXPORT_ENABLED": "false",
+        "REDIS_HOST": "redis",
+        "REDIS_PORT": "6379",
+        "REDIS_AUTH": "${REDIS_AUTH:?required}",
+        "REDIS_TLS_ENABLED": "false"
+      }
+    }
+  }
+}

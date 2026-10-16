@@ -170,9 +170,12 @@ A good setup does not force every tool through one package manager. It just make
 
 ## Isolated agent-platform trial
 
-The opt-in [Pi Durable pilot](docs/AGENT-PLATFORM.md) uses task-local pinned
-dependencies and private runtime state. It does not replace native agent sessions,
-activate services during rebuild, or migrate tracing/fleet storage.
+The opt-in [platform quickstart](docs/AGENT-PLATFORM-QUICKSTART.md) explains the
+restricted Pi Durable terminal and fresh private Langfuse trial. Their pinned
+configuration and tests do not replace native agent sessions, activate services
+during rebuild, or migrate tracing/fleet storage. See the
+[Durable operations guide](docs/AGENT-PLATFORM.md) and
+[tracing runbook](docs/AGENT-PLATFORM-LANGFUSE.md) for maintenance boundaries.
 
 ## Related
 
