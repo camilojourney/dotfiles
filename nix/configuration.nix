@@ -82,6 +82,7 @@ in
       "node" # owns npm; never install a separate global npm
       "pass" # password-store CLI
       "pinentry-mac" # macOS passphrase prompt for gpg-agent
+      "python" # plain python3 for skill and agent scripts; cleanup = "uninstall" removes it when nothing else depends on it
       "starship" # nixpkgs starship currently fails to link on Darwin
       "tmux" # runtime backend for terminal-multiplexed agent sessions
       "uv"
