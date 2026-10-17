@@ -113,9 +113,13 @@ in
       lg = "git log --oneline --graph";
       # Matches Kun's alias: explicitly bypasses Claude Code permission prompts.
       cc = "claude --dangerously-skip-permissions";
-      # Lean cc: no MCP servers and only the tools a Firstmate mate uses: coding,
-      # global skills, subagents, web research, background tasks and questions.
-      ccl = "claude --dangerously-skip-permissions --tools Read,Edit,Write,Bash,Grep,Glob,Skill,Agent,WebSearch,WebFetch,Monitor,TaskStop,AskUserQuestion,ToolSearch --strict-mcp-config";
+      # Lean cc for Firstmate's first mate: no MCP servers, no Claude in Chrome
+      # (Firstmate drives browsers through chrome-devtools-axi), and only the tools
+      # it can use there. Agent and Monitor stay out because Firstmate's
+      # subagent guard refuses them; worker events still wake the session
+      # through Firstmate's Stop hook. Measured 2026-10-17: 16.9k tokens before
+      # any work, against 21.7k for the previous ccl and 32.1k for cc.
+      ccl = "claude --dangerously-skip-permissions --tools Read,Edit,Write,Bash,Grep,Glob,Skill,WebSearch,WebFetch,TaskStop,AskUserQuestion,ToolSearch --strict-mcp-config --no-chrome";
       # Homebrew names the Fabric binary fabric-ai (see nix/configuration.nix).
       fabric = "fabric-ai";
       # One script for both hosts: rebuild.sh detects the account and picks
