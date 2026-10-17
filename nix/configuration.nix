@@ -71,6 +71,7 @@ in
       "curl" # downloads pinned external agent releases during activation
       "fswatch" # used by Invoz watch loops
       "gh" # GitHub CLI
+      "gitleaks" # secret scanner; the /code skill scans each diff with --redact
       "glab" # GitLab CLI
       "gnupg" # GPG key generation and commit signing
       "herdr" # agent multiplexer for SSH remote machines
