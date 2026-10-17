@@ -1,9 +1,15 @@
 # Fresh private Langfuse trial
 
-This is **not** a migration of the laptop's tracing data or producers. It creates
-an isolated synthetic project with fresh local credentials. Keep the laptop
-instance, deferred key rotation and exporter-content decisions unchanged.
-See the [quickstart](AGENT-PLATFORM-QUICKSTART.md) for everyday use and the
+This installed private trial is retained, **not the live trace destination**.
+The laptop Langfuse remains the only live trace destination. These definitions
+create an isolated test project with fresh local credentials, not a migration of
+existing data or producers. Keep the laptop instance, deferred key rotation and
+exporter-content decisions unchanged.
+
+Landing these files does not authorize a producer switch, original tracing
+migration, Langfuse restoration, service restart or host reboot. Commands below
+are reference for separately authorized setup/maintenance, not work to run now.
+See the [quickstart](AGENT-PLATFORM-QUICKSTART.md) for optional access and the
 [storage/backup guide](AGENT-PLATFORM.md) for the encrypted-volume prerequisites.
 
 ## Runtime and storage
@@ -134,6 +140,6 @@ login plus operator SSD unlock and explicit VM start are still required.
 
 Fresh Langfuse full backup/restore, original tracing restoration/migration,
 producer switch, VM automatic recovery, long-duration retention and coordinated
-host reboot acceptance remain separate unproved stages. An SSD-local snapshot is
-not an independent backup. No production capacity or full-fleet adoption follows
-from the bounded synthetic trial.
+host reboot acceptance are unproved and outside this handoff, not authorized next
+steps. An SSD-local snapshot is not an independent backup. No production capacity
+or full-fleet adoption follows from the bounded trial.

@@ -1,13 +1,20 @@
-# Mini platform: how it works now
+# Mini platform: retained trial reference
 
-## What is running
+The private trial is installed but **not the live trace destination**. The laptop
+Langfuse remains the only live trace destination. The separate Firstmate Durable
+launcher stays stopped. Saving these definitions is not a new rollout: do not
+migrate original tracing, switch producers, restore Langfuse or reboot a host.
+Access below is optional reference for separately authorized trial maintenance;
+it does not authorize starting a stopped service or rerunning initialization.
 
-- **Mini:** one restricted Pi Durable terminal and a fresh Langfuse trial.
+## Retained installation
+
+- **Mini trial:** one restricted Pi Durable terminal and a separate Langfuse project.
 - **Encrypted SSD:** Durable execution state and the entire Langfuse VM/data.
 - **Laptop:** an SSH interface and separate manual Durable backups. Its original
   Langfuse remains the live destination for existing producers.
-- **Not adopted:** native Pi sessions, Firstmate, second mates and existing workers.
-  Their folders, sessions and authority records have not moved.
+- **Not adopted by these definitions:** native Pi sessions, Firstmate, second mates
+  and existing workers. No native folders, sessions or authority records are migrated.
 
 Durable remembers committed execution and resumes its safe pending work after
 its worker restarts. SSH is only the interface: disconnecting it does not stop
@@ -44,10 +51,11 @@ do not paste keys/passwords into chat, commands or Git.
 Port 3300 deliberately avoids the laptop's existing port 3000. `ControlPath=none`
 keeps this tunnel separate from shared SSH connections; Ctrl-c closes its forward.
 
-The mini project currently contains **synthetic metadata-only canaries**, not
-an automatic feed of native agents or Durable model/tool activity. Durable's own
-results are in its store/status interface. Do not switch existing producers or
-reuse the fresh keys as a global exporter configuration.
+The mini project is a **test destination, not an automatic live feed** of native
+agents or Durable model/tool activity. The included probe creates metadata-only
+canaries; installing these definitions configures no agent exporter. Durable's
+workbench results are in its store/status interface. Do not switch existing
+producers or reuse the fresh keys as a global exporter configuration.
 
 ## Where the data is
 
@@ -79,7 +87,8 @@ restart existing applications to test this platform.
 
 A closed Durable snapshot was copied to and restored on the separate laptop.
 Backups are manual and require that laptop online. SSD staging snapshots are not
-backups; fresh Langfuse full backup/restore and source-data migration remain pending.
+backups. Fresh Langfuse full backup/restore and source-data migration are unproved
+and outside this handoff, not work to begin now.
 
 The joint trial qualified one serial Durable execution with three outstanding
 requests, not a fleet concurrency limit or a demonstrated productivity improvement.

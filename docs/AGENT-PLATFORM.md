@@ -1,8 +1,16 @@
 # Private Pi Durable installation and pilot
 
-For current everyday use, start with the [quickstart](AGENT-PLATFORM-QUICKSTART.md).
-The separate [fresh Langfuse runbook](AGENT-PLATFORM-LANGFUSE.md) covers its
-SSD-backed container VM and synthetic-only tracing boundary.
+For the retained installation and optional access reference, start with the
+[quickstart](AGENT-PLATFORM-QUICKSTART.md). The separate
+[fresh Langfuse runbook](AGENT-PLATFORM-LANGFUSE.md) covers its SSD-backed container
+VM and isolated test-tracing boundary.
+
+**Landing these files preserves an installed trial, not a live tracing cutover.**
+The laptop Langfuse remains the only live trace destination; the separate Firstmate
+Durable launcher stays stopped. No original tracing migration, producer switch,
+Langfuse restoration or host reboot is part of this handoff. Commands below are
+setup/maintenance reference for separately authorized work, not instructions to
+rerun installation or change existing services now.
 
 This is an opt-in infrastructure trial, not a replacement for native Pi,
 Firstmate, second mates, or their authority/delivery records. Do not import old

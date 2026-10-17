@@ -170,10 +170,13 @@ A good setup does not force every tool through one package manager. It just make
 
 ## Isolated agent-platform trial
 
-The opt-in [platform quickstart](docs/AGENT-PLATFORM-QUICKSTART.md) explains the
-restricted Pi Durable terminal and fresh private Langfuse trial. Their pinned
-configuration and tests do not replace native agent sessions, activate services
-during rebuild, or migrate tracing/fleet storage. See the
+The installed private trial is retained for reference, **not as the live tracing
+destination**. The laptop Langfuse remains the only live trace destination.
+The [platform quickstart](docs/AGENT-PLATFORM-QUICKSTART.md) explains the restricted
+Pi Durable terminal and separate mini Langfuse trial. Keeping these pinned files
+does not activate services during rebuild or authorize starting the separate
+Firstmate Durable launcher, migrating tracing/fleet storage, switching producers,
+restoring Langfuse or rebooting a host. See the
 [Durable operations guide](docs/AGENT-PLATFORM.md) and
 [tracing runbook](docs/AGENT-PLATFORM-LANGFUSE.md) for maintenance boundaries.
 
