@@ -17,11 +17,12 @@
     {
       "when": "Review, audit, or second opinion on a diff/PR/design another crewmate produced. Not for writing the fix.",
       "use": [
+        { "harness": "claude", "model": "claude-fable-5-1", "effort": "high" },
         { "harness": "claude", "model": "claude-opus-5-5", "effort": "high" },
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "xhigh", "provider": "codex" },
         { "harness": "pi", "model": "antigravity/claude-opus-5-5", "effort": "high", "provider": "agy" }
       ],
-      "why": "Prefer a different model family than the author's. Antigravity Opus runs only in low-volume tiers because its quota pool is small. Sol runs at xhigh, not high: Sol high scores below Sol medium."
+      "why": "Prefer a different model family than the author's. Fable 5.1 added by the captain 2026-10-16; quota-axi bounds it by the shared five-hour and seven-day Claude windows plus its own Fable week (scope model:fable), so it adds capability, not extra Claude capacity. Antigravity Opus runs only in low-volume tiers because its quota pool is small. Sol runs at xhigh, not high: Sol high scores below Sol medium."
     },
     {
       "when": "Recon-only, file gathering, narrow lookup, or a trivial mechanical edit (rename, format sweep, typo fix). Not for research that needs current external facts.",
@@ -51,11 +52,12 @@
     {
       "when": "Hardest available work: root-cause investigation, architecture, ambiguous design, or already failed on the workhorse tier.",
       "use": [
+        { "harness": "claude", "model": "claude-fable-5-1", "effort": "max" },
         { "harness": "claude", "model": "claude-opus-5-5", "effort": "max" },
         { "harness": "claude", "model": "claude-sonnet-5-5", "effort": "max" },
         { "harness": "pi", "model": "antigravity/claude-opus-5-5", "effort": "high", "provider": "agy" }
       ],
-      "why": "Claude only: this tier is where Claude is reserved. Antigravity Opus runs at high, Antigravity's ceiling. It runs only in low-volume tiers because its quota pool is small."
+      "why": "Claude only: this tier is where Claude is reserved. Fable 5.1 was added by the captain on 2026-10-16 and verified live on both the claude CLI and Pi's claude-bridge that day; quota-axi bounds it by the shared five-hour and seven-day Claude windows plus its own Fable week (scope model:fable), so it adds capability, not extra Claude capacity. Antigravity Opus runs at high, Antigravity's ceiling. It runs only in low-volume tiers because its quota pool is small."
     }
   ],
   "default": [

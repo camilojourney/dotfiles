@@ -1,5 +1,4 @@
 {
-  "model": "opus",
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
     "CLAUDE_CODE_ENHANCED_TELEMETRY_BETA": "1",
@@ -10,7 +9,57 @@
     "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "http://localhost:3000/api/public/otel/v1/traces",
     "OTEL_LOG_TOOL_DETAILS": "1"
   },
-  "otelHeadersHelper": "~/github/dotfiles/scripts/agent-tools/langfuse-otel-headers.sh",
+  "permissions": {
+    "deny": [
+      "CronCreate",
+      "CronDelete",
+      "CronList",
+      "DesignSync",
+      "NotebookEdit",
+      "RemoteTrigger",
+      "ReportFindings"
+    ]
+  },
+  "disableClaudeAiConnectors": true,
+  "skillOverrides": {
+    "artifact-capabilities": "off",
+    "artifact-design": "off",
+    "artifact-diagramming": "off",
+    "batch": "off",
+    "built-in-browser": "off",
+    "chrome-browser": "off",
+    "claude-api": "off",
+    "claude-in-chrome": "off",
+    "code-review": "off",
+    "computer-use": "off",
+    "cv": "off",
+    "dataviz": "off",
+    "debug": "off",
+    "deep-research": "off",
+    "design": "off",
+    "design-sync": "off",
+    "docs": "off",
+    "docx": "off",
+    "fewer-permission-prompts": "off",
+    "google-workspace": "off",
+    "import-memory": "off",
+    "init": "off",
+    "keybindings-help": "off",
+    "loop": "off",
+    "morning": "off",
+    "pdf": "off",
+    "plugin-authoring": "off",
+    "pptx": "off",
+    "run": "off",
+    "run-skill-generator": "off",
+    "schedule": "off",
+    "security-review": "off",
+    "simplify": "off",
+    "skill-creator": "off",
+    "update-config": "off",
+    "verify": "off",
+    "xlsx": "off"
+  },
   "hooks": {
     "SessionStart": [
       {
@@ -61,62 +110,19 @@
     "type": "command",
     "command": "input=$(cat); model=$(echo \"$input\" | jq -r '.model.display_name'); used=$(echo \"$input\" | jq -r '.context_window.used_percentage // empty'); if [ -n \"$used\" ]; then printf \"%s | ctx: %.0f%% used\" \"$model\" \"$used\"; else printf \"%s\" \"$model\"; fi"
   },
-  "autoCompactWindow": 500000,
-  "skipDangerousModePermissionPrompt": true,
-  "theme": "dark-ansi",
-  "agentPushNotifEnabled": true,
-  "disableClaudeAiConnectors": true,
   "enabledPlugins": {
     "figma@synced": false
   },
-  "skillOverrides": {
-    "artifact-capabilities": "off",
-    "artifact-design": "off",
-    "artifact-diagramming": "off",
-    "batch": "off",
-    "built-in-browser": "off",
-    "chrome-browser": "off",
-    "claude-api": "off",
-    "claude-in-chrome": "off",
-    "code-review": "off",
-    "computer-use": "off",
-    "cv": "off",
-    "dataviz": "off",
-    "debug": "off",
-    "deep-research": "off",
-    "design": "off",
-    "design-sync": "off",
-    "docs": "off",
-    "docx": "off",
-    "fewer-permission-prompts": "off",
-    "google-workspace": "off",
-    "import-memory": "off",
-    "init": "off",
-    "keybindings-help": "off",
-    "loop": "off",
-    "morning": "off",
-    "pdf": "off",
-    "plugin-authoring": "off",
-    "pptx": "off",
-    "run": "off",
-    "run-skill-generator": "off",
-    "schedule": "off",
-    "security-review": "off",
-    "simplify": "off",
-    "skill-creator": "off",
-    "update-config": "off",
-    "verify": "off",
-    "xlsx": "off"
+  "otelHeadersHelper": "~/github/dotfiles/scripts/agent-tools/langfuse-otel-headers.sh",
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "xhigh"
+    }
   },
-  "permissions": {
-    "deny": [
-      "CronCreate",
-      "CronDelete",
-      "CronList",
-      "DesignSync",
-      "NotebookEdit",
-      "RemoteTrigger",
-      "ReportFindings"
-    ]
-  }
+  "autoCompactWindow": 500000,
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "dark-ansi",
+  "switchModelsOnFlag": true,
+  "agentPushNotifEnabled": true,
+  "model": "opus"
 }

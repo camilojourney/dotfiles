@@ -11,14 +11,48 @@
   "steeringMode": "all",
   "followUpMode": "all",
   "collapseChangelog": true,
+  "compaction": {
+    "modelOverrides": {
+      "openai-codex/gpt-6.1-sol": {
+        "reserveTokens": 225000
+      },
+      "claude-bridge/claude-fable-5": {
+        "reserveTokens": 600000
+      },
+      "claude-bridge/claude-fable-5-1": {
+        "reserveTokens": 600000
+      },
+      "claude-bridge/claude-haiku-5-5": {
+        "reserveTokens": 600000
+      },
+      "claude-bridge/claude-opus-4-7": {
+        "reserveTokens": 600000
+      },
+      "claude-bridge/claude-opus-4-8": {
+        "reserveTokens": 600000
+      },
+      "claude-bridge/claude-opus-5": {
+        "reserveTokens": 600000
+      },
+      "claude-bridge/claude-opus-5-5": {
+        "reserveTokens": 600000
+      },
+      "claude-bridge/claude-sonnet-5": {
+        "reserveTokens": 600000
+      },
+      "claude-bridge/claude-sonnet-5-5": {
+        "reserveTokens": 600000
+      }
+    }
+  },
   "packages": [
     "npm:pi-web-access@0.32.0",
     "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.7",
-    "npm:pi-antigravity@0.10.0",
     "npm:pi-claude-bridge@0.9.3",
     "git:github.com/algal/pi-openai-server-compaction@8a3de2f3b0c178fdd6f73f2f94172dfc3943e466",
     "git:github.com/camilojourney/pi-cursor-provider@73fd2d75c58bfe1757a124e407fbc72f89642826",
-    "git:github.com/camilojourney/pi-opentelemetry@e1685ababd475501d584f3ddc77d4514ffbc9297"
+    "git:github.com/camilojourney/pi-opentelemetry@e1685ababd475501d584f3ddc77d4514ffbc9297",
+    "git:github.com/Rahularya01/pi-antigravity@f950c08e7a5c1069a0339af88252347a5ecb0f8c"
   ],
   "thinkingBudgets": {
     "minimal": 512,
@@ -27,7 +61,7 @@
     "high": 4096,
     "xhigh": 8192
   },
-  "lastChangelogVersion": "1.1.0",
+  "lastChangelogVersion": "1.3.0",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-6.1-sol",
   "defaultThinkingLevel": "high",

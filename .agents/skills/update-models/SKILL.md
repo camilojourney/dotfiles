@@ -26,6 +26,7 @@ This skill lives in `.agents/skills/`; `.claude/skills` is a symlink to that dir
 | `home/.firstmate/crew-dispatch.json` | Model per crewmate task, by rule | Immediately (symlinked into `~/github/firstmate/config/`) |
 | `home/.firstmate/secondmate-harness` | Secondmate runtime, one line: `<harness> <model> <effort>` | Next secondmate launch |
 | `home/.pi/agent/settings.json` | Pi `defaultModel` | Immediately |
+| `home/.pi/agent/settings.json` `compaction.modelOverrides` | Per-model compaction trigger; a new 1M Claude or resized GPT window needs a line ([docs/PI-COMPACTION.md](../../../docs/PI-COMPACTION.md)) | Immediately |
 | `home/.no-mistakes/config.yaml` | no-mistakes pipeline `agent` / `agent_config` (one agent for every step) | Immediately (symlinked) |
 | `tests/pi_settings_test.sh` | Pins Pi `defaultModel`; must match settings.json | Run `bash tests/pi_settings_test.sh` |
 | `home/.claude/settings.json` | Claude Code's interactive default `model` | Next Claude Code session |
