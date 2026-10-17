@@ -42,7 +42,8 @@ in
   # which checks it ran) to finished Pi sessions' Langfuse traces. The script
   # lives in the Fleet checkout (system/skills/TRACING.md explains it); the
   # guard keeps the job quiet on a machine without it. Homebrew python3,
-  # because the script needs Python 3.11+.
+  # because the script needs Python 3.11+. docs/AUTOMATIONS.md lists every
+  # scheduled job and how to read this one's results.
   launchd.user.agents.fleet-skill-usage.serviceConfig = {
     Label = "org.dotfiles.fleet-skill-usage";
     ProgramArguments = [
