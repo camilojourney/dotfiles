@@ -11,7 +11,7 @@ Constraints for this run:
 
 ## Checklist
 
-1. Read every step 1 catalog, including `agy models`.
+1. Read every step 1 catalog, including `agy models` and `pi --list-models meta`.
 2. Decided each newer release's availability from a tool-test probe, not from a warning or the release list.
 3. Ran the releases list and the coding index.
 4. Left trades recorded in `why` in place unless their gap moved more than about 2 points.
@@ -24,3 +24,6 @@ Constraints for this run:
 11. Treated a model id missing from the vendor catalog as no candidate, even when Pi lists it. Named the cause or listed it under Gaps.
 12. Checked every rule's `why` against its `use` and flagged each claim the config no longer makes true.
 13. Kept any proposed `when` text about the task alone: no model, harness, effort or cost.
+14. Evaluated confirmed Meta/Muse candidates for crew-dispatch tiers without excluding Pi's route because native Muse Code lacked authentication.
+15. Kept Muse Wonder and Wonder Full separate, and treated native Muse Code benchmark results as directional rather than measured Pi performance.
+16. Established the selected Meta route's authentication, billing and quota mapping independently, reporting missing mapping without inventing a provider.

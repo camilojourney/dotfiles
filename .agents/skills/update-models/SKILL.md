@@ -1,6 +1,7 @@
 ---
 name: update-models
-description: Use when changing or re-checking which AI models the agent fleet uses - a new model release, a retired model, a new provider or harness (e.g. Antigravity via Pi), or a periodic "are we on the newest, best-placed models?" review. Covers finding every model each harness can actually run, checking for newer releases, placing each model in the right Firstmate dispatch tier from coding benchmarks (and the right special-purpose rule for web research and images), verifying each one really works with tools, and editing every file that names a model.
+version: 1.0.0
+description: Reviews and updates fleet models after releases, retirements or provider changes. Discovers Pi routes including Meta/Muse, verifies tools, and places candidates in crew-dispatch tiers.
 ---
 
 # update-models
@@ -44,9 +45,16 @@ For a fleet-wide review, run every catalog. For a scoped model/provider refresh,
 | Pi | `pi update --models`, then `pi --list-models <provider>` | A provider extension's list is not proof a model is served. It can keep retired models and miss new ones. Confirm each id in the vendor's own catalog (for Antigravity, `agy models`). An id only Pi lists is not a candidate. Pi also accepts an unlisted `provider/id` with a "Using custom model id" warning; confirm those the same way. |
 | Antigravity | `agy models` | The authority for Antigravity. Lists Gemini and the other vendors' models Antigravity serves, each with effort suffixes. Every listed model is a candidate for every tier, placed by the same rules as the same model elsewhere. Dispatch through Pi only: strip the suffix (`<model>-high` is `antigravity/<model>`) and set effort with Pi's `--thinking`. The highest suffix listed is Antigravity's effort ceiling for that model. Judge it by the index row at that effort, not a higher one it cannot run. |
 | Codex via Pi | `pi --list-models openai-codex` | |
+| Meta/Muse via Pi | `pi --list-models meta` | Confirm IDs against the [Meta Model API catalog](https://dev.meta.ai/docs/api-reference). Native Muse Code and Cursor routes are separate candidates. |
 | Claude via Pi | `pi --list-models claude-bridge` | The `pi-claude-bridge` extension runs Claude models in Pi through Claude Code's Agent SDK, on the Claude subscription pool. Dispatch through Pi only as `claude-bridge/<id>` with `provider` `claude`, never the `claude` harness. Use exact model ids, never the `opus`/`sonnet`/`haiku` aliases, which silently move. A prior `fable` probe stalled on a usage-credit prompt; retain an explicitly selected candidate and report its current tool-test result rather than removing it from dated prose. |
 | Grok TUI | `grok models` | |
 | Cursor via Pi | `pi --list-models cursor` | Re-test each run. As of 2026-10-04 only `cursor/auto` was accepted and it stalled on any tool call, so Cursor was not dispatchable. |
+
+Include Meta/Muse in every fleet-wide inventory, not only when native Muse Code works. Pi's `meta` provider is a separate route. For example, `meta/muse-wonder-1.0` appeared in Pi's catalog on 2026-10-17. Discover its current ID and supported effort again during each review.
+
+Evaluate catalog-confirmed Meta candidates for each crew-dispatch tier under step 3, then tool-test proposed placements under step 4. A native Muse login failure does not disqualify Pi's Meta route. Establish authentication, billing and quota mapping for the selected route; do not infer them from the `meta` prefix or another route's diagnostics. Report missing quota mapping as uncertainty, not proof that the model cannot run.
+
+Keep Muse Wonder and Wonder Full distinct. Never transfer Full's scores or assume its availability from a standard Wonder catalog entry. Native Muse Code benchmarks are directional evidence, not measured Pi performance. Inventory inclusion alone never authorizes changing dispatcher defaults.
 
 A provider error like `X is no longer available. Please switch to Y` is a retirement notice: replace X everywhere and check Y.
 
@@ -54,7 +62,15 @@ When a catalog lists a model the vendor no longer serves, find the cause before 
 
 The reverse gap also happens: a model the vendor serves that the extension cannot reach. The server answers `429 ResourceExhausted` with `matched=none` even with quota to spare. So a 429 on a custom id, while the vendor's own CLI runs the model (`agy --model <id>-high -p ...`), is an extension gap, not quota. Search the extension's open issues and pull requests before debugging, and record it under Gaps until a fix ships. Example (2026-10-16): pi-antigravity 0.9.0 and npm 0.10.0 announced an old Antigravity client version, so the backend hid Gemini 4 Argon ([issue 93](https://github.com/Rahularya01/pi-antigravity/issues/93), [issue 94](https://github.com/Rahularya01/pi-antigravity/issues/94)). Reuse that evidence before investigating the same failure again; check current releases and fixes before reinstalling npm latest.
 
-For Argon, `agy models` currently advertises `gemini-4-argon-{low,medium,high}`. Pi's logical id is `antigravity/gemini-4-argon`; `--thinking high` must route to the exact `gemini-4-argon-high` runtime, not Flash or another provider. The configured Git extension pin contains the discovery fix while npm latest remains 0.10.0. Refresh with `pi update --models` after the fixed source is installed; headless inference alone is not a catalog refresh. Compare the refreshed Pi list with `agy models`, not the extension's built-in fallback list. Never edit `models-store.json` or add a static Argon override to conceal a discovery failure. Catalog presence and offline routing tests are not live tool verification.
+Argon discovery example, checked 2026-10-16:
+
+- `agy models` advertises `gemini-4-argon-{low,medium,high}`.
+- Pi's logical id is `antigravity/gemini-4-argon`. Its `--thinking high` must select `gemini-4-argon-high`, not Flash or another provider.
+- The configured Git extension pin contains the discovery fix; npm latest was 0.10.0.
+- Run `pi update --models` after installing the fixed source. Headless inference alone is not a catalog refresh.
+- Compare the refreshed Pi list with `agy models`, not the extension's built-in fallback list.
+- Never edit `models-store.json` or add a static Argon override to conceal a discovery failure.
+- Catalog presence and offline routing tests are not live tool verification.
 
 ## 2. Newer models: is anything better released?
 
@@ -98,7 +114,7 @@ For every model you add or move, through the exact configured extension source, 
 
 - **Pi**: `pi --model <provider/id> --thinking <effort> --no-session --no-context-files --no-skills --no-prompt-templates --no-mcp --no-approve --mode json -p "Use your bash tool to run: ls | head -2. Then reply DONE" </dev/null`
 
-Run bounded probes from a fresh throwaway directory containing only invented synthetic fixtures, with no project/private files, no historical session replay and no private input. For this synthetic-only probe, the existing local Pi tracer (`PI_OTEL_EXPORTER_OTLP_ENDPOINT`, currently `http://localhost:3000/api/public/otel` on the laptop) may capture the fixed synthetic prompt/tool content and ordinary runtime metadata; do not label that capture metadata-only, do not expose or copy credentials/headers, and keep ordinary private-data protections and exporter settings unchanged for all other work. Pass means the probe ran the tool, printed `DONE`, exited within seconds, confirmed the actual provider/model/effort in the run output, and read back that exact run's trace (`attributes.pi.session.id` and `attributes.pi.tool.call_id`, not an unrelated canary) from the existing local tracing destination. If trace readback fails, report the concrete backend failure under Gaps without blocking independent dispatcher/config validation. A plain "reply OK" is not enough: some models answer that and still hang on the first tool call. For special-purpose rules also exercise the capability (a checkable `web_search`, a `generate_image`) when in scope. Without `</dev/null`, `pi -p` waits on stdin forever. If Pi replies but never exits, an extension is holding it open: bisect with `pi --no-extensions -e <path> ...`.
+Run bounded probes from a fresh throwaway directory containing only invented synthetic fixtures. Never use project files, private files, historical session replay or other private input. For this synthetic-only probe, the existing local Pi tracer may capture the fixed prompt, tool content and ordinary runtime metadata. Read its destination from `PI_OTEL_EXPORTER_OTLP_ENDPOINT`; the laptop used `http://localhost:3000/api/public/otel` on 2026-10-16. Do not label this capture metadata-only or expose credentials and headers. Keep private-data protections and exporter settings unchanged for other work. A passing probe runs the tool, prints `DONE` and exits within seconds. Its output confirms the actual provider, model and effort. Read back that exact run's trace from the existing local tracing destination. Match `attributes.pi.session.id` and `attributes.pi.tool.call_id`, not an unrelated canary. If trace readback fails, report the concrete backend failure under Gaps without blocking independent dispatcher/config validation. A plain "reply OK" is not enough: some models answer that and still hang on the first tool call. For special-purpose rules also exercise the capability (a checkable `web_search`, a `generate_image`) when in scope. Without `</dev/null`, `pi -p` waits on stdin forever. If Pi replies but never exits, an extension is holding it open: bisect with `pi --no-extensions -e <path> ...`.
 
 ## 5. Edit, validate, and confirm Jev can pick it
 
@@ -106,6 +122,7 @@ Dispatch profile shape:
 
 - `pi` profiles declare `provider` as `quota-axi` names it, not the Pi model prefix (`openai-codex/` is `codex`, `claude-bridge/` is `claude`, `xai/` is `grok`, `antigravity/` is `agy`, `cursor/` is `cursor`).
 - Only `pi` and `grok` harnesses; Claude (`claude-bridge/`) and Antigravity (`antigravity/`) models go through Pi, never the `claude` or `agy` harnesses.
+- Meta/Muse profiles use `harness: pi` and the catalog-confirmed `meta/<id>`. Resolve their quota provider from the selected authentication route, not its name. Report an unbound Jev candidate under Gaps; never relabel it as native Muse to obtain a quota match.
 - `when` is the only rule text the dispatch classifier sees. It reads the brief's intent and spec and picks one `when` as a Choice option; it never sees `use`, `why` or quota. Write `when` so a reader of the brief alone can pick the right rule:
   - Describe the task, never the model, harness, effort or cost.
   - Start with the kind of work, then concrete examples in the words briefs use.
@@ -128,7 +145,7 @@ Then:
      FM_HOME=$PWD CONFIG=$S/cfg; . $S/v.sh; crew_dispatch_validate"
    ```
    No output means valid.
-3. Confirm Jev can rank each new candidate: write a brief whose `## Captain's intent` and `## Firstmate spec` fit the tier, then run `bin/fm-dispatch-resolve.sh <brief> --project <name>` from `~/github/firstmate`. Every candidate must show `-> eligible` with a `scope=` and a numeric `spendPriority`; which one wins today does not matter. `eligible, unranked: no applicable quota row` means the resolver cannot bind the model to a quota row, so it never wins. That is a resolver or config gap to fix or flag, not a quota state. (As of 2026-10-10, Antigravity models rank only with firstmate PR #6569, which binds `antigravity/<id>` to quota-axi's `gemini`/`claude_gpt` scopes; check whether it has merged.) Re-run once before trusting an `unknown` row.
+3. Confirm Jev can rank each new candidate: write a brief whose `## Captain's intent` and `## Firstmate spec` fit the tier, then run `bin/fm-dispatch-resolve.sh <brief> --project <name>` from `~/github/firstmate`. Every candidate must show `-> eligible` with a `scope=` and a numeric `spendPriority`; which one wins today does not matter. `eligible, unranked: no applicable quota row` means the resolver cannot bind the model to a quota row, so it never wins. That is a resolver or config gap to fix or flag, not a quota state. (As of 2026-10-10, Antigravity models rank only with firstmate PR #6569, which binds `antigravity/<id>` to quota-axi's `gemini`/`claude_gpt` scopes; check whether it has merged.) Rerun once before trusting an `unknown` row.
 
 ## 6. Report
 

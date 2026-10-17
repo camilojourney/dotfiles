@@ -1,0 +1,22 @@
+[
+  {
+    "query": "Update our model review so Pi's Meta Muse Wonder route is considered for crew dispatch, even though native Muse Code is not signed in.",
+    "should_trigger": true
+  },
+  {
+    "query": "A new model is listed in Pi. Check whether it belongs in the fleet's implementation or review tiers.",
+    "should_trigger": true
+  },
+  {
+    "query": "Recheck whether our first mate, second mates and coding workers use the best available models for their roles.",
+    "should_trigger": true
+  },
+  {
+    "query": "Run the already configured crew dispatcher on this task without changing its model choices.",
+    "should_trigger": false
+  },
+  {
+    "query": "Fix the application's model dropdown alignment; do not change our agent fleet configuration.",
+    "should_trigger": false
+  }
+]
