@@ -38,6 +38,23 @@ in
     AbandonProcessGroup = true;
   };
 
+  # Every 15 minutes, add skill usage (which skills each crew agent loaded,
+  # which checks it ran) to finished Pi sessions' Langfuse traces. The script
+  # lives in the Fleet checkout (system/skills/TRACING.md explains it); the
+  # guard keeps the job quiet on a machine without it. Homebrew python3,
+  # because the script needs Python 3.11+.
+  launchd.user.agents.fleet-skill-usage.serviceConfig = {
+    Label = "org.dotfiles.fleet-skill-usage";
+    ProgramArguments = [
+      "/bin/sh"
+      "-c"
+      ''script="$HOME/github/fleet-system/system/skills/meta/skill-creator-fleet/scripts/skill_usage.py"; [ -f "$script" ] || exit 0; exec /opt/homebrew/bin/python3 "$script" update''
+    ];
+    StartInterval = 900;
+    StandardOutPath = "${homeDirectory}/Library/Logs/fleet-skill-usage.log";
+    StandardErrorPath = "${homeDirectory}/Library/Logs/fleet-skill-usage.log";
+  };
+
   # Rotate the daily rebuild log with macOS's own newsyslog: at 1 MB keep up
   # to 8 old copies (8 MB at most). Rotated copies stay uncompressed so Baby
   # Menu's system-usage widget can still read the last run from .0 right
