@@ -69,11 +69,16 @@ Do not change the [trial destination](AGENT-PLATFORM-QUICKSTART.md), restore its
 Langfuse store, or start stopped services to reproduce native agents.
 
 Copy committed source, not a running home. Keep `dotfiles`, `fleet-system`,
-`firstmate` and the telemetry extension at the tested commits. The extension's
-exact git pin is owned by `home/.pi/agent/settings.json`. A local commit must be
-available on the receiving Mac before Pi reconciles that pin; an unpublished SHA
-cannot be fetched from GitHub. A source-only git bundle carries unpublished
-commits without publishing or activating them.
+`firstmate` and the telemetry extension at the tested commits. The active extension
+pin is owned by `home/.pi/agent/settings.json` and its regression in
+`tests/pi_settings_test.sh`. Keep that default at the published revision until a
+reviewed upgrade is available from its fetch origin. The reproduction kit's
+manifest records the tested candidate separately; copying the kit does not activate
+it. The daily rebuild uses local commits too, even without a push.
+
+An unpublished SHA cannot be fetched from GitHub. A source-only git bundle carries
+it without publishing or activating it. Merely seeding a managed cache is not enough:
+Pi 1.3.0 still fetches the configured ref during `pi update --extensions`.
 
 On an empty destination, clone the bundles into `~/github/<repository>` and check
 out the recorded commits. For an existing repository, fetch the bundle and inspect
@@ -81,12 +86,21 @@ the diff before changing branches. Preserve local edits. Do not pull a moving br
 and call that the tested configuration. Firstmate's home setup and existing Mac
 bootstrap remain the setup owners; this guide does not bypass their guards.
 
-For an unpublished exporter pin, clone its bundle into Pi's empty managed git path
-`~/.pi/agent/git/github.com/camilojourney/pi-opentelemetry` and check out the pinned
-commit before `pi update --extensions`. Set that clone's origin to the declared
-GitHub URL after import. Existing managed clones can fetch the bundle instead.
-Then install its exact dependencies with `npm ci --omit=dev --omit=peer --ignore-scripts`.
-After the commit is published, ordinary Pi package reconciliation suffices.
+For an explicit unpublished-exporter trial, clone its verified bundle into Pi's
+empty managed git path
+`~/.pi/agent/git/github.com/camilojourney/pi-opentelemetry` at the manifest commit.
+Retain the bundle as that clone's origin until publication: this lets online Pi
+reconciliation fetch the exact candidate locally. Keep the bundle at a stable
+absolute path. Install locked dependencies with
+`npm ci --omit=dev --omit=peer --ignore-scripts`. In the receiving authored settings
+and pin regression, select that manifest commit only when ready to activate it.
+Then run the settings regression and `pi update <exact-package-source>` before
+rebuilding. After publication, restore the declared GitHub origin and verify the
+same update command before relying on unattended rebuilds.
+
+Do not update an existing managed cache with local changes without preserving and
+reviewing them first. Pi 1.3.0 reconciliation can reset tracked files and remove
+untracked files when changing commits; it is not a guarded source-worktree update.
 Do not copy `node_modules`, caches or an installed executable from the laptop.
 
 Run the source checks on each Mac before activation:

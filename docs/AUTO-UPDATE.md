@@ -71,8 +71,11 @@ update for that same target. On a new machine, after `setup/mac.sh`:
 
 The daemon pulls this public repo's `main` and applies it as root with no
 review step. Anything pushed to `main` - by you, an agent, or a compromised
-GitHub account - reaches both machines by the next morning. That is the price
-of not running rebuilds by hand. To stop it, remove
+GitHub account - reaches both machines by the next morning. It rebuilds the
+local checkout even when a pull is skipped: local commits and tracked edits can
+activate without being pushed. Keep unpublished package pins out of that checkout
+until their configured fetch origin can serve them. That is the price of not
+running rebuilds by hand. To stop it, remove
 `launchd.daemons.auto-rebuild` from `nix/configuration.nix` and rebuild.
 
 ## Design notes

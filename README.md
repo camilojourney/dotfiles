@@ -155,7 +155,9 @@ as root, which fast-forwards `~/github/dotfiles` and `~/github/firstmate`,
 then runs the same rebuild as `./rebuild-total.sh` on the laptop or
 `./rebuild.sh` on the remote box. It logs to `/var/log/auto-rebuild.log` and
 posts a notification on failure. Because it pulls this repo and applies it as
-root, anything pushed to `main` reaches both machines unattended.
+root, anything pushed to `main` reaches both machines unattended. The rebuild
+also uses local commits and tracked edits even if the pull is skipped; not pushing
+a change does not keep it inactive locally.
 See [`docs/AUTO-UPDATE.md`](docs/AUTO-UPDATE.md) for logs, enabling it, and
 the design notes.
 [Automations](docs/AUTOMATIONS.md) lists every scheduled job, including this one.
