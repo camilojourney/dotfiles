@@ -7,13 +7,17 @@ set -euo pipefail
 REPO_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." &>/dev/null && pwd)
 SETTINGS="$REPO_ROOT/home/.pi/agent/settings.json"
 MODELS="$REPO_ROOT/home/.pi/agent/models.json"
+DISPATCH="$REPO_ROOT/home/.firstmate/crew-dispatch.json"
 CURSOR_PROVIDER="git:github.com/camilojourney/pi-cursor-provider@73fd2d75c58bfe1757a124e407fbc72f89642826"
 OTEL_PACKAGE="git:github.com/camilojourney/pi-opentelemetry@e1685ababd475501d584f3ddc77d4514ffbc9297"
+ANTIGRAVITY_PACKAGE="git:github.com/Rahularya01/pi-antigravity@f950c08e7a5c1069a0339af88252347a5ecb0f8c"
 
-jq -e --arg cursor_provider "$CURSOR_PROVIDER" --arg otel_package "$OTEL_PACKAGE" '
+jq -e --arg cursor_provider "$CURSOR_PROVIDER" --arg otel_package "$OTEL_PACKAGE" \
+  --arg antigravity_package "$ANTIGRAVITY_PACKAGE" '
   .packages as $packages
   | ($packages | map(select(test("cursor"; "i"))) == [$cursor_provider])
   and ($packages | map(select(test("opentelemetry"))) == [$otel_package])
+  and ($packages | map(select(test("pi-antigravity"))) == [$antigravity_package])
   and ($packages | index("npm:pi-cursor-sdk") | not)
   and (.defaultProvider == "openai-codex")
   and (.defaultModel == "gpt-6.1-sol")
@@ -27,4 +31,28 @@ jq -e '
   and ([.providers.deepseek.modelOverrides[].contextWindow] | all(. == 500000))
 ' "$MODELS" >/dev/null
 
-echo "PASS: declarative Pi settings and model overrides are valid"
+jq -e '
+  def profiles($v): if ($v | type) == "array" then $v else [$v] end;
+  ([.rules[].use, .default] | map(profiles(.)) | add) as $all
+  | ($all | all(.harness == "pi"))
+  and ($all | map(select(.model | startswith("claude-bridge/"))) | length == 5)
+  and ($all | map(select(.model | startswith("claude-bridge/"))) | all(.harness == "pi" and .provider == "claude"))
+  and ([.rules[2].use] | map(profiles(.)) | all(any(.model == "claude-bridge/claude-fable-5-1" and .effort == "high")))
+  and ([.rules[6].use] | map(profiles(.)) | all(any(.model == "claude-bridge/claude-fable-5-1" and .effort == "max")))
+  and ([.rules[0].use, .rules[1].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-3.8-flash" and .effort == "medium" and .provider == "agy")))
+  and ([.rules[3].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-3.8-flash" and .effort == "low" and .provider == "agy")))
+  and ([.rules[2].use, .rules[5].use, .rules[6].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-4-argon" and .effort == "high" and .provider == "agy")))
+  and ([.rules[4].use, .default] | map(profiles(.)) | all((first.model == "openai-codex/gpt-6.1-sol" and first.effort == "medium") and (any(.model == "antigravity/gemini-4-argon") | not)))
+' "$DISPATCH" >/dev/null
+
+# The source is the single owner, linked into Firstmate by Home Manager.
+[[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness") == "pi claude-bridge/claude-opus-5-5 xhigh" ]]
+# Match literal Nix interpolation, not a shell variable.
+# shellcheck disable=SC2016
+grep -Fq '"github/firstmate/config/crew-dispatch.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/crew-dispatch.json";' "$REPO_ROOT/nix/home.nix"
+# shellcheck disable=SC2016
+grep -Fq '"github/firstmate/config/secondmate-harness".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/secondmate-harness";' "$REPO_ROOT/nix/home.nix"
+# shellcheck disable=SC2016
+grep -Fq '".pi/agent/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.pi/agent/settings.json";' "$REPO_ROOT/nix/home.nix"
+
+echo "PASS: declarative Pi settings, model overrides, crew dispatch, and secondmate selection are valid"
