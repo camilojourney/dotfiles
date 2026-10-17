@@ -21,6 +21,7 @@
     ]
   },
   "disableClaudeAiConnectors": true,
+  "syncClaudeAiSkills": false,
   "skillOverrides": {
     "artifact-capabilities": "off",
     "artifact-design": "off",

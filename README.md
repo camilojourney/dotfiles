@@ -14,6 +14,13 @@ I run this on two Macs: my laptop, and a Mac mini I use as a remote work compute
 
 Editor, terminal, and agent configuration live here as real, current files - not stripped-down examples. Credentials, session state, and other host-local runtime data are never committed.
 
+Claude Code account-skill synchronization is disabled by `syncClaudeAiSkills: false`
+in `home/.claude/settings.json`, linked to `~/.claude/settings.json`.
+Keep this flag false: `skillOverrides` does not disable downloads, and Pi also
+reads the shared `~/.agents/skills` directory. Restart Claude Code after changing
+this flag. Existing downloads must be moved outside the shared skill directories;
+then reload or restart Pi. Local Fleet skills remain available.
+
 ## If you're only running this on one Mac
 
 Everything here works fine on a single machine - you just won't need all of it:
