@@ -76,9 +76,23 @@ reviewed upgrade is available from its fetch origin. The reproduction kit's
 manifest records the tested candidate separately; copying the kit does not activate
 it. The daily rebuild uses local commits too, even without a push.
 
+For a published upgrade, preserve any managed-cache edits first, update the authored
+pin and its regression together, run `bash tests/pi_settings_test.sh`, then run
+`pi update <exact-package-source>` with that pin. New Pi sessions load the upgrade;
+already-running sessions retain their loaded exporter until reloaded or resumed.
+No machine rebuild or credential change is needed for this package switch.
+
+For task-scoped linkage, create the presence flag
+`~/github/firstmate/config/trace-context` in the intended operational home before
+starting its next normal home session. Firstmate's `docs/trace-context.md` owns the
+propagation contract. Existing homes keep their frozen decision until restarted;
+coordinate their normal safe restart through Firstmate, preserving active work.
+Never edit `state/.trace-context-effective` to force activation. A successful
+exporter test alone does not prove that an existing Firstmate home enabled linking.
+
 An unpublished SHA cannot be fetched from GitHub. A source-only git bundle carries
 it without publishing or activating it. Merely seeding a managed cache is not enough:
-Pi 1.3.0 still fetches the configured ref during `pi update --extensions`.
+Pi 1.3.0 still fetches the configured ref during `pi update <exact-package-source>`.
 
 On an empty destination, clone the bundles into `~/github/<repository>` and check
 out the recorded commits. For an existing repository, fetch the bundle and inspect

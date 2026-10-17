@@ -11,7 +11,7 @@ DISPATCH="$REPO_ROOT/home/.firstmate/crew-dispatch.json"
 CURSOR_PROVIDER="git:github.com/camilojourney/pi-cursor-provider@73fd2d75c58bfe1757a124e407fbc72f89642826"
 # Retain a published pin until the tested upgrade is available from its origin.
 # Daily rebuilds use local commits too; see docs/AUTOMATIONS.md before upgrading.
-OTEL_PACKAGE="git:github.com/camilojourney/pi-opentelemetry@e1685ababd475501d584f3ddc77d4514ffbc9297"
+OTEL_PACKAGE="git:github.com/camilojourney/pi-opentelemetry@32abe32c2c4e9efb1c30ca958490b9823f7fb0f8"
 ANTIGRAVITY_PACKAGE="git:github.com/Rahularya01/pi-antigravity@f950c08e7a5c1069a0339af88252347a5ecb0f8c"
 
 jq -e --arg cursor_provider "$CURSOR_PROVIDER" --arg otel_package "$OTEL_PACKAGE" \
