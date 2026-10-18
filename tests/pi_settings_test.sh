@@ -37,11 +37,8 @@ jq -e '
   def profiles($v): if ($v | type) == "array" then $v else [$v] end;
   ([.rules[].use, .default] | map(profiles(.)) | add) as $all
   | ($all | all(.harness == "pi"))
-  and ($all | map(select(.model | startswith("claude-bridge/"))) | length == 3)
-  and ($all | all(.model | test("opus"; "i") | not))
-  and ($all | map(select(.model | startswith("claude-bridge/"))) | all(.harness == "pi" and .provider == "claude"))
-  and ([.rules[2].use] | map(profiles(.)) | all(any(.model == "claude-bridge/claude-fable-5-1" and .effort == "high")))
-  and ([.rules[6].use] | map(profiles(.)) | all(any(.model == "claude-bridge/claude-fable-5-1" and .effort == "max")))
+  and ($all | all((.model | test("claude|opus|sonnet|fable"; "i") | not) and .provider != "claude"))
+  and ([.rules[2].use, .rules[6].use] | map(profiles(.)) | all(any(.model == "openai-codex/gpt-6.1-sol" and .effort == "xhigh" and .provider == "codex")))
   and ([.rules[0].use, .rules[1].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-3.8-flash" and .effort == "medium" and .provider == "agy")))
   and ([.rules[3].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-3.8-flash" and .effort == "low" and .provider == "agy")))
   and ([.rules[2].use, .rules[5].use, .rules[6].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-4-argon" and .effort == "high" and .provider == "agy")))
@@ -50,7 +47,7 @@ jq -e '
 
 # Each selection has one authored owner, linked into Firstmate by Home Manager.
 [[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness") == "pi openai-codex/gpt-6.1-sol xhigh" ]]
-[[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness.backup") == "pi claude-bridge/claude-sonnet-5-5 xhigh" ]]
+[[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness.backup") == "pi antigravity/gemini-4-argon high" ]]
 # Match literal Nix interpolation, not a shell variable.
 # shellcheck disable=SC2016
 grep -Fq '"github/firstmate/config/crew-dispatch.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/crew-dispatch.json";' "$REPO_ROOT/nix/home.nix"

@@ -17,11 +17,10 @@
     {
       "when": "Review, audit, or second opinion on a diff/PR/design another crewmate produced. Not for writing the fix.",
       "use": [
-        { "harness": "pi", "model": "claude-bridge/claude-fable-5-1", "effort": "high", "provider": "claude" },
-        { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "xhigh", "provider": "codex" },
-        { "harness": "pi", "model": "antigravity/gemini-4-argon", "effort": "high", "provider": "agy" }
+        { "harness": "pi", "model": "antigravity/gemini-4-argon", "effort": "high", "provider": "agy" },
+        { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "xhigh", "provider": "codex" }
       ],
-      "why": "Prefer a different model family than the author's. Fable 5.1 shares Claude's session and weekly bounds (model:fable). Argon runs at high (Antigravity's ceiling) only in low-volume tiers because its weekly pool is small. Sol runs at xhigh because Sol high scores below Sol medium. Opus is excluded: it is reserved for the captain's own Claude Code session."
+      "why": "Prefer a different model family than the author's: Argon for Sol-written work, Sol otherwise. Argon runs at high (Antigravity's ceiling) only in low-volume tiers because its weekly pool is small. Sol runs at xhigh because Sol high scores below Sol medium. Claude models are excluded from crew dispatch for now because they consume a lot of quota; Opus is reserved for the captain's own Claude Code session."
     },
     {
       "when": "Recon-only, file gathering, narrow lookup, or a trivial mechanical edit (rename, format sweep, typo fix). Not for research that needs current external facts.",
@@ -30,7 +29,7 @@
         { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "low", "provider": "agy" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "low", "provider": "grok" }
       ],
-      "why": "Trivial effort: use the cheapest low-effort models (Luna and Flash) so workhorse Codex and frontier Claude/Argon pools are not spent here."
+      "why": "Trivial effort: use the cheapest low-effort models (Luna and Flash) so the workhorse Codex and Argon reasoning pools are not spent here."
     },
     {
       "when": "Ordinary implementation, bounded bug fix, tests, everyday coding with a clear path.",
@@ -38,7 +37,7 @@
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "medium", "provider": "codex" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "medium", "provider": "grok" }
       ],
-      "why": "Sol medium leads high-volume coding at the lowest cost and time per task; Claude and Argon are reserved for harder, low-volume tiers, with Grok medium as fallback."
+      "why": "Sol medium leads high-volume coding at the lowest cost and time per task; Argon is reserved for harder, low-volume tiers, with Grok medium as fallback."
     },
     {
       "when": "Large/ambiguous multi-file change, risky refactor, work holding many moving parts at once.",
@@ -47,16 +46,15 @@
         { "harness": "pi", "model": "antigravity/gemini-4-argon", "effort": "high", "provider": "agy" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "xhigh", "provider": "grok" }
       ],
-      "why": "Sol xhigh leads on cost and speed near frontier quality, with Argon high (Antigravity's ceiling) second and Grok xhigh as fallback; Claude is reserved for second mates and the hardest tier. Sol runs at xhigh because Sol high scores below Sol medium."
+      "why": "Sol xhigh leads on cost and speed near frontier quality, with Argon high (Antigravity's ceiling) second and Grok xhigh as fallback. Sol runs at xhigh because Sol high scores below Sol medium."
     },
     {
       "when": "Hardest available work: root-cause investigation, architecture, ambiguous design, or already failed on the workhorse tier.",
       "use": [
-        { "harness": "pi", "model": "claude-bridge/claude-fable-5-1", "effort": "max", "provider": "claude" },
-        { "harness": "pi", "model": "claude-bridge/claude-sonnet-5-5", "effort": "max", "provider": "claude" },
+        { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "xhigh", "provider": "codex" },
         { "harness": "pi", "model": "antigravity/gemini-4-argon", "effort": "high", "provider": "agy" }
       ],
-      "why": "Frontier reasoning for work that justifies maximum cost: Claude max models (Fable 5.1, Sonnet 5.5) lead, backed by Argon at high (Antigravity's ceiling) when the shared Claude session window is exhausted. Opus is excluded: it is reserved for the captain's own Claude Code session."
+      "why": "Frontier reasoning for work that justifies maximum cost: Sol xhigh and Argon high (Antigravity's ceiling) are the strongest non-Claude profiles. Claude models (Fable 5.1, Sonnet 5.5) are excluded from crew dispatch for now because they consume a lot of quota; Opus is reserved for the captain's own Claude Code session."
     }
   ],
   "default": [
