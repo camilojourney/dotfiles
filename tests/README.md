@@ -11,6 +11,7 @@ bash tests/pi_settings_test.sh
 bash tests/claude_settings_test.sh
 python3 tests/agent_platform_test.py
 python3 tests/agent_platform_langfuse_test.py
+python3 tests/fleet_telemetry_test.py
 ```
 
 `agent_platform_test.py` exercises the encrypted, unlocked, ownership-enabled
@@ -44,6 +45,9 @@ It also checks that `crew-dispatch.json` routes Claude profiles through Pi (`cla
 `claude_settings_test.sh` requires the authored `syncClaudeAiSkills` setting to stay
 false. Skill overrides alone do not stop account-skill downloads. The test reads
 JSON only; it never starts Claude or contacts a provider.
+
+`fleet_telemetry_test.py` evaluates both hosts' scheduled collector arguments with offline Nix, then executes them against isolated fake collectors.
+It checks both collectors run even when either fails, without credentials, network calls or service changes.
 
 `mac_setup_test.sh` is a regression test for `setup/mac.sh`.
 `rebuild_test.sh` checks the one shared `rebuild.sh` helper's account-based

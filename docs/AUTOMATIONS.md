@@ -8,7 +8,7 @@ rebuilding removes it.
 | --- | --- | --- | --- | --- |
 | `org.dotfiles.auto-rebuild` | 05:00 daily, or at the next wake | root | Pulls this repository and Firstmate, then rebuilds | `/var/log/auto-rebuild.log` |
 | newsyslog rotation | When the rebuild log passes 1 MB | root | Keeps 8 old copies of the rebuild log | - |
-| `org.dotfiles.fleet-skill-usage` | Every 15 minutes | you | Adds skill usage to quiet agent attempts' Langfuse traces | `~/Library/Logs/fleet-skill-usage.log` |
+| `org.dotfiles.fleet-skill-usage` | Every 15 minutes | you | Adds skill usage and flushes task outcome evidence to Langfuse | `~/Library/Logs/fleet-skill-usage.log` |
 
 The agent platform's launchd templates in `services/agent-platform/` are not
 scheduled by a rebuild. Each is installed by hand, as
@@ -19,16 +19,17 @@ scheduled by a rebuild. Each is installed by hand, as
 [Auto-update](AUTO-UPDATE.md) explains the daemon, its failure notification and
 how to turn it off.
 
-## Fleet skill usage
+## Fleet skill usage and task outcomes
 
 Shows whether crew agents use the Fleet skills (`/code`, `/specs`, `/diagnose`)
 and which parts of them. Pi already sends every tool call to Langfuse
 live; this job adds what Langfuse cannot work out alone.
 
-Each run calls `skill_usage.py update` from the Fleet checkout at
-`~/github/fleet-system/system/skills/meta/skill-creator-fleet/scripts/`. For
-every Pi session under `~/.pi/agent/sessions` that has been quiet for 10
-minutes, it records:
+Each run calls `skill_usage.py update` from the Fleet checkout at `~/github/fleet-system/system/skills/meta/skill-creator-fleet/scripts/` and flushes Firstmate's pending task evidence.
+Both collectors run independently, and either failure makes the scheduled job fail visibly.
+The login shell supplies the existing native OTLP endpoint and authentication from the managed shell environment.
+No additional daemon or credentials are introduced.
+For every Pi session under `~/.pi/agent/sessions` that has been quiet for 10 minutes, the skill collector records:
 
 - which skills the agent loaded, and whether before its first edit;
 - which skill references and scripts it read or ran;
@@ -59,8 +60,9 @@ full description.
 
 Check the job: `launchctl print gui/$(id -u)/org.dotfiles.fleet-skill-usage`
 shows its run count and last exit code. Each run logs one line of counts, such
-as `{"exported": 1, "trace-not-found": 15}`. On a machine without the Fleet
-checkout the job exits at once and does nothing.
+as `{"exported": 1, "trace-not-found": 15}`, followed by the outcome connector's counts.
+A missing checkout skips only its own collector.
+`tests/fleet_telemetry_test.py` executes both hosts' evaluated job commands with isolated fixtures, including independent failure cases.
 
 ## Reproduce native agents on another Mac
 
@@ -153,11 +155,12 @@ matching native-project credentials. A configured URL is not proof of delivery;
 require an observed native trace and `fleet.skill_usage` span before claiming both
 hosts collect evidence. Host sleep or a broken tunnel suspends collection.
 
-The scheduled collector covers persistent Pi sessions. Firstmate's optional
-`bin/fm-trace-evidence.py` joins delivery and explicitly selected public
-no-mistakes receipts, including runs without native session files. Invoke it with
-`--help` for its private-output and explicit-export contract. It is not scheduled
-by this job and does not start validation or automatically infer human acceptance.
+The scheduled job also flushes Firstmate's automatic task snapshots, including outcomes without native session files.
+Enable `config/fleet-ledger` separately in each intended Firstmate home, alongside normal trace propagation.
+Lifecycle hooks save private identity and delivery evidence before cleanup; the scheduled connector retries failed exports without needing a live worker checkout.
+Firstmate's `bin/fm-trace-evidence.py --help` owns the storage, attribution and retry contract.
+It never starts validation or infers human acceptance, and it does not reconstruct dispatches missed before enablement.
+This replays retained outcome snapshots, not missing native Pi spans.
 Use Langfuse's existing feedback controls for corrections; keep regressions in
 the application or skill that owns the failed behavior. No paid benchmark, judge
 or automatic optimizer is part of this setup.

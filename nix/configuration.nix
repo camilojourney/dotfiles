@@ -38,18 +38,28 @@ in
     AbandonProcessGroup = true;
   };
 
-  # Every 15 minutes, add skill usage (which skills each crew agent loaded,
-  # which checks it ran) to finished Pi sessions' Langfuse traces. The script
-  # lives in the Fleet checkout (system/skills/TRACING.md explains it); the
-  # guard keeps the job quiet on a machine without it. Homebrew python3,
-  # because the script needs Python 3.11+. docs/AUTOMATIONS.md lists every
-  # scheduled job and how to read this one's results.
+  # One existing 15-minute collector: enrich quiet Pi attempts with Fleet skill
+  # usage and flush Firstmate's durable outcome snapshots. The normal login
+  # environment supplies the existing native OTLP destination/authentication.
+  # Independent guards allow either checkout, and either failure remains visible.
+  # docs/AUTOMATIONS.md owns setup, limits and verification.
   launchd.user.agents.fleet-skill-usage.serviceConfig = {
     Label = "org.dotfiles.fleet-skill-usage";
     ProgramArguments = [
-      "/bin/sh"
-      "-c"
-      ''script="$HOME/github/fleet-system/system/skills/meta/skill-creator-fleet/scripts/skill_usage.py"; [ -f "$script" ] || exit 0; exec /opt/homebrew/bin/python3 "$script" update''
+      "/bin/zsh"
+      "-lic"
+      ''
+        failed=0
+        script="$HOME/github/fleet-system/system/skills/meta/skill-creator-fleet/scripts/skill_usage.py"
+        if [ -f "$script" ]; then
+          /opt/homebrew/bin/python3 "$script" update || failed=1
+        fi
+        script="$HOME/github/firstmate/bin/fm-trace-evidence.py"
+        if [ -f "$script" ]; then
+          /opt/homebrew/bin/python3 "$script" --flush || failed=1
+        fi
+        exit "$failed"
+      ''
     ];
     StartInterval = 900;
     StandardOutPath = "${homeDirectory}/Library/Logs/fleet-skill-usage.log";
