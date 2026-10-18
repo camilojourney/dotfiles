@@ -18,12 +18,10 @@
       "when": "Review, audit, or second opinion on a diff/PR/design another crewmate produced. Not for writing the fix.",
       "use": [
         { "harness": "pi", "model": "claude-bridge/claude-fable-5-1", "effort": "high", "provider": "claude" },
-        { "harness": "pi", "model": "claude-bridge/claude-opus-5-5", "effort": "high", "provider": "claude" },
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "xhigh", "provider": "codex" },
-        { "harness": "pi", "model": "antigravity/gemini-4-argon", "effort": "high", "provider": "agy" },
-        { "harness": "pi", "model": "antigravity/claude-opus-5-5", "effort": "high", "provider": "agy" }
+        { "harness": "pi", "model": "antigravity/gemini-4-argon", "effort": "high", "provider": "agy" }
       ],
-      "why": "Prefer a different model family than the author's. Fable 5.1 shares Claude's session and weekly bounds (model:fable). Argon and Antigravity Opus run at high (Antigravity's ceiling) only in low-volume tiers because their weekly pools are small. Sol runs at xhigh because Sol high scores below Sol medium."
+      "why": "Prefer a different model family than the author's. Fable 5.1 shares Claude's session and weekly bounds (model:fable). Argon runs at high (Antigravity's ceiling) only in low-volume tiers because its weekly pool is small. Sol runs at xhigh because Sol high scores below Sol medium. Opus is excluded: it is reserved for the captain's own Claude Code session."
     },
     {
       "when": "Recon-only, file gathering, narrow lookup, or a trivial mechanical edit (rename, format sweep, typo fix). Not for research that needs current external facts.",
@@ -55,12 +53,10 @@
       "when": "Hardest available work: root-cause investigation, architecture, ambiguous design, or already failed on the workhorse tier.",
       "use": [
         { "harness": "pi", "model": "claude-bridge/claude-fable-5-1", "effort": "max", "provider": "claude" },
-        { "harness": "pi", "model": "claude-bridge/claude-opus-5-5", "effort": "max", "provider": "claude" },
         { "harness": "pi", "model": "claude-bridge/claude-sonnet-5-5", "effort": "max", "provider": "claude" },
-        { "harness": "pi", "model": "antigravity/claude-opus-5-5", "effort": "high", "provider": "agy" },
         { "harness": "pi", "model": "antigravity/gemini-4-argon", "effort": "high", "provider": "agy" }
       ],
-      "why": "Frontier reasoning for work that justifies maximum cost: Claude max models (Fable 5.1, Opus 5.5, Sonnet 5.5) lead, backed by Antigravity Opus and Argon at high (Antigravity's ceiling) when the shared Claude session window is exhausted."
+      "why": "Frontier reasoning for work that justifies maximum cost: Claude max models (Fable 5.1, Sonnet 5.5) lead, backed by Argon at high (Antigravity's ceiling) when the shared Claude session window is exhausted. Opus is excluded: it is reserved for the captain's own Claude Code session."
     }
   ],
   "default": [

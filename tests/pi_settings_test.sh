@@ -37,7 +37,8 @@ jq -e '
   def profiles($v): if ($v | type) == "array" then $v else [$v] end;
   ([.rules[].use, .default] | map(profiles(.)) | add) as $all
   | ($all | all(.harness == "pi"))
-  and ($all | map(select(.model | startswith("claude-bridge/"))) | length == 5)
+  and ($all | map(select(.model | startswith("claude-bridge/"))) | length == 3)
+  and ($all | all(.model | test("opus"; "i") | not))
   and ($all | map(select(.model | startswith("claude-bridge/"))) | all(.harness == "pi" and .provider == "claude"))
   and ([.rules[2].use] | map(profiles(.)) | all(any(.model == "claude-bridge/claude-fable-5-1" and .effort == "high")))
   and ([.rules[6].use] | map(profiles(.)) | all(any(.model == "claude-bridge/claude-fable-5-1" and .effort == "max")))
@@ -49,7 +50,7 @@ jq -e '
 
 # Each selection has one authored owner, linked into Firstmate by Home Manager.
 [[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness") == "pi openai-codex/gpt-6.1-sol xhigh" ]]
-[[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness.backup") == "pi claude-bridge/claude-opus-5-5 xhigh" ]]
+[[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness.backup") == "pi claude-bridge/claude-sonnet-5-5 xhigh" ]]
 # Match literal Nix interpolation, not a shell variable.
 # shellcheck disable=SC2016
 grep -Fq '"github/firstmate/config/crew-dispatch.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/crew-dispatch.json";' "$REPO_ROOT/nix/home.nix"
