@@ -1,6 +1,6 @@
 ---
 name: update-models
-version: 1.0.0
+version: 1.1.0
 description: Reviews and updates fleet models after releases, retirements or provider changes. Discovers Pi routes including Meta/Muse, verifies tools, and places candidates in crew-dispatch tiers.
 ---
 
@@ -25,12 +25,15 @@ This skill lives in `.agents/skills/`; `.claude/skills` is a symlink to that dir
 | File | Controls | Takes effect |
 |---|---|---|
 | `home/.firstmate/crew-dispatch.json` | Model per crewmate task, by rule | Immediately (symlinked into `~/github/firstmate/config/`) |
-| `home/.firstmate/secondmate-harness` | Secondmate runtime, one line: `<harness> <model> <effort>` | Next secondmate launch |
+| `home/.firstmate/secondmate-harness` | Active Secondmate runtime: `<harness> <model> <effort>` | Next Secondmate launch |
+| `home/.firstmate/secondmate-harness.backup` | Saved alternative in the same format, not automatic failover | Only when explicitly selected |
 | `home/.pi/agent/settings.json` | Pi `defaultModel` | Immediately |
 | `home/.pi/agent/settings.json` `compaction.modelOverrides` | Per-model compaction trigger; a new 1M Claude or resized GPT window needs a line ([docs/PI-COMPACTION.md](../../../docs/PI-COMPACTION.md)) | Immediately |
 | `home/.no-mistakes/config.yaml` | no-mistakes pipeline `agent` / `agent_config` (one agent for every step) | Immediately (symlinked) |
 | `tests/pi_settings_test.sh` | Pins Pi `defaultModel`; must match settings.json | Run `bash tests/pi_settings_test.sh` |
 | `home/.claude/settings.json` | Claude Code's interactive default `model` | Next Claude Code session |
+
+Review both Secondmate files, including each route, model and effort. Preserve explicit selections outside the requested scope. Firstmate reads only `secondmate-harness`; editing the backup does not switch agents.
 
 Keep the family alias (e.g. `opus`) in `home/.claude/settings.json`: it follows each new release. Exact ids belong in dispatch config, where runs must be reproducible.
 
@@ -111,8 +114,17 @@ Show the user the benchmark rows and the proposed placement before editing, unle
 ## 4. Verify each new model really works
 
 For every model you add or move, through the exact configured extension source, harness and effort:
+Include changed primary and backup Secondmate selections; a saved backup is not proof its route works.
 
-- **Pi**: `pi --model <provider/id> --thinking <effort> --no-session --no-context-files --no-skills --no-prompt-templates --no-mcp --no-approve --mode json -p "Use your bash tool to run: ls | head -2. Then reply DONE" </dev/null`
+- **Pi**: run this probe, substituting the selected model and effort:
+
+  ```sh
+  pi --model <provider/id> --thinking <effort> --no-session --no-context-files \
+    --no-skills --no-prompt-templates --no-mcp --no-approve --mode json \
+    -p 'Use your bash tool to run exactly `ls | head -2`. Reply DONE only after the command exits 0.' </dev/null
+  ```
+
+Check the tool's exit status; `DONE` alone is not a pass.
 
 Run bounded probes from a fresh throwaway directory containing only invented synthetic fixtures. Never use project files, private files, historical session replay or other private input. For this synthetic-only probe, the existing local Pi tracer may capture the fixed prompt, tool content and ordinary runtime metadata. Read its destination from `PI_OTEL_EXPORTER_OTLP_ENDPOINT`; the laptop used `http://localhost:3000/api/public/otel` on 2026-10-16. Do not label this capture metadata-only or expose credentials and headers. Keep private-data protections and exporter settings unchanged for other work. A passing probe runs the tool, prints `DONE` and exits within seconds. Its output confirms the actual provider, model and effort. Read back that exact run's trace from the existing local tracing destination. Match `attributes.pi.session.id` and `attributes.pi.tool.call_id`, not an unrelated canary. If trace readback fails, report the concrete backend failure under Gaps without blocking independent dispatcher/config validation. A plain "reply OK" is not enough: some models answer that and still hang on the first tool call. For special-purpose rules also exercise the capability (a checkable `web_search`, a `generate_image`) when in scope. Without `</dev/null`, `pi -p` waits on stdin forever. If Pi replies but never exits, an extension is holding it open: bisect with `pi --no-extensions -e <path> ...`.
 
@@ -136,6 +148,7 @@ Dispatch profile shape:
 Then:
 
 1. Edit all files consistently. Edit JSON with `jq` or exact full-line matches, and keep the file's one-line-per-profile style.
+   Keep Secondmate selections and their assertions in `tests/pi_settings_test.sh` consistent. A primary-only change leaves the backup unchanged.
 2. Validate `crew-dispatch.json` with Firstmate's own checker (do not run the whole `fm-bootstrap.sh`):
    ```sh
    cd ~/github/firstmate

@@ -12,6 +12,10 @@
     "should_trigger": true
   },
   {
+    "query": "Review our Secondmate models, including the saved secondmate-harness.backup selection, and verify both configured routes and efforts.",
+    "should_trigger": true
+  },
+  {
     "query": "Run the already configured crew dispatcher on this task without changing its model choices.",
     "should_trigger": false
   },

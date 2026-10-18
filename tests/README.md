@@ -39,7 +39,7 @@ It never touches the real network or host package state.
 
 `pi_settings_test.sh` is a regression test for the declarative Pi settings and model overrides.
 It ensures the package list retains the intended Cursor, telemetry, and Argon-discovery extension pins, keeps GPT-6.1 Sol with high thinking as the Pi default, removes the fixed llama.cpp URL, and limits custom model metadata to DeepSeek's 500,000-token context overrides.
-It also checks that `crew-dispatch.json` routes Claude profiles through Pi (`claude-bridge/`), keeps `antigravity/gemini-3.8-flash` on low-effort/special-purpose rules while placing `antigravity/gemini-4-argon` (`high`) on `review`, `large`, and `hardest`, keeps Codex Sol leading `everyday` and `default`, pins secondmate to Pi Claude Opus 5.5 (`claude-bridge/claude-opus-5-5`) at xhigh, and verifies that Home Manager links settings, crew dispatch, and secondmate selection to their authored owners.
+It also checks that `crew-dispatch.json` routes Claude profiles through Pi (`claude-bridge/`), keeps `antigravity/gemini-3.8-flash` on low-effort/special-purpose rules while placing `antigravity/gemini-4-argon` (`high`) on `review`, `large`, and `hardest`, keeps Codex Sol leading `everyday` and `default`, pins the active Secondmate to Pi GPT-6.1 Sol (`openai-codex/gpt-6.1-sol`) at xhigh, preserves Pi Claude Opus 5.5 (`claude-bridge/claude-opus-5-5`) at xhigh in `secondmate-harness.backup`, and verifies that Home Manager links settings, crew dispatch, and both Secondmate selections to their authored owners. The backup is a saved alternative, not automatic failover.
 
 `claude_settings_test.sh` requires the authored `syncClaudeAiSkills` setting to stay
 false. Skill overrides alone do not stop account-skill downloads. The test reads

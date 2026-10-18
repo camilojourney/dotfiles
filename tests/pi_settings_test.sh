@@ -47,13 +47,16 @@ jq -e '
   and ([.rules[4].use, .default] | map(profiles(.)) | all((first.model == "openai-codex/gpt-6.1-sol" and first.effort == "medium") and (any(.model == "antigravity/gemini-4-argon") | not)))
 ' "$DISPATCH" >/dev/null
 
-# The source is the single owner, linked into Firstmate by Home Manager.
-[[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness") == "pi claude-bridge/claude-opus-5-5 xhigh" ]]
+# Each selection has one authored owner, linked into Firstmate by Home Manager.
+[[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness") == "pi openai-codex/gpt-6.1-sol xhigh" ]]
+[[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness.backup") == "pi claude-bridge/claude-opus-5-5 xhigh" ]]
 # Match literal Nix interpolation, not a shell variable.
 # shellcheck disable=SC2016
 grep -Fq '"github/firstmate/config/crew-dispatch.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/crew-dispatch.json";' "$REPO_ROOT/nix/home.nix"
 # shellcheck disable=SC2016
 grep -Fq '"github/firstmate/config/secondmate-harness".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/secondmate-harness";' "$REPO_ROOT/nix/home.nix"
+# shellcheck disable=SC2016
+grep -Fq '"github/firstmate/config/secondmate-harness.backup".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/secondmate-harness.backup";' "$REPO_ROOT/nix/home.nix"
 # shellcheck disable=SC2016
 grep -Fq '".pi/agent/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.pi/agent/settings.json";' "$REPO_ROOT/nix/home.nix"
 

@@ -176,6 +176,7 @@ in
     # Share authored dispatch policy only. Credentials and sessions stay host-local.
     "github/firstmate/config/crew-dispatch.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/crew-dispatch.json";
     "github/firstmate/config/secondmate-harness".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/secondmate-harness";
+    "github/firstmate/config/secondmate-harness.backup".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/secondmate-harness.backup";
     # force: replaces the pre-existing hand-made config on first activation; its
     # content was merged into the dotfiles copy.
     ".no-mistakes/config.yaml" = {
