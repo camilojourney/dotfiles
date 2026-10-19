@@ -29,11 +29,13 @@
 # Home Manager) so laptop and Mac mini share one config. The Mac mini was on
 # `agent: auto`; both machines now use the same pinned agent. The opencode
 # laguna override was dropped since opencode is no longer in the agent list.
+# 2026-10-19: captain asked that no-mistakes run with Pi Codex 6.1 at xhigh
+# ("makesure that no mistakes ir unnin with pi-codex 6.1 xhigh").
 agent: pi
 agent_config:
   pi:
     model: openai-codex/gpt-6.1-sol
-    effort: medium
+    effort: xhigh
 
 # Optional path to the user-installed acpx binary for acp:<target> agents and ACP aliases
 # acpx_path: acpx
