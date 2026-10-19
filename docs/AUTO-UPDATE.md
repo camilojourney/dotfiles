@@ -38,8 +38,13 @@ A rebuild already updates everything else on every run:
 | Homebrew formulae and casks | `homebrew.onActivation.upgrade = true` |
 | Pi, quota-axi, gh-axi, tasks-axi, and the other npm CLIs | reinstalled at `@latest` from `nix/agent-tools.manifest.lock.json` |
 | Global `python3` libraries (only those in the manifest's `python` list; anything else pip installed is removed) | `pip install --upgrade` |
-| Pi extensions | `pi update --extensions` |
+| Pi extensions | `pi update --extensions`; unversioned packages follow releases, explicit versions and Git refs stay pinned |
 | no-mistakes, treehouse | their own self-updaters |
+
+Pi's authored package list is `home/.pi/agent/settings.json`. `pi-web-access`
+is deliberately unversioned so rebuilds update it. Other explicit package versions
+and Git refs are retained until their declarations change; reconciling a pinned
+package does not advance its pin.
 
 Not updated: Nix packages pinned in `flake.lock`. Bumping those is the change
 most likely to break a rebuild, so do it deliberately with `nix flake update`
