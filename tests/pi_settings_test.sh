@@ -57,6 +57,10 @@ jq -e '
   and ([.rules[3].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-3.8-flash" and .effort == "low" and .provider == "agy")))
   and ([.rules[2].use, .rules[5].use, .rules[6].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-4-argon" and .effort == "high" and .provider == "agy")))
   and ([.rules[4].use, .default] | map(profiles(.)) | all((first.model == "openai-codex/gpt-6.1-sol" and first.effort == "medium") and (any(.model == "antigravity/gemini-4-argon") | not)))
+  # Luna xhigh codes only ordinary, clear-path work (captain, 2026-10-19): an eval
+  # found it faster and cheaper than Sol xhigh but it missed a subtle edge Sol caught.
+  and (.rules[4].when | test("^Ordinary implementation"))
+  and (keys_using(.model == "openai-codex/gpt-6-luna" and .effort == "xhigh" and .provider == "codex") == [4])
 ' "$DISPATCH" >/dev/null
 
 # Each selection has one authored owner, linked into Firstmate by Home Manager.
