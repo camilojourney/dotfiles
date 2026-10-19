@@ -33,17 +33,24 @@ jq -e '
   and ([.providers.deepseek.modelOverrides[].contextWindow] | all(. == 500000))
 ' "$MODELS" >/dev/null
 
-# Claude: only Sonnet, only for external-facts research (rule 0) and read-only
-# mapping (rule 7), captain-approved 2026-10-19. Opus stays reserved for the
-# captain's own session; Fable and Haiku are not dispatched.
+# Claude models run only through Pi, never the Claude Code harness (captain,
+# 2026-10-19): Sonnet 5.5 for external-facts research (rule 0) and read-only
+# mapping (rule 7), Haiku 5.5 for evaluation judging (rule 8). Opus stays
+# reserved for the captain's own session; Fable is not dispatched.
 jq -e '
   def profiles($v): if ($v | type) == "array" then $v else [$v] end;
-  def sonnet: .harness == "claude" and .model == "claude-sonnet-5-5" and .provider == "claude";
+  def sonnet: .model == "claude-bridge/claude-sonnet-5-5" and .provider == "claude"
+    or .model == "antigravity/claude-sonnet-5-5" and .provider == "agy";
+  def haiku: .model == "claude-bridge/claude-haiku-5-5" and .provider == "claude";
+  def keys_using(f): [.rules | to_entries[] | select(.value.use | profiles(.) | any(f)) | .key];
   ([.rules[].use, .default] | map(profiles(.)) | add) as $all
-  | ($all | all(sonnet or (.harness == "pi" and (.model | test("claude|opus|sonnet|fable|haiku"; "i") | not) and .provider != "claude")))
-  and ([.rules | to_entries[] | select(.value.use | profiles(.) | any(sonnet)) | .key] == [0, 7])
-  and ([.rules[0].use, .rules[7].use] | map(profiles(.)) | all(any(sonnet and .effort == "medium")))
+  | ($all | all(.harness == "pi"))
+  and ($all | all(sonnet or haiku or ((.model | test("claude|opus|sonnet|fable|haiku"; "i") | not) and .provider != "claude")))
+  and (keys_using(sonnet) == [0, 7])
+  and (keys_using(haiku) == [8])
+  and ([.rules[0].use, .rules[7].use] | map(profiles(.)) | all(any(sonnet and .provider == "claude" and .effort == "medium") and any(sonnet and .provider == "agy" and .effort == "medium")))
   and (.rules[7].when | test("^Read-only mapping"))
+  and (.rules[8].when | test("^Evaluation judging"))
   and ([.rules[7].use] | map(profiles(.)) | all(any(.model == "openai-codex/gpt-6.1-sol" and .effort == "medium" and .provider == "codex")))
   and ([.rules[2].use, .rules[6].use] | map(profiles(.)) | all(any(.model == "openai-codex/gpt-6.1-sol" and .effort == "xhigh" and .provider == "codex")))
   and ([.rules[0].use, .rules[1].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-3.8-flash" and .effort == "medium" and .provider == "agy")))

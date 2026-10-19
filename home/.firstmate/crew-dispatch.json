@@ -6,9 +6,10 @@
         { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "medium", "provider": "agy" },
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "medium", "provider": "codex" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "medium", "provider": "grok" },
-        { "harness": "claude", "model": "claude-sonnet-5-5", "effort": "medium", "provider": "claude" }
+        { "harness": "pi", "model": "claude-bridge/claude-sonnet-5-5", "effort": "medium", "provider": "claude" },
+        { "harness": "pi", "model": "antigravity/claude-sonnet-5-5", "effort": "medium", "provider": "agy" }
       ],
-      "why": "Requires live web search, not frontier coding: Flash medium leads on Antigravity's large Flash pool, with Sol and Grok medium as fallbacks. Sonnet medium (Claude Code web search) spreads research load off Codex; the captain allowed Claude here on 2026-10-19."
+      "why": "Requires live web search, not frontier coding: Flash medium leads on Antigravity's large Flash pool, with Sol and Grok medium as fallbacks. Sonnet medium through Pi (Claude bridge or Antigravity's pool) spreads research load off Codex; the captain allowed Claude here on 2026-10-19, through Pi only, never the Claude Code harness."
     },
     {
       "when": "Task needs generated images or visual assets: icons, illustrations, logos, mockup art, placeholder imagery.",
@@ -21,7 +22,7 @@
         { "harness": "pi", "model": "antigravity/gemini-4-argon", "effort": "high", "provider": "agy" },
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "xhigh", "provider": "codex" }
       ],
-      "why": "Prefer a different model family than the author's: Argon for Sol-written work, Sol otherwise. Argon runs at high (Antigravity's ceiling) only in low-volume tiers because its weekly pool is small. Sol runs at xhigh because Sol high scores below Sol medium. Claude is not used for review: only Sonnet, only for research and read-only mapping; Opus is reserved for the captain's own Claude Code session."
+      "why": "Prefer a different model family than the author's: Argon for Sol-written work, Sol otherwise. Argon runs at high (Antigravity's ceiling) only in low-volume tiers because its weekly pool is small. Sol runs at xhigh because Sol high scores below Sol medium. Claude is not used for review: only Sonnet for research and read-only mapping and Haiku for evaluation judging, through Pi; Opus is reserved for the captain's own Claude Code session."
     },
     {
       "when": "Recon-only, file gathering, narrow lookup, or a trivial mechanical edit (rename, format sweep, typo fix). Not for research that needs current external facts.",
@@ -55,15 +56,24 @@
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "xhigh", "provider": "codex" },
         { "harness": "pi", "model": "antigravity/gemini-4-argon", "effort": "high", "provider": "agy" }
       ],
-      "why": "Frontier reasoning for work that justifies maximum cost: Sol xhigh and Argon high (Antigravity's ceiling) are the strongest non-Claude profiles. Claude is not used here: only Sonnet, only for research and read-only mapping; Opus is reserved for the captain's own Claude Code session."
+      "why": "Frontier reasoning for work that justifies maximum cost: Sol xhigh and Argon high (Antigravity's ceiling) are the strongest non-Claude profiles. Claude is not used here: only Sonnet for research and read-only mapping and Haiku for evaluation judging, through Pi; Opus is reserved for the captain's own Claude Code session."
     },
     {
       "when": "Read-only mapping of an existing application or codebase: as-built feature maps, capability inventories and where-is-it surveys that produce a report and change no files.",
       "use": [
-        { "harness": "claude", "model": "claude-sonnet-5-5", "effort": "medium", "provider": "claude" },
+        { "harness": "pi", "model": "claude-bridge/claude-sonnet-5-5", "effort": "medium", "provider": "claude" },
+        { "harness": "pi", "model": "antigravity/claude-sonnet-5-5", "effort": "medium", "provider": "agy" },
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "medium", "provider": "codex" }
       ],
-      "why": "Careful reading across many files without edits: Sonnet medium and Sol medium; the captain allowed Claude Sonnet for research and mapping on 2026-10-19 to spread load off Codex."
+      "why": "Careful reading across many files without edits: Sonnet medium through Pi (Claude bridge or Antigravity's pool) and Sol medium; the captain allowed Claude Sonnet for research and mapping on 2026-10-19, through Pi only, to spread load off Codex."
+    },
+    {
+      "when": "Evaluation judging: score finished outputs, runs or transcripts against a fixed rubric as the judge in an evaluation loop. Not for reviewing or writing code.",
+      "use": [
+        { "harness": "pi", "model": "claude-bridge/claude-haiku-5-5", "effort": "medium", "provider": "claude" },
+        { "harness": "pi", "model": "openai-codex/gpt-6-luna", "effort": "medium", "provider": "codex" }
+      ],
+      "why": "The captain chose Haiku for evaluators on 2026-10-19: a small, different-family judge for Codex-authored work, through Pi only; Luna medium is the fallback."
     }
   ],
   "default": [
