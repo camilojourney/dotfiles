@@ -73,8 +73,11 @@ Langfuse store, or start stopped services to reproduce native agents.
 Copy committed source, not a running home. Keep `dotfiles`, `fleet-system`,
 `firstmate` and the telemetry extension at the tested commits. The active extension
 pin is owned by `home/.pi/agent/settings.json` and its regression in
-`tests/pi_settings_test.sh`. Keep that default at the published revision until a
-reviewed upgrade is available from its fetch origin. The reproduction kit's
+`tests/pi_settings_test.sh`. The laptop currently loads unpublished commit
+`6e223b2` (metadata-only by default) from the local install
+`~/.local/share/pi-opentelemetry/install-6e223b2`; that path exists on the laptop
+only. Before another host uses these settings, publish the commit and restore a
+published `git:` pin with its regression. The reproduction kit's
 manifest records the tested candidate separately; copying the kit does not activate
 it. The daily rebuild uses local commits too, even without a push.
 

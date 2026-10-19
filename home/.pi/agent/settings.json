@@ -51,7 +51,7 @@
     "npm:pi-claude-bridge@0.9.3",
     "git:github.com/algal/pi-openai-server-compaction@8a3de2f3b0c178fdd6f73f2f94172dfc3943e466",
     "git:github.com/camilojourney/pi-cursor-provider@73fd2d75c58bfe1757a124e407fbc72f89642826",
-    "git:github.com/camilojourney/pi-opentelemetry@32abe32c2c4e9efb1c30ca958490b9823f7fb0f8",
+    "/Users/camiloslaptop/.local/share/pi-opentelemetry/install-6e223b2",
     "git:github.com/Rahularya01/pi-antigravity@f950c08e7a5c1069a0339af88252347a5ecb0f8c"
   ],
   "thinkingBudgets": {
