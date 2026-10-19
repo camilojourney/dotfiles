@@ -5,20 +5,43 @@
 Configuration lives in [`home/.pi/agent/settings.json`](../home/.pi/agent/settings.json),
 linked as `~/.pi/agent/settings.json`. These are **provisional operating settings,
 not measured optimal thresholds**. They control context size, not subscription
-quota limits. No new summarizer or pruning extension has been installed for this
-experiment.
+quota limits. No summarizer or pruning extension is installed for this
+experiment. On 2026-10-19 `pi-anthropic-compat` and
+`pi-cache-compact-preserved-messages` were each installed, reviewed and then
+removed without being relied on: the first cannot activate because it requires
+the direct Claude API rather than the bridge, and the second was published
+anonymously with no repository and no provenance. The only compaction package
+that remains declared is the pinned OpenAI one described under Maintenance.
 
-| Model/provider | Configured window | `reserveTokens` | Pi threshold | Compaction mechanism |
-|---|---|---|---|---|
-| `openai-codex/gpt-6.1-sol` | 500K | 225000 | 275K | Existing OpenAI server-side compaction extension, with fallback |
-| Listed 1M `claude-bridge` models | 1M | 600000 | 400K | Pi text-summary compaction using the active model |
-| Gemini and Grok | Check current catalog | Default 16384 | Window minus 16384 | Pi text-summary compaction unless another extension overrides it |
-| Other models | Check current catalog | Default 16384 | Window minus 16384 | Depends on provider and installed extensions |
+| Model/provider | Configured window | `reserveTokens` | Pi threshold | `keepRecentTokens` | Compaction mechanism |
+|---|---|---|---|---|---|
+| `openai-codex/gpt-6.1-sol` | 500K | 225000 | 275K | Default 20000 | Existing OpenAI server-side compaction extension, with fallback |
+| Listed 1M `claude-bridge` models | 1M | 600000 | 400K | 40000 | Pi text-summary compaction using the active model |
+| Listed 1M `antigravity` models | 1.0M | 600000 | 400K | 40000 | Pi text-summary compaction using the active model |
+| Grok | Not registered as a Pi provider | n/a | n/a | n/a | Its own CLI, outside Pi's compaction entirely |
+| Other models | Check current catalog | Default 16384 | Window minus 16384 | Default 20000 | Depends on provider and installed extensions |
 
 The nine Claude overrides cover Fable 5 and 5.1, Haiku 5.5, Opus 4.7, 4.8, 5
 and 5.5, and Sonnet 5 and 5.5. They do not apply automatically to future models.
 At the default reserve, a 272K model triggers near 256K and a 200K model near
 184K. Extension behavior and failures can affect the actual compaction path.
+
+The `keepRecentTokens` values and the `antigravity` rows were added on
+2026-10-19. The motivation is that Pi truncates every tool result to 2000
+characters and drops thinking blocks before summarizing, so whatever reaches the
+summarizer is already lossy; keeping more of the tail verbatim is the only
+native lever against that. The specific value 40000 is bounded by measurement
+rather than chosen by ratio, and the derivation is in the measured section
+below: the first attempt that day used 100000 and was withdrawn the same hour,
+because the measured floor arithmetic showed it could place the post-compaction
+floor at or above the 400K trigger. Treat 40000 as provisional in exactly the
+same way as the thresholds.
+
+The `antigravity` change deliberately departs from recommendation 3 below, which
+said to leave Gemini at its defaults until its runs were measured. Before the
+change those models reserved only the default 16384 of a 1.0M window, so they
+would have carried roughly 984K of context before compacting once. Reverting to
+that default is a one-line change if the measured runs disagree.
 
 ### When versus how
 
@@ -45,9 +68,14 @@ At the default reserve, a 272K model triggers near 256K and a 200K model near
    goal, user constraints, decisions and rejected approaches, changed file
    paths, test results, blockers and next actions current. Avoid another memory
    system unless the existing files expose a concrete gap.
-3. **Keep the 400K Claude and 275K GPT settings provisional.** Leave Gemini and
-   Grok at their defaults until their actual runs are measured. Family names and
+3. **Keep the 400K Claude and 275K GPT settings provisional.** Family names and
    advertised windows do not establish the best threshold.
+   *Superseded in part on 2026-10-19:* Gemini through `antigravity` was moved off
+   its defaults to the same 400K trigger and 40000 retention, because the
+   default reserve left it carrying roughly 984K of a 1.0M window before its
+   first compaction. That is a bounded-risk hypothesis, not a measured result,
+   and it is listed as an open question below. Grok turned out not to be a
+   registered Pi provider at all, so no Pi threshold applies to it.
 4. **Test a dedicated summarizer before adopting one.** Compare the active
    model's text summary with a GPT-generated text summary. A stronger or more
    expensive summarizer is not automatically better at preserving task state.
@@ -59,12 +87,111 @@ At the default reserve, a 272K model triggers near 256K and a 200K model near
 These recommendations apply to Pi, including FirstMate sessions actually using
 Pi. They do not configure standalone Claude Code or other harnesses.
 
+## Measured evidence, 2026-10-19
+
+A scan of local Pi history found **808 compaction events across 290 sessions**
+that recorded a usable `tokensBefore`. Medians by provider, where "after" is the
+context of the first assistant response following the compaction:
+
+| Provider | Events | Median tokens before | Median context after | Retained | Native artifacts |
+|---|---|---|---|---|---|
+| `openai-codex` | 742 | 261,753 | 33,007 | 13% | 555 |
+| `cursor` | 37 | 211,512 | no usage reported | n/a | 0 |
+| `claude-bridge` | 21 | 401,161 | 92,844 | 23% | 3 |
+| `deepseek` | 6 | 270,329 | 43,869 | 16% | 0 |
+| `antigravity` | 1 | 418,419 | 23,925 | 6% | 1 |
+
+Three things follow, and only the first is conclusive.
+
+**The 400K Claude trigger is now verified live.** The open item below asked for a
+post-reload confirmation; a median of 401,161 tokens before compaction across 21
+bridge events supplies it. The 275K GPT trigger is likewise consistent with its
+261,753 median, allowing for overshoot between checks.
+
+**Claude restarts about 2.8 times heavier than GPT**, 92,844 against 33,007. The
+earlier sample suggested 1.6 to 1.9 times. The larger figure still does not
+isolate a cause: retained messages, tool and prompt wrapping, reasoning
+representation, FirstMate context injection and provider accounting all differ.
+It does bound the practical consequence: every bridge turn after a compaction
+carries roughly three times the floor of a GPT turn.
+
+**Cursor appears to compact past its own window.** A 200K model shows a median
+of 211,512 tokens before compaction, above the window and well above the 183.6K
+default trigger, which points at overflow recovery rather than a threshold
+check. A `keepRecentTokens` value was briefly given to `cursor/default` on
+2026-10-19 and then removed, because retention cannot help a model that is
+already overflowing and would raise the floor on a window it is already
+exceeding. Cursor reports no usage, so the retained figure cannot be computed
+from history. It needs a reserve investigation, not a retention value.
+The same reasoning removed the brief `antigravity/gpt-oss-120b` override: a
+131.1K window implies a trigger near 53K, which is close to the measured fixed
+overhead alone, so that model is left at Pi's defaults.
+
+Comparing the two configured thresholds as raw numbers is a category error: 400K
+is 40% of a 1M window summarized by a text model, and 275K is 55% of a 500K
+window compacted by a provider-native mechanism that this history shows was used
+555 times. Per cycle, bridge buys about 307K of headroom against GPT's 242K,
+while paying a floor three times higher on every turn in between. Which is
+"better" depends on whether the scarce resource is subscription utilization or
+billed tokens, and on continuation quality, which none of these counts measure.
+
+### Decomposing the floor, and why retention is 40000
+
+The 10 bridge compactions recorded in this project's own sessions allow the
+post-compaction floor to be separated into its parts, where kept is the residual
+`floor - overhead - summary`:
+
+| Tokens before | Floor | Fixed overhead | Summary | Implied kept |
+|---|---|---|---|---|
+| 339,005 | 105,144 | 35,514 | 5,884 | 63,746 |
+| 275,518 | 128,538 | 35,514 | 7,486 | 85,538 |
+| 275,675 | 128,784 | 35,514 | 7,383 | 85,887 |
+| 401,161 | 122,310 | 70,948 | 3,187 | 48,175 |
+| 402,487 | 123,967 | 41,412 | 5,822 | 76,733 |
+| 401,210 | 78,067 | 41,412 | 8,479 | 28,176 |
+| 401,135 | 137,353 | 41,412 | 9,291 | 86,650 |
+| 400,923 | 139,449 | 41,412 | 9,102 | 88,935 |
+| 402,175 | 29,530 | 39,997 | 1,532 | -11,999 |
+| 400,258 | 110,233 | 40,938 | 4,408 | 64,887 |
+
+Median fixed overhead 41,175, median summary 6,633, median implied kept 76,733,
+against a configured `keepRecentTokens` of 20000 throughout. Two consequences
+matter more than the medians.
+
+**Fixed overhead dominates the floor.** About 41,000 tokens of system prompt,
+tool declarations and injected project context ride on every single turn and
+survive every compaction. That is roughly a third of a typical floor, and no
+compaction setting touches it. Reducing it would lower the cost of every turn in
+every session, which no threshold change can do.
+
+**The configured retention is not the retention delivered.** The implied kept
+value exceeds the 20000 budget in every usable row, with a median ratio near
+3.8x. The residual absorbs several distinct effects - Pi's cut point stops at a
+message boundary and can overshoot, Pi's own token estimate differs from the
+provider's count, overhead grows within a session, and the last row is an
+OpenAI-native event attributed here by active model - so 3.8x is an upper bound
+on the real overshoot, not a calibrated multiplier. It is still the operative
+number, because a setting must be safe across the whole plausible range.
+
+That is what rules out 100000. At the measured upper bound the floor becomes
+41,175 + about 5,000 + 100,000 x 3.8, or roughly 431,000, which is **above the
+400K trigger**: compaction would no longer free enough context to clear the
+condition that caused it. Even with no overshoot at all it lands near 147,000,
+leaving only 252K of headroom. The upper case is not merely expensive, it is a
+malfunction, so 100000 was withdrawn within the hour it was set.
+
+40000 is the largest round value that stays safe across the full range: about
+198,000 at the 3.8x upper bound, which keeps the floor under half the trigger,
+and about 87,000 with no overshoot, close to today's observed behavior. It is
+double the previous effective setting rather than five times it. Raise it only
+after the next real compactions show which end of that range is true.
+
 ## Evidence so far and its limits
 
-An inspection of local Pi history found 553 compactions across 1,843 sessions
-with recorded usage. Most were GPT runs. One FirstMate session recorded 70
-compactions over about 189 hours. That demonstrates repeated continuation, not
-that task quality was preserved or that its threshold was optimal.
+An earlier inspection of local Pi history found 553 compactions across 1,843
+sessions with recorded usage. Most were GPT runs. One FirstMate session recorded
+70 compactions over about 189 hours. That demonstrates repeated continuation,
+not that task quality was preserved or that its threshold was optimal.
 
 A FirstMate session switching from GPT-6.1 Sol to Opus 5.5 through claude-bridge
 provided these historical observations:
@@ -77,8 +204,9 @@ provided these historical observations:
 
 The larger first Claude compaction followed a switch into an already-large
 conversation. The later 275518 event showed the running process still used the
-previous 275K policy. **Neither event verifies the new 400K trigger in a live
-run.** Confirm it after a reload with a new compaction entry.
+previous 275K policy. Neither event verified the 400K trigger in a live run.
+**Resolved on 2026-10-19:** the measured section above records a 401,161-token
+median across 21 bridge compactions, so the 400K trigger is active in practice.
 
 The observed differences combine tokenization, prompt and tool wrapping,
 reasoning representation, retained messages, FirstMate context injection and
@@ -141,8 +269,19 @@ OpenAI extension: ensure only one handler owns each compaction path.
 After selecting a mechanism, compare the current threshold with one lower and
 one higher setting, within the verified model window. For Claude 1M models,
 350K / 400K / 450K are candidate trials, not recommendations established by
-research. Establish Gemini/Grok baselines before selecting their trial values.
+research. Establish the Gemini baseline before selecting its trial values.
 Do not change summarizer, trigger and pruning policy in the same comparison.
+
+### 3b. Test retention separately from the threshold
+
+`keepRecentTokens` is a second, independent knob and the 2026-10-19 values were
+set by ratio, not by measurement. Hold the trigger fixed and compare retention
+at 20000, 40000 and one higher value per 1M model. Retention trades fidelity
+for a permanently higher per-turn floor and more frequent compactions, so score
+both sides: what the summary preserved, and the measured cost of carrying the
+larger floor across the turns between compactions. A retention value close to
+the trigger leaves too little headroom and must be rejected on that ground
+alone, independently of quality.
 
 ### 4. Score continuation, not just compression
 
@@ -158,6 +297,25 @@ judge. Prefer the lowest-overhead candidate that preserves task quality across
 representative cases; do not pick the smallest summary. If results are mixed,
 keep the baseline. Record the exact model/provider and workload tested, not a
 blanket claim that GPT, Claude, Gemini or Grok is best at compaction.
+
+### Open questions as of 2026-10-19
+
+1. Is 400K the right Claude trigger, or does 350K or 450K continue better at
+   equal or lower total cost? Verified active, never compared.
+2. What is the true cut-point overshoot? The decomposition bounds it at about
+   3.8x and cannot rule out 1x. Measuring it directly sets the ceiling for any
+   retention value, so it is the highest-value single measurement here.
+3. Is 40000 the right retention, and is there room to raise it once the
+   overshoot is known? Deliberately conservative, untested.
+4. Can the roughly 41,000 tokens of fixed per-turn overhead be reduced? It is
+   the largest component of the floor, and no compaction setting touches it.
+5. Does the Gemini `antigravity` move off defaults help or hurt? It has exactly
+   one historical compaction event, which is not a baseline.
+6. Why does `cursor` compact above its 200K window, and does it need a reserve
+   rather than only retention?
+7. Does the GPT native mechanism actually preserve continuation better than the
+   Claude text summary on the same task, as its vendor benchmark claims? The
+   555 native events here prove usage, not quality.
 
 ## Inspecting actual sessions
 
