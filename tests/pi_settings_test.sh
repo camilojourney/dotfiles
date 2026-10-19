@@ -33,11 +33,18 @@ jq -e '
   and ([.providers.deepseek.modelOverrides[].contextWindow] | all(. == 500000))
 ' "$MODELS" >/dev/null
 
+# Claude: only Sonnet, only for external-facts research (rule 0) and read-only
+# mapping (rule 7), captain-approved 2026-10-19. Opus stays reserved for the
+# captain's own session; Fable and Haiku are not dispatched.
 jq -e '
   def profiles($v): if ($v | type) == "array" then $v else [$v] end;
+  def sonnet: .harness == "claude" and .model == "claude-sonnet-5-5" and .provider == "claude";
   ([.rules[].use, .default] | map(profiles(.)) | add) as $all
-  | ($all | all(.harness == "pi"))
-  and ($all | all((.model | test("claude|opus|sonnet|fable"; "i") | not) and .provider != "claude"))
+  | ($all | all(sonnet or (.harness == "pi" and (.model | test("claude|opus|sonnet|fable|haiku"; "i") | not) and .provider != "claude")))
+  and ([.rules | to_entries[] | select(.value.use | profiles(.) | any(sonnet)) | .key] == [0, 7])
+  and ([.rules[0].use, .rules[7].use] | map(profiles(.)) | all(any(sonnet and .effort == "medium")))
+  and (.rules[7].when | test("^Read-only mapping"))
+  and ([.rules[7].use] | map(profiles(.)) | all(any(.model == "openai-codex/gpt-6.1-sol" and .effort == "medium" and .provider == "codex")))
   and ([.rules[2].use, .rules[6].use] | map(profiles(.)) | all(any(.model == "openai-codex/gpt-6.1-sol" and .effort == "xhigh" and .provider == "codex")))
   and ([.rules[0].use, .rules[1].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-3.8-flash" and .effort == "medium" and .provider == "agy")))
   and ([.rules[3].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-3.8-flash" and .effort == "low" and .provider == "agy")))
