@@ -183,8 +183,55 @@ malfunction, so 100000 was withdrawn within the hour it was set.
 40000 is the largest round value that stays safe across the full range: about
 198,000 at the 3.8x upper bound, which keeps the floor under half the trigger,
 and about 87,000 with no overshoot, close to today's observed behavior. It is
-double the previous effective setting rather than five times it. Raise it only
-after the next real compactions show which end of that range is true.
+double the previous effective setting rather than five times it.
+
+### The ratio resolved, and the per-turn overhead inventory
+
+Later on 2026-10-19 a session's own stored system message supplied the exact
+composition, so the 3.8x no longer needs to be treated as an unresolved bound.
+Pi's estimator is literally `Math.ceil(chars / 4)` per message
+(`dist/core/compaction/compaction.js`), so character counts are Pi's own units.
+
+For one `claude-bridge` session in this project:
+
+| System-message section | Chars | Pi tokens | Share |
+|---|---|---|---|
+| `project_context` (both `AGENTS.md` plus `CLAUDE.md`) | 52,930 | 13,233 | 60% |
+| `skills` (the always-loaded trigger index, 35 skills) | 19,806 | 4,952 | 22% |
+| `toolsAdded` (15 tool schemas, JSON) | 11,386 | 2,847 | 13% |
+| `rules`, `tools`, `docs`, `preamble`, `cwd` | 4,595 | 1,148 | 5% |
+| **Total system message** | **88,717** | **22,180** | 100% |
+
+The same session's first assistant response carried a provider-counted context
+of 40,737 tokens against a 27-token first user message. So Pi estimated 22,207
+where the provider counted 40,737: an **estimator bias of 1.83x** on this
+provider, measured directly and independently of any cut point.
+
+That splits the combined 3.8x cleanly. Estimator bias accounts for 1.83x, which
+leaves roughly **2.1x of genuine cut-point overshoot** in Pi's own units - Pi
+accumulates whole entries walking backwards and then cuts at the next valid
+boundary, so one large tool result or a split turn carries far past the budget.
+Both components are real and material, and the possibility that the true
+overshoot was near 1x is refuted. 100000 would therefore have produced a floor
+around 421,000 against a 400,000 trigger as a measured expectation, not as a
+worst case. 40000 lands near 199,000, almost exactly half the trigger, so it is
+at the edge of the safe band rather than conservatively inside it. Do not raise
+it without changing something else first.
+
+**The inventory's own conclusion is that compaction is the smaller problem.**
+The system message is re-sent on every turn and no compaction setting touches
+it. At roughly 40,700 provider-counted tokens across a measured 268-turn
+compaction cycle it accounts for about 10.9M token-reads, against roughly 406K
+for the one summary that cycle generates - a factor near 27. Of that system
+message, 82% is `project_context` plus the skills index, both Firstmate-owned.
+
+Two honest qualifications. The system message is stable and therefore highly
+cacheable, so its billed or metered weight is well below its raw token count;
+the bridge rebuilding its session at each compaction is what discards that
+cache, which is a further argument for compacting less often rather than more.
+And `AGENTS.md` is a safety contract, so its size is not waste by default -
+reducing it is a deliberate engineering decision with its own risk, not a
+cleanup.
 
 ## Evidence so far and its limits
 
@@ -302,13 +349,17 @@ blanket claim that GPT, Claude, Gemini or Grok is best at compaction.
 
 1. Is 400K the right Claude trigger, or does 350K or 450K continue better at
    equal or lower total cost? Verified active, never compared.
-2. What is the true cut-point overshoot? The decomposition bounds it at about
-   3.8x and cannot rule out 1x. Measuring it directly sets the ceiling for any
-   retention value, so it is the highest-value single measurement here.
-3. Is 40000 the right retention, and is there room to raise it once the
-   overshoot is known? Deliberately conservative, untested.
-4. Can the roughly 41,000 tokens of fixed per-turn overhead be reduced? It is
-   the largest component of the floor, and no compaction setting touches it.
+2. ~~What is the true cut-point overshoot?~~ **Answered 2026-10-19:** 1.83x
+   estimator bias measured directly, leaving about 2.1x cut-point overshoot,
+   for the observed combined 3.8x. There is no unused retention headroom.
+3. Is 40000 still the right retention given that it lands at about half the
+   trigger, which is the edge of the safe band rather than inside it? Consider
+   whether anything else should change before adjusting it.
+4. Can the system message's roughly 40,700 provider-counted tokens be reduced?
+   82% is project context plus the skills index. It is re-sent every turn, no
+   compaction setting touches it, and across one compaction cycle it outweighs
+   the summary it is being tuned around by a factor near 27. Needs the captain's
+   word, because it is Firstmate's own instruction surface.
 5. Does the Gemini `antigravity` move off defaults help or hurt? It has exactly
    one historical compaction event, which is not a baseline.
 6. Why does `cursor` compact above its 200K window, and does it need a reserve
