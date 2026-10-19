@@ -34,4 +34,7 @@ These local runtime flags are not distributed by this repository.
 
 Package-update behavior is documented in [Auto-update](AUTO-UPDATE.md).
 The tested compaction pin and its remaining limitation are documented in
-[Pi compaction](PI-COMPACTION.md).
+[Pi compaction](PI-COMPACTION.md). The [maintenance tracker](TOOL-MAINTENANCE.md)
+owns open follow-ups, activation status and the Pi-versus-Claude-Code trial.
+It also explains why `/supervision-model` is a per-home model selector,
+not an activation switch.

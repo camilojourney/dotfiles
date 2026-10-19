@@ -1,0 +1,8 @@
+[
+  {"query": "Review our dotfiles tools and tell me which temporary fixes need attention this month.", "should_trigger": true},
+  {"query": "Has the upstream compaction fix shipped, and can we stop using the temporary pin?", "should_trigger": true},
+  {"query": "What is configured versus actually loaded in Pi, and what should we maintain next?", "should_trigger": true},
+  {"query": "Diagnose this specific production crash and implement its fix.", "should_trigger": false},
+  {"query": "Benchmark new models and change crew-dispatch tiers.", "should_trigger": false},
+  {"query": "Draw a poster of a sailboat.", "should_trigger": false}
+]

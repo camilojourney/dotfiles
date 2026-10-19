@@ -162,6 +162,16 @@ See [`docs/AUTO-UPDATE.md`](docs/AUTO-UPDATE.md) for logs, enabling it, and
 the design notes.
 [Automations](docs/AUTOMATIONS.md) lists every scheduled job, including this one.
 
+## Tool maintenance conversations
+
+Open Pi in this repository and run `/skill:tool-maintenance` for a read-only
+review of temporary pins, upstream fixes, configuration drift and unresolved
+failures. [The maintenance tracker](docs/TOOL-MAINTENANCE.md) records the latest
+before/after state, next actions and conditions for retiring workarounds.
+It also holds the Pi-versus-Claude-Code supervision trial checklist.
+The skill is repository-local, not added to every worker's prompt. Repairs and
+restarts remain separate approvals; the review starts no scheduled jobs.
+
 ## Testing
 
 Do not run `setup/mac.sh` or `rebuild.sh`/`rebuild-total.sh` against a real machine just to test them - they install Nix, Homebrew, and activate a real system. Run the sandboxed regression tests instead; see [`tests/README.md`](tests/README.md).

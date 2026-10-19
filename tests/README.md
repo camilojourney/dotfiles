@@ -42,6 +42,13 @@ It never touches the real network or host package state.
 It ensures the package list retains the intended Cursor, telemetry, Argon-discovery, and public compaction PR #18 pins, leaves `pi-web-access` unversioned for daily updates, excludes Codex fast-mode, preserves automatic project trust, enables codemode alongside ordinary tools and `tool_search`, and links deferred web configuration. It keeps GPT-6.1 Sol with high thinking as the Pi default, removes the fixed llama.cpp URL, and limits custom model metadata to DeepSeek's 500,000-token context overrides. See [Pi tools](../docs/PI-TOOLS.md) and [Pi compaction](../docs/PI-COMPACTION.md) for activation and the temporary pin's limits.
 It also checks that `crew-dispatch.json` routes Claude profiles through Pi (`claude-bridge/`), keeps `antigravity/gemini-3.8-flash` on low-effort/special-purpose rules while placing `antigravity/gemini-4-argon` (`high`) on `review`, `large`, and `hardest`, keeps Codex Sol leading `everyday` and `default`, pins the active Secondmate to Pi GPT-6.1 Sol (`openai-codex/gpt-6.1-sol`) at xhigh, preserves Pi Gemini 4 Argon (`antigravity/gemini-4-argon`) at high in `secondmate-harness.backup`, and verifies that Home Manager links settings, crew dispatch, and both Secondmate selections to their authored owners. The backup is a saved alternative, not automatic failover.
 
+The repository-local `tool-maintenance` skill has routing examples and a synthetic
+read-only behavior case under `.agents/skills/tool-maintenance/evals/`.
+Fleet's creator `quick_validate.py` and Vale check its resources. Case validation
+checks fixture readiness only; an authorized model run is needed to grade behavior.
+The initial Pi CLI smoke verified command expansion using a local response fixture,
+not maintenance judgment or live fleet delivery.
+
 `claude_settings_test.sh` requires the authored `syncClaudeAiSkills` setting to stay
 false. Skill overrides alone do not stop account-skill downloads. The test reads
 JSON only; it never starts Claude or contacts a provider.
