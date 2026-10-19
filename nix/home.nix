@@ -209,6 +209,7 @@ in
     ".pi/agent/extensions".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.pi/agent/extensions";
     ".pi/agent/models.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.pi/agent/models.json";
     ".pi/agent/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.pi/agent/settings.json";
+    ".pi/web-search.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.pi/web-search.json";
 
     "github/vault".source = config.lib.file.mkOutOfStoreSymlink vaultPath;
   };

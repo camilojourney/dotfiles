@@ -189,6 +189,39 @@ metadata/logs for the actual handler and reason.
 
 ## Maintenance
 
+### Temporary upstream message-preservation fix
+
+The package declaration pins the public PR author's revision
+`kunchenguid/pi-openai-server-compaction@cf30a9fee30312ef33d03fd1d99ad511e81e2b95`,
+from [upstream PR #18](https://github.com/algal/pi-openai-server-compaction/pull/18).
+It is not a private patch or a merged upstream release. The author's repository
+exposes the commit on a branch, so fresh Pi installs can clone and check it out.
+Only one compaction package is declared.
+
+The fix preserves extension-injected context and unanswered trailing messages
+in remote replacement history. On Pi 1.3.0, an isolated real CLI/RPC regression
+reproduced their loss before the change and their presence afterward, including
+a fresh-process resume. The test used fabricated credentials and local Responses
+fixtures, not a live OpenAI quality evaluation. Upstream typecheck/smoke tests
+also passed; smoke assertions passed against the installed Pi 1.3.0 SDK.
+The package still declares a Pi 0.80.x peer range, so these checks are not a
+blanket compatibility guarantee.
+
+**Known separate limitation:** this PR does not fix failed summary and native
+checkpoint requests producing a placeholder-only compaction. Missing
+`details.remoteCompaction` plus success-sounding placeholder text is not proof
+that useful context was retained. Do not treat this pin as resolving that failure
+or repairing historical session entries.
+
+Pinned revisions do not advance during daily updates. Once upstream incorporates
+the fix, verify that revision with Firstmate before replacing this temporary
+source with the upstream repository. Update the authored declaration and its
+regression in `tests/pi_settings_test.sh` together, then reconcile with
+`pi update <exact-package-source>`. New sessions load it; live sessions require
+an explicit reload or coordinated restart. Never patch the managed cache.
+
+### Model thresholds
+
 - Overrides match exact `provider/modelId` values; there are no wildcards. New
   models without an override use Pi defaults, not the family's trial policy.
 - Check `pi --list-models <provider>` when a model or entitlement changes and

@@ -10,6 +10,10 @@
   "theme": "rose-pine-moon-code",
   "steeringMode": "all",
   "followUpMode": "all",
+  "defaultTools": ["+codemode", "+tool_search"],
+  "codemode": {
+    "mode": "on"
+  },
   "collapseChangelog": true,
   "compaction": {
     "modelOverrides": {
@@ -48,7 +52,7 @@
   "packages": [
     "npm:pi-web-access",
     "npm:pi-claude-bridge@0.9.3",
-    "git:github.com/algal/pi-openai-server-compaction@8a3de2f3b0c178fdd6f73f2f94172dfc3943e466",
+    "git:github.com/kunchenguid/pi-openai-server-compaction@cf30a9fee30312ef33d03fd1d99ad511e81e2b95",
     "git:github.com/camilojourney/pi-cursor-provider@73fd2d75c58bfe1757a124e407fbc72f89642826",
     "/Users/camiloslaptop/.local/share/pi-opentelemetry/install-6e223b2",
     "git:github.com/Rahularya01/pi-antigravity@f950c08e7a5c1069a0339af88252347a5ecb0f8c"

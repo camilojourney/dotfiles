@@ -8,27 +8,37 @@ REPO_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." &>/dev/null && pwd)
 SETTINGS="$REPO_ROOT/home/.pi/agent/settings.json"
 MODELS="$REPO_ROOT/home/.pi/agent/models.json"
 DISPATCH="$REPO_ROOT/home/.firstmate/crew-dispatch.json"
+WEB_SEARCH="$REPO_ROOT/home/.pi/web-search.json"
 CURSOR_PROVIDER="git:github.com/camilojourney/pi-cursor-provider@73fd2d75c58bfe1757a124e407fbc72f89642826"
 # Laptop-only local install of unpublished commit 6e223b2 (metadata-only default);
 # restore a published git pin before syncing to another host. See docs/AUTOMATIONS.md.
 OTEL_PACKAGE="/Users/camiloslaptop/.local/share/pi-opentelemetry/install-6e223b2"
 ANTIGRAVITY_PACKAGE="git:github.com/Rahularya01/pi-antigravity@f950c08e7a5c1069a0339af88252347a5ecb0f8c"
+# Public PR #18 author's revision, not a locally maintained patch.
+COMPACTION_PACKAGE="git:github.com/kunchenguid/pi-openai-server-compaction@cf30a9fee30312ef33d03fd1d99ad511e81e2b95"
 
 jq -e --arg cursor_provider "$CURSOR_PROVIDER" --arg otel_package "$OTEL_PACKAGE" \
-  --arg antigravity_package "$ANTIGRAVITY_PACKAGE" '
+  --arg antigravity_package "$ANTIGRAVITY_PACKAGE" --arg compaction_package "$COMPACTION_PACKAGE" '
   .packages as $packages
   | ($packages | map(select(test("cursor"; "i"))) == [$cursor_provider])
   and ($packages | map(select(test("opentelemetry"))) == [$otel_package])
   and ($packages | map(select(test("pi-antigravity"))) == [$antigravity_package])
+  and ($packages | map(select(test("pi-openai-server-compaction"))) == [$compaction_package])
   and ($packages | index("npm:pi-cursor-sdk") | not)
   and ($packages | map(select(test("^npm:pi-web-access(@|$)"))) == ["npm:pi-web-access"])
   and ($packages | all(contains("pi-extension-codex-fast-mode") | not))
   and (.defaultProjectTrust == "always")
+  and (.defaultTools == ["+codemode", "+tool_search"])
+  and (.codemode.mode == "on")
   and (.defaultProvider == "openai-codex")
   and (.defaultModel == "gpt-6.1-sol")
   and (.defaultThinkingLevel == "high")
   and (has("llamaServerUrl") | not)
 ' "$SETTINGS" >/dev/null
+
+jq -e '
+  .provider == "anysearch" and .toolExposure == "deferred"
+' "$WEB_SEARCH" >/dev/null
 
 jq -e '
   (.providers | keys) == ["deepseek"]
@@ -79,4 +89,7 @@ grep -Fq '"github/firstmate/config/secondmate-harness.backup".source = config.li
 # shellcheck disable=SC2016
 grep -Fq '".pi/agent/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.pi/agent/settings.json";' "$REPO_ROOT/nix/home.nix"
 
-echo "PASS: declarative Pi settings, model overrides, crew dispatch, and secondmate selection are valid"
+# shellcheck disable=SC2016
+grep -Fq '".pi/web-search.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.pi/web-search.json";' "$REPO_ROOT/nix/home.nix"
+
+echo "PASS: declarative Pi tools, deferred web search, model overrides, crew dispatch, and secondmate selection are valid"
