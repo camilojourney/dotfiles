@@ -39,7 +39,7 @@ Everything here works fine on a single machine - you just won't need all of it:
 - `nix/camilo-extra.nix` - personal apps (Camo, OBS, WhatsApp, Dato, Notion, Obsidian, and more) - never installed by plain `rebuild.sh`, only by `rebuild-total.sh`
 - `home/.config/` - live WezTerm / Neovim / herdr configs (symlinked by Home Manager)
 - `home/.claude/` and `home/.firstmate/` - authored agent, crew-dispatch, and secondmate harness configuration (symlinked by Home Manager)
-- `home/.pi/agent/` - authored Pi models, settings, themes, and extensions (symlinked by Home Manager); per-model compaction triggers are explained in `docs/PI-COMPACTION.md`
+- `home/.pi/agent/` - authored Pi models, settings, themes, and extensions (symlinked by Home Manager); per-model compaction triggers and verbatim retention are explained in [`docs/PI-COMPACTION.md`](docs/PI-COMPACTION.md), whose "Start here" section carries the current values, the measured multiplier that makes a retention setting deliver about 3.8 times its stated size, and the reminder that Pi applies these only at startup or `/reload`
 - `upstream/kunchenguid/` - complete upstream mirror, selected config snapshot, and adoption decisions for [Kun's configs](https://github.com/kunchenguid/dotfiles)
 - `scripts/check-upstream-configs.sh` - check / safely adopt his updates
 - `rebuild.sh` - one nix-darwin rebuild helper for both machines, detects the account and picks the right flake attr

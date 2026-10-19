@@ -1,5 +1,56 @@
 # Pi compaction per model
 
+## Start here (last reviewed 2026-10-19)
+
+**What is configured now**
+
+| Models | Compacts at | Keeps verbatim |
+|---|---|---|
+| 9 Claude models through `claude-bridge` (1M) | 400,000 | 40,000 |
+| 15 Gemini and Claude models through `antigravity` (1M) | 400,000 | 40,000 |
+| `openai-codex/gpt-6.1-sol` (500K) | 275,000 | Pi default 20,000 |
+| `cursor/*`, `antigravity/gpt-oss-120b`, everything else | Pi defaults | Pi default 20,000 |
+
+**Activating a change.** Pi reads these at startup or `/reload` only. A session
+that was already running keeps its old values until it is reloaded or replaced.
+A change can be correct on disk and have no effect on anything open.
+
+**The five facts worth remembering**
+
+1. `keepRecentTokens` does not deliver the number written on it. Measurement
+   puts the real multiplier near **3.8x**: about **1.83x** because Pi's
+   estimator is `chars / 4` while the provider counts the wire format, and about
+   **2.1x** because Pi accumulates whole messages backwards and cuts at the next
+   boundary. Budget accordingly.
+2. That is why 40000 and not 100000. At 3.8x, a 100000 setting puts the
+   post-compaction floor near 421,000 against a 400,000 trigger, so compaction
+   could not clear the condition that triggered it. 40000 lands near 199,000,
+   which is half the trigger and the edge of the safe band, not inside it.
+3. Both configured triggers are verified in live runs: 21 bridge compactions
+   at a 401,161 median, 742 Codex compactions at a 261,753 median.
+4. The two triggers are not comparable as numbers. 400,000 is 40% of a 1M
+   window summarized by a text model; 275,000 is 55% of a 500K window compacted
+   by the provider's own mechanism. Claude buys more room per cycle and pays a
+   floor about three times higher on every turn in between.
+5. **The per-turn overhead outweighs compaction by roughly 27x.** About 40,700
+   provider-counted tokens ride on every single turn and survive every
+   compaction, 60% of it project instructions and 22% the skill index. Across
+   one 268-turn cycle that is ~10.9M token-reads against ~406K for the summary
+   being tuned. No compaction setting touches it.
+
+**What is still open.** See [Open questions](#open-questions-as-of-2026-10-19).
+The queued follow-up is recorded as `pi-compaction-overshoot-measurement`.
+The main unexplained defect is `cursor` compacting above its own 200K window.
+
+**Where the evidence is.** [Measured evidence](#measured-evidence-2026-10-19)
+has the per-provider medians; the floor decomposition and the overhead
+inventory follow it. Commits `ddfb255` and `ccd1455`.
+
+**Do not** raise retention without re-measuring, change the trigger and the
+retention in the same pass, add a compaction extension (four were reviewed and
+none adopted), or apply a 600000 reserve to a model whose window is smaller
+than that.
+
 ## Current position
 
 Configuration lives in [`home/.pi/agent/settings.json`](../home/.pi/agent/settings.json),
