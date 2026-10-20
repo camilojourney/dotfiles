@@ -18,13 +18,13 @@ export default function Layout({ widgets, renderWidget }: BabyMenuLayoutProps) {
   const remainingWidgets = widgets.filter((widget) => !renderedIds.has(widget.id));
 
   return (
-    <div className="w-[1080px] bg-stage p-3">
+    <div className="w-[1440px] bg-stage p-3">
       <div className="flex items-center justify-between border-b border-line-faint px-1 pb-2 text-xxs uppercase tracking-caps text-ink-label">
         <span>baby menu / fleet</span>
         <span>live sources</span>
       </div>
 
-      <div className="grid grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] items-start gap-3 pt-3">
+      <div className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] items-start gap-3 pt-3">
         <section className="min-w-0 rounded-md border border-line-faint bg-elevated p-3">
           <div className="flex items-center justify-between border-b border-line-faint pb-2 text-xxs uppercase tracking-caps text-ink-label">
             <span>quotas / remaining</span>

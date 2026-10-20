@@ -1,5 +1,5 @@
 import { Tooltip } from "@babymenu/ui";
-import { useSystemUsage, type RebuildStatus } from "./store";
+import { useSystemUsage, type RebuildStatus, type SystemUsageSample } from "./store";
 
 const RADIUS = 15.9155;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
@@ -181,18 +181,13 @@ function MachineCard({
   cpuPercent: number | null;
   memoryPercent: number | null;
   storagePercent: number | null;
-  capacity: {
-    cpu: string;
-    memory: string;
-    storage: string;
-    gpu: string | null;
-  };
+  capacity: SystemUsageSample["capacity"];
   status?: "online" | "offline";
   gpuSummary?: string | null;
   rebuild: RebuildStatus;
 }) {
   return (
-    <article className="min-w-0 rounded-sm border border-line-faint bg-[rgba(255,255,255,.015)] p-2.5">
+    <article className="min-w-0 rounded-sm border border-line bg-[rgba(255,255,255,.015)] p-2.5">
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="truncate text-xxs uppercase tracking-caps text-ink-soft">{name}</span>
         <span className={`rounded-pill border border-line-faint px-1.5 py-0.5 text-[8px] uppercase tracking-caps ${status === "online" ? "text-ink-label" : "text-signal-danger"}`}>
@@ -204,8 +199,8 @@ function MachineCard({
         <>
           <div className="grid grid-cols-3 gap-2">
             <Metric label="cpu" value={cpuPercent} warnAt={60} dangerAt={85} />
-            <Metric label="mem" value={memoryPercent} warnAt={75} dangerAt={90} />
-            <Metric label="disk" value={storagePercent} warnAt={75} dangerAt={90} />
+            <Metric label="ram used" value={memoryPercent} warnAt={75} dangerAt={90} />
+            <Metric label="disk full" value={storagePercent} warnAt={75} dangerAt={90} />
           </div>
           <CapacityStrip capacity={capacity} gpuSummary={gpuSummary} />
           <RebuildLine rebuild={rebuild} />
@@ -265,26 +260,29 @@ function RebuildLine({ rebuild }: { rebuild: RebuildStatus }) {
 
 type GitHubContributions = ReturnType<typeof useSystemUsage>["githubContributions"];
 
-function CapacityStrip({ capacity, gpuSummary }: { capacity: { cpu: string; memory: string; storage: string; gpu: string | null }; gpuSummary?: string | null }) {
-  const gpu = gpuSummary ?? capacity.gpu;
+function CapacityStrip({ capacity, gpuSummary }: { capacity: SystemUsageSample["capacity"]; gpuSummary?: string | null }) {
+  const rows = [
+    ["cpu", capacity.cpu],
+    ["ram total", capacity.memory],
+    ["ram used", capacity.memoryUsed],
+    ["disk total", capacity.storage],
+    ["Data used", capacity.storageUsed],
+    ["disk free", capacity.storageFree],
+    ["gpu", gpuSummary ?? capacity.gpu ?? "--"],
+  ];
   return (
-    <div className="mt-2 border-t border-line-faint pt-2">
-      <div className="grid grid-cols-3 gap-1.5 text-[9px]">
-        <CapacityItem label="cpu" value={capacity.cpu} />
-        <CapacityItem label="ram" value={capacity.memory} />
-        <CapacityItem label="disk" value={capacity.storage} />
-      </div>
-      {gpu && <div className="mt-1.5 truncate font-mono text-[9px] text-ink-label">{gpu}</div>}
-    </div>
-  );
-}
-
-function CapacityItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0 rounded-[3px] border border-line-faint bg-[rgba(255,255,255,.018)] px-1.5 py-1">
-      <div className="text-[8px] uppercase tracking-caps text-ink-muted">{label}</div>
-      <div className="truncate font-mono text-[9px] text-ink-label">{value}</div>
-    </div>
+    // Explicit cell sizing and wrapping keep every value visible without a
+    // scroll wrapper, including long CPU/GPU names and zero remaining space.
+    <table aria-label="system capacity and usage" className="mt-3 w-full table-fixed border-collapse font-mono text-sm text-ink">
+      <tbody>
+        {rows.map(([label, value]) => (
+          <tr key={label}>
+            <th scope="row" className="w-[104px] border border-line px-2 py-1.5 text-left font-normal text-ink-label">{label}</th>
+            <td className="break-words border border-line px-2 py-1.5">{value}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 

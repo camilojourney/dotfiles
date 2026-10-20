@@ -2,6 +2,7 @@ import { cpus, totalmem } from "node:os";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { BabyMenuServerContext } from "@babymenu/contracts";
+import { DATA_VOLUME, summarizeResources, type MachineCapacity } from "./metrics";
 
 const execFileAsync = promisify(execFile);
 
@@ -51,13 +52,6 @@ type RemoteSystemSample = {
   storagePercent: number | null;
   capacity: MachineCapacity;
   gpuSummary: string | null;
-};
-
-type MachineCapacity = {
-  cpu: string;
-  memory: string;
-  storage: string;
-  gpu: string | null;
 };
 
 type HeatmapCell = {
@@ -125,76 +119,28 @@ function readCpuPercent(context: BabyMenuServerContext): number | null {
   return Math.min(100, Math.max(0, busyRatio * 100));
 }
 
-function parsePageCount(vmStatOutput: string, label: string): number {
-  const match = vmStatOutput.match(new RegExp(`${label}:\\s+(\\d+)\\.`));
-  return match ? Number(match[1]) : 0;
-}
-
-function parseStoragePercent(dfOutput: string): number | null {
-  const line = dfOutput.trim().split("\n").at(-1);
-  if (!line) return null;
-  const match = line.match(/\s(\d{1,3})%\s/);
-  if (!match) return null;
-  return Math.min(100, Math.max(0, Number(match[1])));
-}
-
-function parseStorageCapacity(dfOutput: string): string {
-  const line = dfOutput.trim().split("\n").at(-1);
-  if (!line) return "--";
-  const blocks = Number(line.trim().split(/\s+/)[1]);
-  return Number.isFinite(blocks) ? formatBytes(blocks * 1024) : "--";
-}
-
-function formatBytes(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes <= 0) return "--";
-  const units = ["B", "KB", "MB", "GB", "TB"] as const;
-  let value = bytes;
-  let unitIndex = 0;
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex += 1;
-  }
-  const precision = value >= 100 || Number.isInteger(value) ? 0 : 1;
-  return `${value.toFixed(precision)} ${units[unitIndex]}`;
-}
-
-function memoryPercentFromVmStat(vmStatOutput: string, memoryBytes: number): number | null {
-  if (!Number.isFinite(memoryBytes) || memoryBytes <= 0) return null;
-  const pageSizeMatch = vmStatOutput.match(/page size of (\d+) bytes/);
-  const pageSize = pageSizeMatch ? Number(pageSizeMatch[1]) : 4096;
-  const free = parsePageCount(vmStatOutput, "Pages free");
-  const inactive = parsePageCount(vmStatOutput, "Pages inactive");
-  const speculative = parsePageCount(vmStatOutput, "Pages speculative");
-  const purgeable = parsePageCount(vmStatOutput, "Pages purgeable");
-  const reclaimableBytes = (free + inactive + speculative + purgeable) * pageSize;
-  const usedBytes = Math.max(0, memoryBytes - reclaimableBytes);
-  return Math.min(100, Math.max(0, (usedBytes / memoryBytes) * 100));
-}
-
-async function readMemoryPercent(): Promise<number> {
-  const { stdout } = await execFileAsync("vm_stat");
-  return memoryPercentFromVmStat(stdout, totalmem()) ?? 0;
-}
-
-async function readStoragePercent(): Promise<number | null> {
-  const { stdout } = await execFileAsync("df", ["-k", "/"]);
-  return parseStoragePercent(stdout);
-}
-
-async function readLocalCapacity(): Promise<MachineCapacity> {
-  const [dfResult, cpuBrandResult, gpuResult] = await Promise.allSettled([
-    execFileAsync("df", ["-k", "/"]),
+async function readLocalSystem() {
+  const [dfResult, vmResult, cpuBrandResult, gpuResult] = await Promise.allSettled([
+    execFileAsync("df", ["-k", DATA_VOLUME]),
+    execFileAsync("vm_stat"),
     execFileAsync("sysctl", ["-n", "machdep.cpu.brand_string"]),
     execFileAsync("system_profiler", ["SPDisplaysDataType"], { timeout: 5000, maxBuffer: 128 * 1024 }),
   ]);
   const cpuBrand =
     cpuBrandResult.status === "fulfilled" ? cpuBrandResult.value.stdout.trim().replace(/\s+/g, " ") : "";
 
+  const resources = summarizeResources(
+    vmResult.status === "fulfilled" ? vmResult.value.stdout : "",
+    totalmem(),
+    dfResult.status === "fulfilled" ? dfResult.value.stdout : "",
+  );
   return {
-    cpu: cpuBrand || `${cpus().length} cores`,
-    memory: formatBytes(totalmem()),
-    storage: dfResult.status === "fulfilled" ? parseStorageCapacity(dfResult.value.stdout) : "--",
-    gpu: gpuResult.status === "fulfilled" ? parseGpuSummary(gpuResult.value.stdout) : null,
+    ...resources,
+    capacity: {
+      ...resources.capacity,
+      cpu: cpuBrand || `${cpus().length} cores`,
+      gpu: gpuResult.status === "fulfilled" ? parseGpuSummary(gpuResult.value.stdout) : null,
+    },
   };
 }
 
@@ -787,7 +733,7 @@ async function readLocalRebuild(): Promise<RebuildStatus> {
 const REMOTE_SAMPLE_COMMAND = [
   "export LC_ALL=C",
   "printf '__DISK__\\n'",
-  "df -k / | tail -n 1",
+  `df -k ${DATA_VOLUME}`,
   "printf '__MEMSIZE__\\n'",
   "sysctl -n hw.memsize",
   "printf '__CPUBRAND__\\n'",
@@ -834,16 +780,15 @@ function parseRemoteSample(output: string): RemoteSystemSample | null {
   if (cpuParts.length < 2 || cpuParts.some((value) => !Number.isFinite(value))) return null;
   const cpuCoreCount = cpuParts[0];
   const gpuSummary = parseGpuSummary(output);
+  const resources = summarizeResources(vmStat, Number(memorySize), disk);
   return {
+    ...resources,
     status: "online",
     rebuild,
-    storagePercent: parseStoragePercent(disk),
-    memoryPercent: memoryPercentFromVmStat(vmStat, Number(memorySize)),
     cpuPercent: Math.min(100, Math.max(0, cpuParts[1] / cpuParts[0])),
     capacity: {
+      ...resources.capacity,
       cpu: cpuBrand || `${cpuCoreCount} cores`,
-      memory: formatBytes(Number(memorySize)),
-      storage: parseStorageCapacity(disk),
       gpu: gpuSummary,
     },
     gpuSummary,
@@ -859,8 +804,11 @@ function offlineRemoteSample(): RemoteSystemSample {
     storagePercent: null,
     capacity: {
       cpu: "Apple M4",
-      memory: "16 GB",
-      storage: "228 GB",
+      memory: "--",
+      storage: "--",
+      memoryUsed: "--",
+      storageUsed: "--",
+      storageFree: "--",
       gpu: gpuCache && gpuCache.expiresAt > Date.now() ? gpuCache.summary : "Apple M4 · 10 cores · Metal 4",
     },
     gpuSummary: gpuCache && gpuCache.expiresAt > Date.now() ? gpuCache.summary : null,
@@ -910,16 +858,14 @@ export const background = {
 
 export const actions = {
   sample: async (_input: unknown, context: BabyMenuServerContext) => {
-    const [memoryPercent, cpuPercent, storagePercent, capacity, rebuild, miniMac, githubContributions] = await Promise.all([
-      readMemoryPercent(),
+    const [local, cpuPercent, rebuild, miniMac, githubContributions] = await Promise.all([
+      readLocalSystem(),
       Promise.resolve(readCpuPercent(context)),
-      readStoragePercent(),
-      readLocalCapacity(),
       readLocalRebuild(),
       readRemoteSystem(),
       readGitHubContributions(context),
     ]);
 
-    return { cpuPercent, memoryPercent, storagePercent, capacity, rebuild, miniMac, githubContributions };
+    return { ...local, cpuPercent, rebuild, miniMac, githubContributions };
   },
 };

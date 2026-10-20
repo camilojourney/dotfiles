@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import type { MachineCapacity } from "./metrics";
 
 export type RebuildStatus = {
   state: "ok" | "failed" | "running" | "unfinished" | "never" | "unknown";
@@ -10,12 +11,7 @@ export type SystemUsageSample = {
   cpuPercent: number | null;
   memoryPercent: number | null;
   storagePercent: number | null;
-  capacity: {
-    cpu: string;
-    memory: string;
-    storage: string;
-    gpu: string | null;
-  };
+  capacity: MachineCapacity;
   rebuild: RebuildStatus;
   miniMac: {
     status: "online" | "offline";
@@ -23,12 +19,7 @@ export type SystemUsageSample = {
     cpuPercent: number | null;
     memoryPercent: number | null;
     storagePercent: number | null;
-    capacity: {
-      cpu: string;
-      memory: string;
-      storage: string;
-      gpu: string | null;
-    };
+    capacity: MachineCapacity;
     gpuSummary: string | null;
   };
   githubContributions: {
@@ -63,7 +54,7 @@ let state: SystemUsageSample = {
   cpuPercent: null,
   memoryPercent: null,
   storagePercent: null,
-  capacity: { cpu: "--", memory: "--", storage: "--", gpu: null },
+  capacity: { cpu: "--", memory: "--", storage: "--", memoryUsed: "--", storageUsed: "--", storageFree: "--", gpu: null },
   rebuild: { state: "unknown", target: null, atMs: null },
   miniMac: {
     status: "offline",
@@ -71,7 +62,7 @@ let state: SystemUsageSample = {
     cpuPercent: null,
     memoryPercent: null,
     storagePercent: null,
-    capacity: { cpu: "--", memory: "--", storage: "--", gpu: null },
+    capacity: { cpu: "--", memory: "--", storage: "--", memoryUsed: "--", storageUsed: "--", storageFree: "--", gpu: null },
     gpuSummary: null,
   },
   githubContributions: {
