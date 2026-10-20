@@ -33,8 +33,19 @@ jq -e --arg cursor_provider "$CURSOR_PROVIDER" --arg otel_package "$OTEL_PACKAGE
   and (.defaultProvider == "openai-codex")
   and (.defaultModel == "gpt-6.1-sol")
   and (.defaultThinkingLevel == "high")
+  and (.skills == ["~/github/dotfiles/.agents/skills/storage-audit"])
   and (has("llamaServerUrl") | not)
 ' "$SETTINGS" >/dev/null
+STORAGE_SKILL="$REPO_ROOT/.agents/skills/storage-audit/SKILL.md"
+[[ -f "$STORAGE_SKILL" ]]
+# [utest->req~storage-audit.inventory~1]
+grep -Fq 'umask 077' "$STORAGE_SKILL"
+grep -Fq 'state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/storage-audit"' "$STORAGE_SKILL"
+grep -Fq 'report="$state_dir/inventory-$(date -u +%Y%m%dT%H%M%SZ).txt"' "$STORAGE_SKILL"
+grep -Fq 'mark it incomplete' "$STORAGE_SKILL"
+# [utest->req~storage-audit.cleanup-approval~1]
+grep -Fq 'Never delete during an audit-only request.' "$STORAGE_SKILL"
+grep -Fq 'Show the plan and get approval for the exact targets.' "$STORAGE_SKILL"
 
 jq -e '
   .provider == "anysearch" and .toolExposure == "deferred"

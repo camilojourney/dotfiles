@@ -118,6 +118,7 @@
       }
     }
   },
+  "skills": ["~/github/dotfiles/.agents/skills/storage-audit"],
   "packages": [
     "npm:pi-web-access",
     "npm:pi-claude-bridge@0.9.3",

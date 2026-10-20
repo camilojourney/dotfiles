@@ -4,6 +4,9 @@ Run `bash scripts/storage-report.sh` from the repository, or `storage-report`
 on either machine. Run it weekly and after large installs. The mac-mini
 (`camilo-remote`) runs consistently low on free space, so check it there most
 often.
+<!-- [doc->req~storage-audit.inventory~1] -->
+Use `/skill:storage-audit` for a guided audit, private dated snapshots, and a cleanup review. Snapshots belong under `${XDG_STATE_HOME:-~/.local/state}/storage-audit`, not in this repository.
+
 It only measures existing locations. Totals overlap, and access errors mean a
 measurement may be incomplete. It does not record private file contents.
 
@@ -17,6 +20,9 @@ agent sessions, containers, or model servers.
 | `/opt/homebrew`, `~/Library/Caches/Homebrew` | Installed tools, older versions, downloads | Preview `brew cleanup -n`, then run `brew cleanup` if the listed cleanup is wanted. |
 | `~/.cache/uv` (or `UV_CACHE_DIR`) | Python package cache | Between jobs, use `uv cache prune` for unused entries. |
 | `~/.npm` | npm cache and logs | Start with `npm cache verify`; inspect size before choosing further cleanup. |
+| `~/.firstmate-homes` | Persistent Secondmate homes, project clones, local state and task artifacts | Inspect one home at a time. Retire homes only through Firstmate's provisioning/retirement workflow; do not raw-delete a home. |
+| `~/.treehouse` | Reusable Git worktrees, per-task builds and environments | Inspect the owning pool and return/retire worktrees through Treehouse; do not raw-delete active or leased worktrees. |
+| `~/.chrome-profiles`, `~/Library/Application Support/Google/Chrome*` | Persistent Chrome user profiles, sign-in state, caches, extensions and browser history | Close the owning Chrome instance first. Remove only approved cache paths; deleting a profile also removes sign-in/session state. |
 | `~/github` | Repositories, `node_modules`, `.venv`, build output, project data | Inspect one project at a time. Generated dependencies may be recreated from lockfiles; keep source, `.git`, databases, and unpublished work. |
 | `~/.cache/huggingface`, `~/.ollama` | Downloaded model weights | Remove individual unused models through their owning tool. Models can be very large. |
 | `~/Library/Group Containers/HUAQ24HBR6.dev.orbstack/data` | OrbStack's VM disk image (`data.img`) - every container/image/volume | This is the real location; `~/.orbstack` is only a bind-mount view and takes no space itself. The image is sparse, so `du -sh` on this path (not Finder's "apparent size") is the true usage. Inspect with `docker system df`; prune with `docker system prune` (add `--volumes` only if you don't need volume data). Changing OrbStack's storage location is in OrbStack → Settings → Disk. |
