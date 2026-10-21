@@ -20,8 +20,8 @@
       "ReportFindings"
     ]
   },
+  "model": "opus[1m]",
   "disableClaudeAiConnectors": true,
-  "syncClaudeAiSkills": false,
   "skillOverrides": {
     "artifact-capabilities": "off",
     "artifact-design": "off",
@@ -115,15 +115,15 @@
     "figma@synced": false
   },
   "otelHeadersHelper": "~/github/dotfiles/scripts/agent-tools/langfuse-otel-headers.sh",
-  "modelSettings": {
-    "claude-opus-5-5": {
-      "effortLevel": "xhigh"
-    }
-  },
   "autoCompactWindow": 500000,
   "skipDangerousModePermissionPrompt": true,
   "theme": "dark-ansi",
   "switchModelsOnFlag": true,
   "agentPushNotifEnabled": true,
-  "model": "opus"
+  "syncClaudeAiSkills": false,
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "xhigh"
+    }
+  }
 }
