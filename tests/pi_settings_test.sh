@@ -10,9 +10,9 @@ MODELS="$REPO_ROOT/home/.pi/agent/models.json"
 DISPATCH="$REPO_ROOT/home/.firstmate/crew-dispatch.json"
 WEB_SEARCH="$REPO_ROOT/home/.pi/web-search.json"
 CURSOR_PROVIDER="git:github.com/camilojourney/pi-cursor-provider@73fd2d75c58bfe1757a124e407fbc72f89642826"
-# Laptop-only local install of unpublished commit 6e223b2 (metadata-only default);
+# Laptop-only local install of unpublished commit e097771 (private headers file);
 # restore a published git pin before syncing to another host. See docs/AUTOMATIONS.md.
-OTEL_PACKAGE="/Users/camiloslaptop/.local/share/pi-opentelemetry/install-6e223b2"
+OTEL_PACKAGE="/Users/camiloslaptop/.local/share/pi-opentelemetry/install-e097771"
 ANTIGRAVITY_PACKAGE="git:github.com/Rahularya01/pi-antigravity@f950c08e7a5c1069a0339af88252347a5ecb0f8c"
 # Public PR #18 author's revision, not a locally maintained patch.
 COMPACTION_PACKAGE="git:github.com/kunchenguid/pi-openai-server-compaction@cf30a9fee30312ef33d03fd1d99ad511e81e2b95"
@@ -40,8 +40,8 @@ STORAGE_SKILL="$REPO_ROOT/.agents/skills/storage-audit/SKILL.md"
 [[ -f "$STORAGE_SKILL" ]]
 # [utest->req~storage-audit.inventory~2]
 grep -Fq 'umask 077' "$STORAGE_SKILL"
-grep -Fq 'state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/storage-audit"' "$STORAGE_SKILL"
-grep -Fq 'report="$state_dir/inventory-$(date -u +%Y%m%dT%H%M%SZ).txt"' "$STORAGE_SKILL"
+grep -Fq "state_dir=\"\${XDG_STATE_HOME:-\$HOME/.local/state}/storage-audit\"" "$STORAGE_SKILL"
+grep -Fq "report=\"\$state_dir/inventory-\$(date -u +%Y%m%dT%H%M%SZ).txt\"" "$STORAGE_SKILL"
 grep -Fq 'du -h -d 1 /System/Volumes/Data' "$STORAGE_SKILL"
 grep -Fq 'mark it incomplete' "$STORAGE_SKILL"
 # [utest->req~storage-audit.cleanup-approval~1]

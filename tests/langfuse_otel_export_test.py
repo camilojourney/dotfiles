@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
-"""Real shell -> landed Pi exporter -> loopback HTTP; pass the extension source path."""
+"""Real shell -> authored Pi package selection -> loopback HTTP, using fake keys."""
 import base64
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
 import shlex
-import sys
 import threading
 
 from langfuse_otel_headers_test import HeaderTest, ROOT
 
 # [itest->req~native-tracing.shell-authentication~1]
-def main(extension):
+def main():
+    settings = json.loads((ROOT / "home/.pi/agent/settings.json").read_text())
+    selected = [p for p in settings["packages"] if "pi-opentelemetry" in p]
+    assert len(selected) == 1, "expected one authored telemetry package"
+    extension = Path(selected[0])
+    assert extension.is_absolute() and extension.is_dir(), "selected local installation missing"
     received = []
 
     class Collector(BaseHTTPRequestHandler):
@@ -67,4 +71,4 @@ def main(extension):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main()

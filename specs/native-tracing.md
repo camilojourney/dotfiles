@@ -42,3 +42,7 @@ Symlink directories and destinations are refused. A same-directory temporary
 file is renamed only after writing succeeds. Failure leaves any previous file
 untouched, but shell startup does not export it. Header contents are a startup
 snapshot: rotation requires a new shell and new exporter process.
+
+The authored `home/.pi/agent/settings.json` package selection must resolve to a
+private-file-capable installation. The loopback export regression reads that
+selection and tests its installed bytes, not an independent source checkout.

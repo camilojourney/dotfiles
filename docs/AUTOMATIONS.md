@@ -43,10 +43,11 @@ Missing or incomplete keys leave the shell without an authentication file variab
 a failed refresh never publishes a partially written file. Claude's JSON helper
 and explicit `--env` consumers retain their existing output formats.
 
-This requires Pi extension private-file support (local main `e097771` or later);
-landing dotfiles alone does not activate that extension in existing agents.
-After landing, the operator coordinates the extension selection, rebuild, normal
-agent restarts, exposed-key rotation/revocation and received-trace verification.
+The authored Pi package selection uses the private-file-capable local installation
+`~/.local/share/pi-opentelemetry/install-e097771`. Landing dotfiles does not reload
+that extension in existing agents. After landing, the operator coordinates the
+rebuild, normal agent restarts, exposed-key rotation/revocation and received-trace
+verification.
 Do not inspect credentials through environment dumps. Existing processes retain
 their old environment and exporters snapshot headers at startup, so neither a
 rebuild nor a file update removes credentials from already-running processes.
@@ -95,9 +96,9 @@ Langfuse store, or start stopped services to reproduce native agents.
 Copy committed source, not a running home. Keep `dotfiles`, `fleet-system`,
 `firstmate` and the telemetry extension at the tested commits. The active extension
 pin is owned by `home/.pi/agent/settings.json` and its regression in
-`tests/pi_settings_test.sh`. The laptop currently loads unpublished commit
-`6e223b2` (metadata-only by default) from the local install
-`~/.local/share/pi-opentelemetry/install-6e223b2`; that path exists on the laptop
+`tests/pi_settings_test.sh`. The authored laptop selection names unpublished commit
+`e097771` (private-file headers, metadata-only by default) from the local install
+`~/.local/share/pi-opentelemetry/install-e097771`; that path exists on the laptop
 only. Before another host uses these settings, publish the commit and restore a
 published `git:` pin with its regression. The reproduction kit's
 manifest records the tested candidate separately; copying the kit does not activate

@@ -59,15 +59,17 @@ JSON only; it never starts Claude or contacts a provider.
 
 `langfuse_otel_headers_test.py` uses only synthetic keys and isolated homes to
 check shell credential removal, private atomic updates, rotation, failure paths,
-symlink refusal and legacy Claude/`--env` responses. With a dependency-installed
-Pi extension checkout containing private-file support, also run:
+symlink refusal and legacy Claude/`--env` responses. After preparing the stable
+local Pi extension installation selected in authored settings, also run:
 
 ```bash
-python3 tests/langfuse_otel_export_test.py /path/to/pi-opentelemetry
+python3 tests/langfuse_otel_export_test.py
 ```
 
-This executes the managed zsh setup and the extension's actual configuration and
-OTLP exporter against a temporary loopback HTTP receiver. It does not start a
+This reads the final authored package path, executes the managed zsh setup and
+that installation's actual configuration and OTLP exporter against a temporary
+loopback HTTP receiver. A missing installation or selection without private-file
+support fails the test. It does not start a
 model, use real credentials, or activate the extension in running agents.
 
 `fleet_telemetry_test.py` evaluates both hosts' scheduled collector arguments with offline Nix, then executes them against isolated fake collectors.
