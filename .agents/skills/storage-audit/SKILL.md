@@ -1,6 +1,6 @@
 ---
 name: storage-audit
-version: 1.0.0
+version: 1.1.0
 description: Inventory where disk space and project data are stored, track growth privately, and plan safe cleanup. Use when storage is filling, locating app or agent data, preventing duplicated datasets in new workspaces, or reviewing cleanup candidates.
 ---
 
@@ -8,13 +8,25 @@ description: Inventory where disk space and project data are stored, track growt
 
 Audit first. Cleanup is a separate, explicitly authorized action. Keep machine-specific inventories outside Git.
 
-<!-- [impl->req~storage-audit.inventory~1] -->
+<!-- [impl->req~storage-audit.inventory~2] -->
 ## Start with the existing owners
 
 1. Read the dotfiles repository's `AGENTS.md` and [`docs/STORAGE.md`](../../../docs/STORAGE.md).
 2. Run the read-only [`scripts/storage-report.sh`](../../../scripts/storage-report.sh) from the dotfiles repository. Do not replace it with another whole-disk scanner.
-3. Establish the volume's free space with `df -h "$HOME"`. If Finder, `df`, and directory totals disagree, report the discrepancy and inspect APFS snapshots/volumes with read-only `diskutil apfs list` and `tmutil listlocalsnapshots /`. Do not thin snapshots automatically.
-4. Treat nested directory totals as overlapping. A `du` total is not proof of physically duplicated bytes: APFS clones, snapshots, hard links, symlinks, inaccessible files, and sparse VM images can change what it means.
+3. Establish the volume's free space with `df -h "$HOME"`. The report is a first-level inventory, not proof that all storage was found. Treat nested totals as overlapping: APFS clones, snapshots, hard links, symlinks, inaccessible files, and sparse VM images affect what `du` means.
+4. If free space is low or the home and selected-root totals do not explain `df`, save a private one-level Data-volume overview. This can take several minutes and can be incomplete due to macOS permissions:
+
+   ```bash
+   state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/storage-audit"
+   umask 077
+   mkdir -p "$state_dir"
+   volume_report="$state_dir/data-volume-$(date -u +%Y%m%dT%H%M%SZ).txt"
+   if ! du -h -d 1 /System/Volumes/Data > "$volume_report" 2>&1; then
+     printf 'Incomplete: some Data-volume paths could not be measured.\n' >> "$volume_report"
+   fi
+   ```
+
+   Treat these totals as overlapping, check mount boundaries, and do not add them to the home report. Drill into the largest unexplained paths one level at a time. If directory totals still disagree with `df`, inspect APFS snapshots/volumes with read-only `diskutil apfs list` and `tmutil listlocalsnapshots /`. Do not thin snapshots automatically.
 
 ## Make a private growth record
 
@@ -34,7 +46,7 @@ If the dotfiles checkout is not at `~/github/dotfiles`, resolve the script relat
 
 ## Find where large data is owned and written
 
-- Start with the roots in `docs/STORAGE.md`, then drill into only the largest or relevant roots with `du -h -d 1 "PATH"`.
+- Start with the home, Library, and Application Support summaries in the report, then drill into only the largest or relevant roots with `du -h -d 1 "PATH"`.
 - Read the owning project's README, path resolver, configuration, and data/download scripts. Search for path variables such as `DATA_DIR`, `CACHE_DIR`, `HF_HOME`, `TORCH_HOME`, and project-specific environment variables. Do not assume ignored files or runtime data live beside tracked source.
 - Distinguish source corpora, model weights, generated feature caches, build output, environments, app runtime databases/audio, Git object stores, and agent/task evidence. Use the owner and purpose, not a directory name alone, to classify a path.
 - For Firstmate, keep each home's agent state and writable runtime isolated. For repeated training data on one machine, prefer one canonical dataset root and have project clones reference it. Share raw data read-only; share generated caches only when their input/model/config identity is clear and concurrent writes are safe. Keep run outputs, databases, logs, and checkpoints per home or run.

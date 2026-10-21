@@ -4,11 +4,15 @@ Run `bash scripts/storage-report.sh` from the repository, or `storage-report`
 on either machine. Run it weekly and after large installs. The mac-mini
 (`camilo-remote`) runs consistently low on free space, so check it there most
 often.
-<!-- [doc->req~storage-audit.inventory~1] -->
+<!-- [doc->req~storage-audit.inventory~2] -->
 Use `/skill:storage-audit` for a guided audit, private dated snapshots, and a cleanup review. Snapshots belong under `${XDG_STATE_HOME:-~/.local/state}/storage-audit`, not in this repository.
 
-It only measures existing locations. Totals overlap, and access errors mean a
-measurement may be incomplete. It does not record private file contents.
+The report summarizes directories one level below `$HOME`, `$HOME/Library`, and
+`Application Support`, plus selected system roots. It is not an exhaustive
+filesystem scan. Totals overlap, and access errors mean a measurement may be
+incomplete. For unexplained disk usage, the skill guides an optional read-only
+one-level scan of `/System/Volumes/Data`. Reports contain paths and sizes, not
+private file contents.
 
 Disk space and RAM are different. Removing files frees disk space. To diagnose
 RAM pressure, use Activity Monitor's Memory tab and close unused applications,
@@ -22,6 +26,7 @@ agent sessions, containers, or model servers.
 | `~/.npm` | npm cache and logs | Start with `npm cache verify`; inspect size before choosing further cleanup. |
 | `~/.firstmate-homes` | Persistent Secondmate homes, project clones, local state and task artifacts | Inspect one home at a time. Retire homes only through Firstmate's provisioning/retirement workflow; do not raw-delete a home. |
 | `~/.treehouse` | Reusable Git worktrees, per-task builds and environments | Inspect the owning pool and return/retire worktrees through Treehouse; do not raw-delete active or leased worktrees. |
+| `~/Library/Application Support` | Per-application data, including browser profiles, editor state, downloaded models, and app databases | Inspect each app's owner and data type. Do not assume all application support data is a disposable cache. |
 | `~/.chrome-profiles`, `~/Library/Application Support/Google/Chrome*` | Persistent Chrome user profiles, sign-in state, caches, extensions and browser history | Close the owning Chrome instance first. Remove only approved cache paths; deleting a profile also removes sign-in/session state. |
 | `~/github` | Repositories, `node_modules`, `.venv`, build output, project data | Inspect one project at a time. Generated dependencies may be recreated from lockfiles; keep source, `.git`, databases, and unpublished work. |
 | `~/.cache/huggingface`, `~/.ollama` | Downloaded model weights | Remove individual unused models through their owning tool. Models can be very large. |

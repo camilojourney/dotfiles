@@ -8,23 +8,30 @@ fi
 : "${HOME:?HOME must be set}"
 printf 'Available disk space\n'
 df -h "$HOME"
-printf '\nStorage by location (overlapping totals; do not add them)\n'
-# [impl->req~storage-audit.inventory~1]
+printf '\nImmediate home directories (one level; totals overlap)\n'
+# [impl->req~storage-audit.inventory~2]
+if ! du -h -d 1 "$HOME"; then
+  printf 'Could not fully measure immediate home directories: %s\n' "$HOME" >&2
+fi
+
+for path in "$HOME/Library" "$HOME/Library/Application Support"; do
+  if [ -d "$path" ]; then
+    printf '\nImmediate directories under: %s\n' "$path"
+    if ! du -h -d 1 "$path"; then
+      printf 'Could not fully measure: %s\n' "$path" >&2
+    fi
+  fi
+done
+
+printf '\nSelected system and external roots (overlapping totals; do not add them)\n'
 for path in \
   /nix/store /opt/homebrew/Cellar /opt/homebrew/Caskroom \
-  "$HOME/Library/Caches" "$HOME/Library/Caches/Homebrew" \
-  "$HOME/.cache" "${UV_CACHE_DIR:-$HOME/.cache/uv}" \
-  "$HOME/.npm" "$HOME/.local" "$HOME/.nvm" \
-  "$HOME/Library/pnpm" "$HOME/.cache/huggingface" "$HOME/.ollama" \
-  "$HOME/.codex" "$HOME/.claude" "$HOME/.pi" "$HOME/.openclaw" \
-  "$HOME/.firstmate-homes" "$HOME/.treehouse" "$HOME/.chrome-profiles" \
-  "$HOME/Library/Logs" "$HOME/Library/Developer" \
+  "${UV_CACHE_DIR:-$HOME/.cache/uv}" "$HOME/.cache/huggingface" \
+  "$HOME/Library/Caches/Homebrew" "$HOME/Library/pnpm" \
   "$HOME/Library/Application Support/Google/Chrome" \
   "$HOME/Library/Application Support/Google/Chrome Canary" \
   "$HOME/Library/Group Containers/HUAQ24HBR6.dev.orbstack/data" \
-  "$HOME/Library/Containers/com.docker.docker" \
-  "$HOME/.docker" "$HOME/.colima" \
-  "$HOME/Downloads" "$HOME/.Trash" "$HOME/github"; do
+  "$HOME/Library/Containers/com.docker.docker"; do
   if [ -e "$path" ]; then
     if ! du -sh "$path"; then
       printf 'Could not fully measure: %s\n' "$path" >&2

@@ -12,15 +12,17 @@ Does not own: where individual applications store data or how those applications
 
 ## Context
 
-The Pi procedure is the [storage-audit skill](../.agents/skills/storage-audit/SKILL.md). It uses the [storage report](../scripts/storage-report.sh) and the [storage guide](../docs/STORAGE.md).
+The Pi procedure is the [storage-audit skill](../.agents/skills/storage-audit/SKILL.md). It uses the [storage report](../scripts/storage-report.sh) and the [storage guide](../docs/STORAGE.md). One-level summaries are not exhaustive. macOS-protected paths can be unreadable; mounted locations can overlap the host-volume totals.
 
 ## Requirements
 
 ### Guided inventory and history
 
-`req~storage-audit.inventory~1`
+`req~storage-audit.inventory~2`
 
-WHEN a user requests a storage audit in Pi, the storage-audit skill SHALL guide a read-only inventory, save dated reports in private local state, and identify incomplete measurements.
+WHEN a user requests a storage audit in Pi, the skill SHALL summarize directories under home, Library, and Application Support one level deep, and measure selected system roots.
+
+Reports SHALL be read-only, private, timestamped, and explicitly mark incomplete measurements.
 
 Needs: impl, utest, doc
 

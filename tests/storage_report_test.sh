@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Read-only storage report includes major agent and browser data roots.
-# [utest->req~storage-audit.inventory~1]
+# [utest->req~storage-audit.inventory~2]
 # Run: bash tests/storage_report_test.sh
 set -euo pipefail
 
@@ -12,6 +12,8 @@ mkdir -p \
   "$HOME/.firstmate-homes" \
   "$HOME/.treehouse" \
   "$HOME/.chrome-profiles" \
+  "$HOME/unlisted-data-root" \
+  "$HOME/Library/Application Support/OtherApp/Data" \
   "$HOME/Library/Application Support/Google/Chrome" \
   "$HOME/Library/Application Support/Google/Chrome Canary"
 printf 'preserve\n' > "$HOME/.firstmate-homes/marker"
@@ -21,6 +23,8 @@ for path in \
   "$HOME/.firstmate-homes" \
   "$HOME/.treehouse" \
   "$HOME/.chrome-profiles" \
+  "$HOME/unlisted-data-root" \
+  "$HOME/Library/Application Support/OtherApp" \
   "$HOME/Library/Application Support/Google/Chrome" \
   "$HOME/Library/Application Support/Google/Chrome Canary"; do
   grep -F -- "$path" <<<"$report" >/dev/null || {
@@ -29,4 +33,4 @@ for path in \
   }
 done
 [[ $(<"$HOME/.firstmate-homes/marker") == preserve ]]
-printf 'PASS: report measures the major agent/browser roots and leaves data untouched\n'
+printf 'PASS: report measures named roots, discovers unlisted home/app data, and leaves data untouched\n'
