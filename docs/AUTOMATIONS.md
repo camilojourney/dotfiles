@@ -27,8 +27,30 @@ live; this job adds what Langfuse cannot work out alone.
 
 Each run calls `skill_usage.py update` from the Fleet checkout at `~/github/fleet-system/system/skills/meta/skill-creator-fleet/scripts/` and flushes Firstmate's pending task evidence.
 Both collectors run independently, and either failure makes the scheduled job fail visibly.
-The login shell supplies the existing native OTLP endpoint and authentication from the managed shell environment.
-No additional daemon or credentials are introduced.
+The login shell supplies the existing native OTLP endpoint and a private authentication
+file location, never inline credentials. No additional daemon or credentials are introduced.
+
+### Native tracing credentials
+
+<!-- Nix is outside the checker's tag-importer extensions; this points to envExtra. -->
+<!-- [impl->req~native-tracing.shell-authentication~1] -->
+`nix/home.nix` refreshes the existing `langfuse-otel-headers.sh --file` helper at
+shell startup. The helper reads `~/.config/secrets/langfuse.env` and atomically
+writes `~/.config/secrets/pi-otel/headers` (0600 inside a 0700 directory).
+Only `PI_OTEL_EXPORTER_OTLP_HEADERS_FILE` is exported. Inherited inline headers
+and old file locations are removed first because inline values override files.
+Missing or incomplete keys leave the shell without an authentication file variable;
+a failed refresh never publishes a partially written file. Claude's JSON helper
+and explicit `--env` consumers retain their existing output formats.
+
+This requires Pi extension private-file support (local main `e097771` or later);
+landing dotfiles alone does not activate that extension in existing agents.
+After landing, the operator coordinates the extension selection, rebuild, normal
+agent restarts, exposed-key rotation/revocation and received-trace verification.
+Do not inspect credentials through environment dumps. Existing processes retain
+their old environment and exporters snapshot headers at startup, so neither a
+rebuild nor a file update removes credentials from already-running processes.
+See the [authentication contract](../specs/native-tracing.md).
 For every Pi session under `~/.pi/agent/sessions` that has been quiet for 10 minutes, the skill collector records:
 
 - which skills the agent loaded, and whether before its first edit;

@@ -158,7 +158,15 @@ in
       export PI_OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:3000/api/public/otel"
       export PI_OTEL_METRICS_EXPORTER="none"
       export PI_OTEL_SERVICE_NAME="pi"
-      export PI_OTEL_EXPORTER_OTLP_HEADERS="$(${dotfilesDir}/scripts/agent-tools/langfuse-otel-headers.sh --env)"
+      # [impl->req~native-tracing.shell-authentication~1]
+      # Inline headers override files. Clear credentials inherited from old shells
+      # before launching any children, including the private-file helper.
+      unset PI_OTEL_EXPORTER_OTLP_HEADERS OTEL_EXPORTER_OTLP_HEADERS
+      unset PI_OTEL_EXPORTER_OTLP_HEADERS_FILE OTEL_EXPORTER_OTLP_HEADERS_FILE
+      if _pi_otel_headers_file="$(${dotfilesDir}/scripts/agent-tools/langfuse-otel-headers.sh --file)"; then
+        export PI_OTEL_EXPORTER_OTLP_HEADERS_FILE="$_pi_otel_headers_file"
+      fi
+      unset _pi_otel_headers_file
     '';
   };
 

@@ -13,6 +13,7 @@ bash tests/claude_settings_test.sh
 python3 tests/agent_platform_test.py
 python3 tests/agent_platform_langfuse_test.py
 python3 tests/fleet_telemetry_test.py
+python3 tests/langfuse_otel_headers_test.py
 ```
 
 `agent_platform_test.py` exercises the encrypted, unlocked, ownership-enabled
@@ -55,6 +56,19 @@ not maintenance judgment or live fleet delivery.
 `claude_settings_test.sh` requires the authored `syncClaudeAiSkills` setting to stay
 false. Skill overrides alone do not stop account-skill downloads. The test reads
 JSON only; it never starts Claude or contacts a provider.
+
+`langfuse_otel_headers_test.py` uses only synthetic keys and isolated homes to
+check shell credential removal, private atomic updates, rotation, failure paths,
+symlink refusal and legacy Claude/`--env` responses. With a dependency-installed
+Pi extension checkout containing private-file support, also run:
+
+```bash
+python3 tests/langfuse_otel_export_test.py /path/to/pi-opentelemetry
+```
+
+This executes the managed zsh setup and the extension's actual configuration and
+OTLP exporter against a temporary loopback HTTP receiver. It does not start a
+model, use real credentials, or activate the extension in running agents.
 
 `fleet_telemetry_test.py` evaluates both hosts' scheduled collector arguments with offline Nix, then executes them against isolated fake collectors.
 It checks both collectors run even when either fails, without credentials, network calls or service changes.
