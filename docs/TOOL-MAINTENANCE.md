@@ -45,9 +45,14 @@ Decision date: **2026-10-19**. Keep OpenAI native compaction, adopt the existing
 public message-preservation fix, and reduce tool overhead without replacing
 Firstmate's orchestration. See the owning runbooks for exact settings.
 
+Compaction follow-up checked **2026-10-23, laptop only**: our fork's `main`
+contains the validated Pi 1.4 repair, and `pi list` selects our local checkout.
+See [fork maintenance](PI-COMPACTION.md#maintaining-our-compaction-fork) for
+updating, testing, reloading and rollback. Upstream acceptance is not required.
+
 | Area | Before | Selected state | Activation and evidence |
 | --- | --- | --- | --- |
-| Compaction connector | Original upstream revision lost injected and unanswered messages | Public PR #18 author revision pinned | Installed; real Pi CLI fixture passed after compaction and resume. Existing sessions not reloaded by this maintenance work. |
+| Compaction connector | Earlier revisions lost messages or Pi 1.4 tool declarations | Our maintained fork, selected through a local checkout | Validated repair passed real-provider compaction/tool/resume testing; configured source checked on laptop. This documentation update did not reload running sessions. |
 | Codemode | Not enabled | Alongside ordinary tools, not tools-only mode | Real CLI fixture preserved tested Firstmate denial hooks. New-session selection still needed. |
 | Web tools | Older pinned package | Updated, unpinned, deferred schemas | Local CLI fixture verified hiding and discovery, not external search quality. |
 | Waiting workers | No wait-no-turns flags | Presence flags in all eleven existing local homes | Applies to newly generated briefs; no polling-reduction measurement yet. |
@@ -64,14 +69,14 @@ Keep IDs stable. Each entry names its exit condition so temporary fixes do not
 become forgotten permanent forks. Priority reflects correctness and reliability
 before optimization, not a predicted completion date.
 
-### TM-001: retire the temporary compaction source
+### TM-001: maintain our compaction fork
 
-- **Status:** fix installed; upstream adoption and running-session activation remain pending verification.
-- **Owner:** [Pi compaction](PI-COMPACTION.md#temporary-upstream-message-preservation-fix).
-- **Evidence:** [PR #18](https://github.com/algal/pi-openai-server-compaction/pull/18) was open on the review date; isolated CLI payload preservation passed.
-- **Next:** check merge/release status and compatibility with installed Pi. Keep the tested pin until a replacement passes.
-- **Done when:** the upstream source includes the fix and equivalent compaction/resume checks pass; affected sessions load that revision.
-- **Rollback:** restore the previous declaration and reconcile deliberately, understanding that it reintroduces message loss. Never rewrite historical session JSONL.
+- **Status:** our fork's `main` includes the repair; the laptop selects our local checkout. Running-session activation was not rechecked in this documentation update.
+- **Owner:** [Pi compaction fork maintenance](PI-COMPACTION.md#maintaining-our-compaction-fork).
+- **Evidence:** validated commit `4a471183` passed real-provider tool use after compaction and resume; [PR #28](https://github.com/algal/pi-openai-server-compaction/pull/28) remains open as of the follow-up check.
+- **Next:** maintain and validate our fork independently; review upstream changes before merging them. Do not wait for upstream approval to use our version.
+- **Done when:** a supported upstream revision includes our fixes, passes equivalent checks, and is deliberately adopted and loaded. Until then, retain our fork.
+- **Rollback:** use the owning runbook's previous-validated-revision procedure; never rewrite historical session JSONL.
 
 ### TM-002: failed compaction can save a misleading placeholder
 

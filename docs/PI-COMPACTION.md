@@ -62,7 +62,7 @@ experiment. On 2026-10-19 `pi-anthropic-compat` and
 removed without being relied on: the first cannot activate because it requires
 the direct Claude API rather than the bridge, and the second was published
 anonymously with no repository and no provenance. The only compaction package
-that remains declared is the pinned OpenAI one described under Maintenance.
+that remains declared is our local OpenAI fork described under Maintenance.
 
 | Model/provider | Configured window | `reserveTokens` | Pi threshold | `keepRecentTokens` | Compaction mechanism |
 |---|---|---|---|---|---|
@@ -449,36 +449,46 @@ metadata/logs for the actual handler and reason.
 
 ## Maintenance
 
-### Temporary upstream message-preservation fix
+### Maintaining our compaction fork
 
-The package declaration pins the public PR author's revision
-`kunchenguid/pi-openai-server-compaction@cf30a9fee30312ef33d03fd1d99ad511e81e2b95`,
-from [upstream PR #18](https://github.com/algal/pi-openai-server-compaction/pull/18).
-It is not a private patch or a merged upstream release. The author's repository
-exposes the commit on a branch, so fresh Pi installs can clone and check it out.
-Only one compaction package is declared.
+- **Our fork:** [camilojourney/pi-openai-server-compaction](https://github.com/camilojourney/pi-openai-server-compaction).
+  Our `main` includes the repair; we do not need upstream approval to use it.
+- **Original project:** [algal/pi-openai-server-compaction](https://github.com/algal/pi-openai-server-compaction).
+  [PR #28](https://github.com/algal/pi-openai-server-compaction/pull/28) submits our
+  changes upstream. Keep its `fix/pi-1.4-tool-declarations` branch while it is open.
+- **Local source:** `~/github/pi-openai-server-compaction`. The authored Pi
+  settings select this checkout through `../../github/pi-openai-server-compaction`.
+  `pi list` confirmed this source on the laptop on 2026-10-23. Another Mac needs
+  its own checkout and dependencies; dotfiles alone do not supply them.
 
-The fix preserves extension-injected context and unanswered trailing messages
-in remote replacement history. On Pi 1.3.0, an isolated real CLI/RPC regression
-reproduced their loss before the change and their presence afterward, including
-a fresh-process resume. The test used fabricated credentials and local Responses
-fixtures, not a live OpenAI quality evaluation. Upstream typecheck/smoke tests
-also passed; smoke assertions passed against the installed Pi 1.3.0 SDK.
-The package still declares a Pi 0.80.x peer range, so these checks are not a
-blanket compatibility guarantee.
+The repair retains the earlier message-preservation fix and prevents native
+compaction from dropping Pi 1.4 tool declarations. Validated commit
+`4a4711836bfba0d79b71f0f2e08cad8dfd33bd8c` passed `npm test` and a real-provider
+`npm run test:live:tools` run covering two native compactions, tool use afterward,
+and reopening the session. That does not establish every Firstmate workflow.
 
-**Known separate limitation:** this PR does not fix failed summary and native
-checkpoint requests producing a placeholder-only compaction. Missing
-`details.remoteCompaction` plus success-sounding placeholder text is not proof
-that useful context was retained. Do not treat this pin as resolving that failure
-or repairing historical session entries.
+**To maintain it:**
 
-Pinned revisions do not advance during daily updates. Once upstream incorporates
-the fix, verify that revision with Firstmate before replacing this temporary
-source with the upstream repository. Update the authored declaration and its
-regression in `tests/pi_settings_test.sh` together, then reconcile with
-`pi update <exact-package-source>`. New sessions load it; live sessions require
-an explicit reload or coordinated restart. Never patch the managed cache.
+1. Fetch updates from the original project and merge them into our fork's
+   `main`. In the current checkout, `origin` names the original project and
+   `fork` names our repository. Resolve conflicts without losing our fixes.
+2. Run `npm ci`, `npm test`, and `npm run test:live:tools` in the candidate
+   checkout. The live test uses provider credentials and real requests.
+3. Push validated changes to our fork. Upstream merges do not automatically
+   update our fork, and GitHub merges do not update the laptop checkout.
+4. Update the local checkout to the validated revision, then `/reload` Pi or
+   start a new process. Check `pi list` for the configured source and exercise
+   actual tool use after compaction; configuration alone is not activation proof.
+
+**Rollback:** return the local checkout to a previously validated revision and
+reload Pi. Save uncommitted work first. Do not edit managed caches or historical
+session JSONL. If the package source changes, update the authored settings and
+`tests/pi_settings_test.sh` together.
+
+**Separate open issue:** failed summary and native checkpoint requests have
+produced placeholder-only compactions. Missing `details.remoteCompaction` plus
+success-sounding text is not proof that useful context survived. The tool-access
+repair does not establish that this failure is fixed; track it as TM-002.
 
 ### Model thresholds
 
