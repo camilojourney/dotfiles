@@ -9,22 +9,20 @@ SETTINGS="$REPO_ROOT/home/.pi/agent/settings.json"
 MODELS="$REPO_ROOT/home/.pi/agent/models.json"
 DISPATCH="$REPO_ROOT/home/.firstmate/crew-dispatch.json"
 WEB_SEARCH="$REPO_ROOT/home/.pi/web-search.json"
-CURSOR_PROVIDER="git:github.com/camilojourney/pi-cursor-provider@73fd2d75c58bfe1757a124e407fbc72f89642826"
 # Laptop-only local install of unpublished commit e097771 (private headers file);
 # restore a published git pin before syncing to another host. See docs/AUTOMATIONS.md.
 OTEL_PACKAGE="/Users/camiloslaptop/.local/share/pi-opentelemetry/install-e097771"
 ANTIGRAVITY_PACKAGE="git:github.com/Rahularya01/pi-antigravity@f950c08e7a5c1069a0339af88252347a5ecb0f8c"
-# Public PR #18 author's revision, not a locally maintained patch.
-COMPACTION_PACKAGE="git:github.com/kunchenguid/pi-openai-server-compaction@cf30a9fee30312ef33d03fd1d99ad511e81e2b95"
+# Our maintained local checkout; see docs/PI-COMPACTION.md.
+COMPACTION_PACKAGE="../../github/pi-openai-server-compaction"
 
-jq -e --arg cursor_provider "$CURSOR_PROVIDER" --arg otel_package "$OTEL_PACKAGE" \
+jq -e --arg otel_package "$OTEL_PACKAGE" \
   --arg antigravity_package "$ANTIGRAVITY_PACKAGE" --arg compaction_package "$COMPACTION_PACKAGE" '
   .packages as $packages
-  | ($packages | map(select(test("cursor"; "i"))) == [$cursor_provider])
+  | ($packages | map(select(test("cursor"; "i"))) == [])
   and ($packages | map(select(test("opentelemetry"))) == [$otel_package])
   and ($packages | map(select(test("pi-antigravity"))) == [$antigravity_package])
   and ($packages | map(select(test("pi-openai-server-compaction"))) == [$compaction_package])
-  and ($packages | index("npm:pi-cursor-sdk") | not)
   and ($packages | map(select(test("^npm:pi-web-access(@|$)"))) == ["npm:pi-web-access"])
   and ($packages | all(contains("pi-extension-codex-fast-mode") | not))
   and (.defaultProjectTrust == "always")
@@ -36,6 +34,15 @@ jq -e --arg cursor_provider "$CURSOR_PROVIDER" --arg otel_package "$OTEL_PACKAGE
   and (.skills == ["~/github/dotfiles/.agents/skills/storage-audit"])
   and (has("llamaServerUrl") | not)
 ' "$SETTINGS" >/dev/null
+# Cursor must not be reinstalled or rediscovered as a Baby Menu widget.
+[[ ! -d "$REPO_ROOT/home/.baby-menu/extensions/cursor-quota" ]]
+if grep -Fq '"cursor-quota"' "$REPO_ROOT/home/.baby-menu/extensions/layout.tsx" \
+  || grep -Eq '^ *"cursor(-agent|-cli)?"' "$REPO_ROOT/nix/configuration.nix" \
+  || grep -Eiq '"[^"[:space:]]*cursor[^"[:space:]]*"' "$REPO_ROOT/nix/agent-tools.manifest.lock.json"; then
+  echo "FAIL: Cursor is still declared in Baby Menu or managed installs" >&2
+  exit 1
+fi
+
 STORAGE_SKILL="$REPO_ROOT/.agents/skills/storage-audit/SKILL.md"
 [[ -f "$STORAGE_SKILL" ]]
 # [utest->req~storage-audit.inventory~2]
@@ -60,19 +67,23 @@ jq -e '
 
 # Claude models run only through Pi, never the Claude Code harness (captain,
 # 2026-10-19): Sonnet 5.5 for external-facts research (rule 0) and read-only
-# mapping (rule 7), Haiku 5.5 for evaluation judging (rule 8). Opus stays
-# reserved for the captain's own session; Fable is not dispatched.
+# mapping (rule 7), Haiku 5.5 for evaluation judging (rule 8). Opus 5.5 serves
+# only the hardest-work tier (rule 6; captain, 2026-10-23); Fable is not dispatched.
 jq -e '
   def profiles($v): if ($v | type) == "array" then $v else [$v] end;
   def sonnet: .model == "claude-bridge/claude-sonnet-5-5" and .provider == "claude"
     or .model == "antigravity/claude-sonnet-5-5" and .provider == "agy";
   def haiku: .model == "claude-bridge/claude-haiku-5-5" and .provider == "claude";
+  def opus: .model == "claude-bridge/claude-opus-5-5" and .provider == "claude"
+    or .model == "antigravity/claude-opus-5-5" and .provider == "agy";
   def keys_using(f): [.rules | to_entries[] | select(.value.use | profiles(.) | any(f)) | .key];
   ([.rules[].use, .default] | map(profiles(.)) | add) as $all
   | ($all | all(.harness == "pi"))
-  and ($all | all(sonnet or haiku or ((.model | test("claude|opus|sonnet|fable|haiku"; "i") | not) and .provider != "claude")))
+  and ($all | all(sonnet or haiku or opus or ((.model | test("claude|opus|sonnet|fable|haiku"; "i") | not) and .provider != "claude")))
   and (keys_using(sonnet) == [0, 7])
   and (keys_using(haiku) == [8])
+  and (keys_using(opus) == [6])
+  and ([.rules[6].use] | map(profiles(.)) | all(any(opus and .provider == "claude" and .effort == "xhigh") and any(opus and .provider == "agy" and .effort == "xhigh")))
   and ([.rules[0].use, .rules[7].use] | map(profiles(.)) | all(any(sonnet and .provider == "claude" and .effort == "medium") and any(sonnet and .provider == "agy" and .effort == "medium")))
   and (.rules[7].when | test("^Read-only mapping"))
   and (.rules[8].when | test("^Evaluation judging"))
@@ -89,8 +100,10 @@ jq -e '
 ' "$DISPATCH" >/dev/null
 
 # Each selection has one authored owner, linked into Firstmate by Home Manager.
-[[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness") == "pi openai-codex/gpt-6.1-sol xhigh" ]]
-[[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness.backup") == "pi antigravity/gemini-4-argon high" ]]
+# Second mates run Opus 5.5 (captain, 2026-10-23). The manual backup lists Argon,
+# then Flash, which draws on a separate Antigravity pool from Argon's.
+[[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness") == "pi claude-bridge/claude-opus-5-5 xhigh" ]]
+[[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness.backup") == $'pi antigravity/gemini-4-argon high\npi antigravity/gemini-3.8-flash high' ]]
 # Match literal Nix interpolation, not a shell variable.
 # shellcheck disable=SC2016
 grep -Fq '"github/firstmate/config/crew-dispatch.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/crew-dispatch.json";' "$REPO_ROOT/nix/home.nix"

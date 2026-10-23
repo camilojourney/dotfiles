@@ -1,24 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-type QuotaWindow = {
-  id: string;
-  label: string;
-  percentUsed?: number;
-  resetText?: string;
-  resetAt?: string;
-};
-
-type CodexQuotaSnapshot = {
-  source: "oauth" | "cli-rpc";
-  accountEmail?: string;
-  plan?: string;
-  windows: QuotaWindow[];
-  credits?: { balance?: number; hasCredits?: boolean; unlimited?: boolean };
-  refreshedAt: string;
-  stale: boolean;
-};
-
-type QuotaResult<T> = { ok: true; data: T } | { ok: false; error: string; sourceTried: string[] };
+import type { CodexQuotaSnapshot, QuotaResult } from "./types";
 
 export type CodexQuotaState =
   | { status: "loading" }

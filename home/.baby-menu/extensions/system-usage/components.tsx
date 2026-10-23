@@ -1,9 +1,9 @@
 import { Tooltip } from "@babymenu/ui";
+import { PANEL_STYLES, SYSTEM_GAUGE_SIZE, TEXT_STYLES, TYPE_SCALE } from "./shared/ui-styles";
 import { useSystemUsage, type RebuildStatus, type SystemUsageSample } from "./store";
 
 const RADIUS = 15.9155;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-const SYSTEM_GAUGE_SIZE = 60;
 const HEATMAP_LABEL_COLUMN_PX = 24;
 const HEATMAP_GAP_PX = 3;
 const WEEKDAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
@@ -71,8 +71,8 @@ function weeklyCommitTooltipText(week: GitHubContributions["weeklyTotals"][numbe
 function CommitCountTooltip({ date, count }: { date: string; count: number }) {
   return (
     <span className="block min-w-[148px]">
-      <span className="block whitespace-nowrap font-mono text-sm leading-none tracking-value text-ink-strong">{formatExactCommitCount(count)}</span>
-      <span className="mt-1 block whitespace-nowrap text-[9px] uppercase tracking-caps text-ink-muted">{date}</span>
+      <span className={`block whitespace-nowrap font-mono ${TYPE_SCALE.content} leading-none tracking-value text-ink-strong`}>{formatExactCommitCount(count)}</span>
+      <span className={`mt-1 block whitespace-nowrap ${TYPE_SCALE.metadata} uppercase tracking-caps text-ink-muted`}>{date}</span>
     </span>
   );
 }
@@ -80,8 +80,8 @@ function CommitCountTooltip({ date, count }: { date: string; count: number }) {
 function FutureDayTooltip({ date }: { date: string }) {
   return (
     <span className="block min-w-[96px]">
-      <span className="block whitespace-nowrap font-mono text-sm leading-none tracking-value text-ink-strong">Future day</span>
-      <span className="mt-1 block whitespace-nowrap text-[9px] uppercase tracking-caps text-ink-muted">{date}</span>
+      <span className={`block whitespace-nowrap font-mono ${TYPE_SCALE.content} leading-none tracking-value text-ink-strong`}>Future day</span>
+      <span className={`mt-1 block whitespace-nowrap ${TYPE_SCALE.metadata} uppercase tracking-caps text-ink-muted`}>{date}</span>
     </span>
   );
 }
@@ -148,8 +148,8 @@ function RadialGauge({ value, tone, size = SYSTEM_GAUGE_SIZE }: { value: number 
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-lg font-light tracking-value text-ink-strong">{formatPercent(value)}</span>
-        {value !== null && <span className="ml-0.5 mt-2 text-xs text-ink-soft">%</span>}
+        <span className={TEXT_STYLES.indicatorValue}>{formatPercent(value)}</span>
+        {value !== null && <span className={`ml-0.5 ${TYPE_SCALE.metadata} text-ink-soft`}>%</span>}
       </div>
     </div>
   );
@@ -160,7 +160,7 @@ function Metric({ label, value, warnAt, dangerAt }: { label: string; value: numb
   return (
     <div className="flex min-w-0 flex-col items-center gap-1.5">
       <RadialGauge value={value} tone={tone} />
-      <span className="text-xxs uppercase tracking-caps text-ink-label">{label}</span>
+      <span className={TEXT_STYLES.indicatorLabel}>{label}</span>
     </div>
   );
 }
@@ -173,7 +173,6 @@ function MachineCard({
   storagePercent,
   capacity,
   status = "online",
-  gpuSummary,
   rebuild,
 }: {
   name: string;
@@ -183,37 +182,37 @@ function MachineCard({
   storagePercent: number | null;
   capacity: SystemUsageSample["capacity"];
   status?: "online" | "offline";
-  gpuSummary?: string | null;
   rebuild: RebuildStatus;
 }) {
   return (
-    <article className="min-w-0 rounded-sm border border-line bg-[rgba(255,255,255,.015)] p-2.5">
+    <article className={PANEL_STYLES.machine}>
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="truncate text-xxs uppercase tracking-caps text-ink-soft">{name}</span>
-        <span className={`rounded-pill border border-line-faint px-1.5 py-0.5 text-[8px] uppercase tracking-caps ${status === "online" ? "text-ink-label" : "text-signal-danger"}`}>
+        <span className={TEXT_STYLES.label}>{name}</span>
+        <span className={`rounded-pill border border-line-faint px-1.5 py-0.5 ${TYPE_SCALE.metadata} uppercase tracking-caps ${status === "online" ? "text-ink-label" : "text-signal-danger"}`}>
           {badge}
         </span>
       </div>
 
       {status === "online" ? (
-        <>
-          <div className="grid grid-cols-3 gap-2">
-            <Metric label="cpu" value={cpuPercent} warnAt={60} dangerAt={85} />
-            <Metric label="ram used" value={memoryPercent} warnAt={75} dangerAt={90} />
-            <Metric label="disk full" value={storagePercent} warnAt={75} dangerAt={90} />
-          </div>
-          <CapacityStrip capacity={capacity} gpuSummary={gpuSummary} />
-          <RebuildLine rebuild={rebuild} />
-        </>
+        <div className="grid grid-cols-3 gap-2">
+          <Metric label="cpu" value={cpuPercent} warnAt={60} dangerAt={85} />
+          <Metric label="ram" value={memoryPercent} warnAt={75} dangerAt={90} />
+          <Metric label="disk" value={storagePercent} warnAt={75} dangerAt={90} />
+        </div>
       ) : (
-        <>
-          <div className="grid min-h-[82px] place-items-center rounded-sm border border-dashed border-[rgba(255,106,122,.25)] text-center text-xxs uppercase tracking-caps text-signal-danger">
-            ssh target unavailable
-          </div>
-          <CapacityStrip capacity={capacity} gpuSummary={gpuSummary} />
-          <RebuildLine rebuild={rebuild} />
-        </>
+        <div className={`grid min-h-[66px] place-items-center rounded-sm border border-dashed border-[rgba(255,106,122,.25)] text-center ${TYPE_SCALE.metadata} uppercase tracking-caps text-signal-danger`}>
+          ssh target unavailable
+        </div>
       )}
+
+      <div className="mt-2 space-y-1 border-t border-line-faint pt-2">
+        <div className={"truncate " + TEXT_STYLES.content}>{capacity.cpu}</div>
+        <div className={"flex flex-wrap justify-between gap-x-2 " + TEXT_STYLES.content}>
+          <span>{capacity.memory} ram</span>
+          <span>{capacity.storage} disk</span>
+        </div>
+      </div>
+      <RebuildLine rebuild={rebuild} />
     </article>
   );
 }
@@ -248,8 +247,8 @@ function formatRebuildTime(atMs: number | null) {
 function RebuildLine({ rebuild }: { rebuild: RebuildStatus }) {
   const time = formatRebuildTime(rebuild.atMs);
   return (
-    <div className="mt-1.5 flex items-center justify-between gap-2 text-[9px]" title={rebuild.target ? `daily rebuild of ${rebuild.target}` : undefined}>
-      <span className="truncate uppercase tracking-caps text-ink-muted">daily update{rebuild.target ? ` · ${rebuild.target}` : ""}</span>
+    <div className={`mt-1.5 flex items-center justify-between gap-2 ${TYPE_SCALE.metadata}`} title={rebuild.target ? `daily rebuild of ${rebuild.target}` : undefined}>
+      <span className="truncate uppercase tracking-caps text-ink-muted">daily update</span>
       <span className={`shrink-0 font-mono ${rebuildToneClass(rebuild.state)}`}>
         {REBUILD_LABELS[rebuild.state]}
         {time ? ` · ${time}` : ""}
@@ -260,32 +259,6 @@ function RebuildLine({ rebuild }: { rebuild: RebuildStatus }) {
 
 type GitHubContributions = ReturnType<typeof useSystemUsage>["githubContributions"];
 
-function CapacityStrip({ capacity, gpuSummary }: { capacity: SystemUsageSample["capacity"]; gpuSummary?: string | null }) {
-  const rows = [
-    ["cpu", capacity.cpu],
-    ["ram total", capacity.memory],
-    ["ram used", capacity.memoryUsed],
-    ["disk total", capacity.storage],
-    ["Data used", capacity.storageUsed],
-    ["disk free", capacity.storageFree],
-    ["gpu", gpuSummary ?? capacity.gpu ?? "--"],
-  ];
-  return (
-    // Explicit cell sizing and wrapping keep every value visible without a
-    // scroll wrapper, including long CPU/GPU names and zero remaining space.
-    <table aria-label="system capacity and usage" className="mt-3 w-full table-fixed border-collapse font-mono text-sm text-ink">
-      <tbody>
-        {rows.map(([label, value]) => (
-          <tr key={label}>
-            <th scope="row" className="w-[104px] border border-line px-2 py-1.5 text-left font-normal text-ink-label">{label}</th>
-            <td className="break-words border border-line px-2 py-1.5">{value}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
 function WeeklyComparison({ weeks, login }: { weeks: GitHubContributions["weeklyTotals"]; login: string }) {
   const current = weeks.at(-1);
   const previous = weeks.at(-2);
@@ -293,7 +266,7 @@ function WeeklyComparison({ weeks, login }: { weeks: GitHubContributions["weekly
 
   return (
     <div className="mt-3 rounded-sm border border-line-faint bg-[rgba(255,255,255,.015)] p-2">
-      <div className="mb-2 flex items-center justify-between gap-2 text-[9px] uppercase tracking-caps text-ink-label">
+      <div className={`mb-2 flex items-center justify-between gap-2 ${TYPE_SCALE.metadata} uppercase tracking-caps text-ink-label`}>
         <span>real github weekly comparison</span>
         <span className="truncate text-ink-soft">gh default branches @{login}</span>
       </div>
@@ -315,8 +288,8 @@ function ComparisonMetric({ label, value, tone = "neutral" }: { label: string; v
 
   return (
     <div className="min-w-0">
-      <div className="text-[8px] uppercase tracking-caps text-ink-muted">{label}</div>
-      <div className={`truncate font-mono text-sm tracking-value ${toneClasses[tone]}`}>{value}</div>
+      <div className={`${TYPE_SCALE.metadata} uppercase tracking-caps text-ink-muted`}>{label}</div>
+      <div className={`truncate font-mono ${TYPE_SCALE.content} tracking-value ${toneClasses[tone]}`}>{value}</div>
     </div>
   );
 }
@@ -327,7 +300,7 @@ function WeeklyBars({ weeks }: { weeks: GitHubContributions["weeklyTotals"] }) {
 
   return (
     <div className="mt-3 border-t border-line-faint pt-2">
-      <div className="mb-1.5 flex items-center justify-between text-[9px] uppercase tracking-caps text-ink-label">
+      <div className={`mb-1.5 flex items-center justify-between ${TYPE_SCALE.metadata} uppercase tracking-caps text-ink-label`}>
         <span>weekly bars</span>
         <span>{formatScore(maxTotal)} max</span>
       </div>
@@ -366,17 +339,17 @@ function Heatmap({ githubContributions }: { githubContributions: GitHubContribut
     <div>
       <div className="my-2 flex items-baseline justify-between gap-3">
         <div>
-          <span className="font-mono text-lg tracking-value text-ink-strong">{formatScore(githubContributions.currentWeekTotal)}</span>
-          <span className="ml-1 text-xxs text-ink-soft">this week</span>
+          <span className={TEXT_STYLES.value}>{formatScore(githubContributions.currentWeekTotal)}</span>
+          <span className={`ml-1 ${TYPE_SCALE.metadata} text-ink-soft`}>this week</span>
         </div>
-        <span className={githubContributions.status === "unavailable" ? "text-xxs text-signal-danger" : "text-xxs text-ink-soft"}>
+        <span className={githubContributions.status === "unavailable" ? `${TYPE_SCALE.metadata} text-signal-danger` : `${TYPE_SCALE.metadata} text-ink-soft`}>
           {contributionStatusLabel(githubContributions.status)}
         </span>
       </div>
 
       {hasContributions ? (
         <div className="w-full min-w-0 pb-0.5">
-          <div className="mb-1 grid w-full text-[10px] font-medium text-ink-soft opacity-80" style={{ columnGap: HEATMAP_GAP_PX, gridTemplateColumns: heatmapColumns }}>
+          <div className={`mb-1 grid w-full ${TYPE_SCALE.metadata} font-medium text-ink-soft opacity-80`} style={{ columnGap: HEATMAP_GAP_PX, gridTemplateColumns: heatmapColumns }}>
             <span />
             {monthLabels.map(({ index, endIndex, isCurrent, label }) => (
               <span key={`${index}-${label}`} className={`min-w-0 leading-3 ${isCurrent ? "text-right" : ""}`} style={{ gridColumn: `${index + 2} / ${endIndex + 2}` }}>
@@ -386,7 +359,7 @@ function Heatmap({ githubContributions }: { githubContributions: GitHubContribut
           </div>
           <div className="grid w-full" style={{ columnGap: HEATMAP_GAP_PX, gridTemplateColumns: heatmapColumns, rowGap: HEATMAP_GAP_PX }}>
             {WEEKDAY_LABELS.map((label, index) => (
-              <span key={index} className="flex items-center justify-end text-right text-[9px] leading-none text-ink-soft opacity-50" style={{ gridColumn: 1, gridRow: index + 1 }}>
+              <span key={index} className={`flex items-center justify-end text-right ${TYPE_SCALE.metadata} leading-none text-ink-soft opacity-50`} style={{ gridColumn: 1, gridRow: index + 1 }}>
                 {label}
               </span>
             ))}
@@ -405,7 +378,7 @@ function Heatmap({ githubContributions }: { githubContributions: GitHubContribut
           </div>
         </div>
       ) : (
-        <div className="grid min-h-[92px] place-items-center rounded-sm border border-dashed border-line-faint px-3 text-center text-xxs uppercase tracking-caps text-ink-muted">
+        <div className={`grid min-h-[92px] place-items-center rounded-sm border border-dashed border-line-faint px-3 text-center ${TYPE_SCALE.metadata} uppercase tracking-caps text-ink-muted`}>
           github contribution data unavailable
         </div>
       )}
@@ -413,7 +386,7 @@ function Heatmap({ githubContributions }: { githubContributions: GitHubContribut
       <WeeklyComparison weeks={githubContributions.weeklyTotals} login={githubContributions.login} />
       <WeeklyBars weeks={githubContributions.weeklyTotals} />
 
-      <div className="mt-2 flex items-center justify-between gap-3 text-[9px] text-ink-label">
+      <div className={`mt-2 flex items-center justify-between gap-3 ${TYPE_SCALE.metadata} text-ink-label`}>
         <span className="truncate">
           {firstDay && lastDay ? `${formatDateLabel(firstDay)} to ${formatDateLabel(lastDay)} · today ${formatScore(githubContributions.todayCount)}` : "warming up history"}
         </span>
@@ -427,7 +400,7 @@ function Heatmap({ githubContributions }: { githubContributions: GitHubContribut
           more
         </span>
       </div>
-      {githubContributions.status !== "live" && githubContributions.error && <div className="mt-1 truncate text-[9px] text-ink-soft">{githubContributions.error}</div>}
+      {githubContributions.status !== "live" && githubContributions.error && <div className={`mt-1 truncate ${TYPE_SCALE.metadata} text-ink-soft`}>{githubContributions.error}</div>}
     </div>
   );
 }
@@ -436,7 +409,7 @@ export function SystemUsageView() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between border-b border-line-faint pb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-ink-label">
+      <div className={`flex items-center justify-between border-b border-line-faint pb-2 ${TYPE_SCALE.metadata} font-medium uppercase tracking-[0.08em] text-ink-label`}>
         <span>fleet / github</span>
         <span>last 6 months</span>
       </div>
@@ -444,7 +417,7 @@ export function SystemUsageView() {
       <Heatmap githubContributions={githubContributions} />
 
       <div className="border-t border-line-faint pt-3">
-        <div className="mb-2 flex items-center justify-between text-xxs uppercase tracking-caps text-ink-label">
+        <div className={`mb-2 flex items-center justify-between ${TYPE_SCALE.metadata} uppercase tracking-caps text-ink-label`}>
           <span>systems</span>
           <span className={miniMac.status === "online" ? "text-signal-live" : "text-ink-muted"}>mini {miniMac.status}</span>
         </div>
@@ -458,7 +431,6 @@ export function SystemUsageView() {
             memoryPercent={miniMac.memoryPercent}
             storagePercent={miniMac.storagePercent}
             capacity={miniMac.capacity}
-            gpuSummary={miniMac.gpuSummary}
             rebuild={miniMac.rebuild}
           />
         </div>

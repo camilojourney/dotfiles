@@ -12,7 +12,7 @@ type QuotaWindow = {
 };
 
 type QuotaPool = {
-  id: "gemini" | "claude-gpt";
+  id: string;
   label: string;
   windows: QuotaWindow[];
 };
@@ -53,33 +53,29 @@ async function readQuota(): Promise<string> {
   throw new Error(code === "ENOENT" ? "Antigravity CLI (agy) is not installed" : "Antigravity quota read failed");
 }
 
-function poolFor(name: string): Pick<QuotaPool, "id" | "label"> | undefined {
-  const lower = name.toLowerCase();
-  if (lower.includes("gemini")) return { id: "gemini", label: "Gemini models" };
-  if (lower.includes("claude") || lower.includes("gpt")) return { id: "claude-gpt", label: "Claude + GPT models" };
-  return undefined;
+function parseWindow(bucket: RawBucket): QuotaWindow | null {
+  if (bucket.disabled || typeof bucket.remaining_fraction !== "number" || !Number.isFinite(bucket.remaining_fraction)) return null;
+  if (bucket.window !== "5h" && bucket.window !== "weekly") return null;
+  return {
+    kind: bucket.window,
+    percentRemaining: Math.max(0, Math.min(100, bucket.remaining_fraction * 100)),
+    resetsAt: bucket.reset_time,
+  };
+}
+
+function parsePool(group: RawGroup): QuotaPool | null {
+  if (typeof group.name !== "string" || !group.name.trim() || !Array.isArray(group.buckets)) return null;
+  const windows = group.buckets.map(parseWindow).filter((window): window is QuotaWindow => window !== null);
+  if (windows.length === 0) return null;
+  // Provider group names are distinct: Gemini Models and Gemini 4 Argon
+  // must never share a label, React key, or aggregate percentage.
+  return { id: group.name, label: group.name, windows };
 }
 
 function parseQuota(stdout: string): QuotaPool[] {
   const payload = JSON.parse(stdout) as { status?: string; command?: { data?: { groups?: RawGroup[] } } };
-  const pools: QuotaPool[] = [];
-  for (const group of payload.command?.data?.groups ?? []) {
-    const pool = poolFor(group.name ?? "");
-    if (!pool) continue;
-    const windows: QuotaWindow[] = [];
-    for (const bucket of group.buckets ?? []) {
-      if (bucket.disabled || typeof bucket.remaining_fraction !== "number") continue;
-      const kind = bucket.window === "5h" ? "5h" : bucket.window === "weekly" ? "weekly" : undefined;
-      if (!kind) continue;
-      windows.push({
-        kind,
-        percentRemaining: Math.max(0, Math.min(100, bucket.remaining_fraction * 100)),
-        resetsAt: bucket.reset_time,
-      });
-    }
-    if (windows.length > 0) pools.push({ ...pool, windows });
-  }
-  return pools;
+  if (payload.status !== "SUCCESS") return [];
+  return (payload.command?.data?.groups ?? []).map(parsePool).filter((pool): pool is QuotaPool => pool !== null);
 }
 
 export const actions = {

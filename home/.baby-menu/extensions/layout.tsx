@@ -1,12 +1,13 @@
 import type { BabyMenuLayoutProps } from "@babymenu/contracts";
+import { PANEL_STYLES, TYPE_SCALE } from "./shared/ui-styles";
 
 const quotaWidgetIds = [
   "codex-quota",
   "claude-code-quota",
-  "cursor-quota",
-  "deepseek-quota",
   "grok-quota",
   "antigravity-quota",
+  "muse-quota",
+  "deepseek-quota",
 ] as const;
 
 const SYSTEM_WIDGET_ID = "system-usage";
@@ -18,17 +19,11 @@ export default function Layout({ widgets, renderWidget }: BabyMenuLayoutProps) {
   const remainingWidgets = widgets.filter((widget) => !renderedIds.has(widget.id));
 
   return (
-    <div className="w-[1440px] bg-stage p-3">
-      <div className="flex items-center justify-between border-b border-line-faint px-1 pb-2 text-xxs uppercase tracking-caps text-ink-label">
-        <span>baby menu / fleet</span>
-        <span>live sources</span>
-      </div>
-
-      <div className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] items-start gap-3 pt-3">
-        <section className="min-w-0 rounded-md border border-line-faint bg-elevated p-3">
-          <div className="flex items-center justify-between border-b border-line-faint pb-2 text-xxs uppercase tracking-caps text-ink-label">
+    <div className="w-[1080px] bg-stage p-3">
+      <div className="grid grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] items-start gap-3">
+        <section className={PANEL_STYLES.widget}>
+          <div className={`flex items-center justify-between border-b border-line-faint pb-2 ${TYPE_SCALE.metadata} uppercase tracking-caps text-ink-label`}>
             <span>quotas / remaining</span>
-            <span className="text-signal-live">live</span>
           </div>
           <div className="divide-y divide-line-faint">
             {quotaIds.map((id) => (
@@ -38,7 +33,7 @@ export default function Layout({ widgets, renderWidget }: BabyMenuLayoutProps) {
         </section>
 
         {available.has(SYSTEM_WIDGET_ID) && (
-          <section className="min-w-0 rounded-md border border-line-faint bg-elevated p-3">
+          <section className={PANEL_STYLES.widget}>
             {renderWidget(SYSTEM_WIDGET_ID)}
           </section>
         )}
@@ -47,7 +42,7 @@ export default function Layout({ widgets, renderWidget }: BabyMenuLayoutProps) {
       {remainingWidgets.length > 0 && (
         <div className="grid grid-cols-3 gap-3 pt-3">
           {remainingWidgets.map((widget) => (
-            <section key={widget.id} className="min-w-0 rounded-md border border-line-faint bg-elevated p-3">
+            <section key={widget.id} className={PANEL_STYLES.widget}>
               {renderWidget(widget.id)}
             </section>
           ))}

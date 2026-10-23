@@ -7,7 +7,7 @@ export type AntigravityQuotaWindow = {
 };
 
 export type AntigravityQuotaPool = {
-  id: "gemini" | "claude-gpt";
+  id: string;
   label: string;
   windows: AntigravityQuotaWindow[];
 };
@@ -27,7 +27,7 @@ type Result = { ok: true; data: AntigravityQuotaSnapshot } | { ok: false; error:
 type State =
   | { status: "loading" }
   | { status: "error"; error: string }
-  | { status: "ready"; data: AntigravityQuotaSnapshot };
+  | { status: "ready"; data: AntigravityQuotaSnapshot; stale: boolean };
 
 let state: State = { status: "loading" };
 let inFlight: Promise<void> | null = null;
@@ -48,14 +48,19 @@ export function useAntigravityQuota() {
   );
 }
 
+function recordFailure(error: string) {
+  setState(state.status === "ready" ? { ...state, stale: true } : { status: "error", error });
+}
+
 export function fetchAntigravityQuota() {
   if (inFlight) return inFlight;
   inFlight = window.babyMenu!.capabilities
     .invoke<Result>("antigravity-quota", "getQuota")
     .then((result) => {
-      setState(result.ok ? { status: "ready", data: result.data } : { status: "error", error: result.error });
+      if (result.ok) setState({ status: "ready", data: result.data, stale: false });
+      else recordFailure(result.error);
     })
-    .catch(() => setState({ status: "error", error: "Antigravity quota check failed" }))
+    .catch(() => recordFailure("Antigravity quota check failed"))
     .finally(() => {
       inFlight = null;
     });

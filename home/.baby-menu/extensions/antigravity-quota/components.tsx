@@ -1,111 +1,28 @@
-import { Badge, StatusDot } from "@babymenu/ui";
+import { QuotaRow, QuotaValue, QuotaWindowRow } from "./shared/quota-components";
+import { formatQuotaReset } from "./shared/quota-format";
+import { TEXT_STYLES, quotaTone } from "./shared/ui-styles";
 import { limitingWindow, useAntigravityQuota, type AntigravityQuotaPool } from "./store";
 
-function toneFor(percentUsed: number) {
-  if (percentUsed >= 90) return "danger" as const;
-  if (percentUsed >= 70) return "warn" as const;
-  return "live" as const;
-}
-
-function fillClassName(percentUsed: number) {
-  const tone = toneFor(percentUsed);
-  if (tone === "danger") return "h-full rounded-[1px] bg-[rgb(255,106,122)] shadow-[0_0_9px_rgba(255,106,122,.32)]";
-  if (tone === "warn") return "h-full rounded-[1px] bg-[rgb(255,216,107)] shadow-[0_0_9px_rgba(255,216,107,.30)]";
-  return "h-full rounded-[1px] bg-signal-live shadow-[0_0_9px_rgba(106,227,182,.38)]";
-}
-
-function remainingClassName(percentUsed: number) {
-  const tone = toneFor(percentUsed);
-  if (tone === "danger") return "text-signal-danger";
-  if (tone === "warn") return "text-signal-warn";
-  return "text-ink-strong";
-}
-
-function UsageBar({ value }: { value: number }) {
-  const clamped = Math.max(0, Math.min(100, value));
-  return (
-    <div className="h-[7px] overflow-hidden rounded-[2px] border border-[rgba(255,255,255,.08)] bg-[repeating-linear-gradient(90deg,transparent_0,transparent_9px,rgba(255,255,255,.08)_10px),rgba(255,255,255,.035)] shadow-[inset_0_1px_2px_rgba(0,0,0,.55)]">
-      <div className={fillClassName(clamped)} style={{ width: `${clamped}%` }} />
-    </div>
-  );
-}
-
-function formatReset(resetsAt?: string): string | undefined {
-  if (!resetsAt) return undefined;
-  const date = new Date(resetsAt);
-  if (Number.isNaN(date.getTime())) return undefined;
-  return `resets ${date.toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })}`;
-}
-
 function PoolRow({ pool }: { pool: AntigravityQuotaPool }) {
-  const tightest = limitingWindow(pool);
-  const windows = [...pool.windows].sort((a, b) => (a.kind === "5h" ? -1 : 1) - (b.kind === "5h" ? -1 : 1));
-  const reset = formatReset(tightest.resetsAt);
+  const limit = limitingWindow(pool);
+  const other = pool.windows.filter((window) => window !== limit).map((window) => window.kind + " " + Math.round(window.percentRemaining) + "% left");
   return (
-    <div>
-      <div className="mb-1 flex justify-between gap-2 text-xxs text-ink-soft">
-        <span className="truncate">
-          {pool.label}
-          <span className="ml-1.5 text-ink-label">
-            {windows.map((window) => `${window.kind === "5h" ? "5h" : "wk"} ${Math.round(window.percentRemaining)}%`).join(" · ")}
-          </span>
-        </span>
-        {reset && <span className="whitespace-nowrap text-ink-label">{reset}</span>}
-      </div>
-      <UsageBar value={100 - tightest.percentRemaining} />
-    </div>
+    <QuotaWindowRow label={pool.label} reset={formatQuotaReset(limit.resetsAt)} remaining={limit.percentRemaining} note={[limit.kind, ...other].join(" · ")}>
+      <QuotaValue value={Math.round(limit.percentRemaining)} unit="%" label={limit.kind + " left"} tone={quotaTone(limit.percentRemaining)} />
+    </QuotaWindowRow>
   );
 }
 
 export function AntigravityQuotaView() {
   const state = useAntigravityQuota();
-
-  if (state.status === "loading") {
-    return (
-      <article className="grid grid-cols-[86px_minmax(0,1fr)_72px] items-center gap-3 py-3">
-        <span className="text-xs uppercase tracking-caps text-ink-strong">antigrav</span>
-        <span className="text-sm text-ink-muted">checking model quota...</span>
-      </article>
-    );
-  }
-
-  if (state.status === "error") {
-    return (
-      <article className="grid grid-cols-[86px_minmax(0,1fr)_72px] items-center gap-3 py-3">
-        <span className="flex items-center gap-1.5 text-xs uppercase tracking-caps text-ink-strong">antigrav <StatusDot tone="danger" /></span>
-        <span className="text-sm text-ink-muted">{state.error}</span>
-      </article>
-    );
-  }
-
-  const { pools } = state.data;
-  // The headline is Gemini: it is the pool the crew dispatch spends.
-  const headline = pools.find((pool) => pool.id === "gemini") ?? pools[0];
-  const headlineLeft = headline ? limitingWindow(headline).percentRemaining : null;
-
+  const tone = state.status === "error" ? "danger" : state.status === "loading" ? "muted" : state.stale ? "warn" : "live";
   return (
-    <article className="grid grid-cols-[86px_minmax(0,1fr)_72px] items-center gap-3 py-3">
-      <div className="min-w-0">
-        <div className="truncate text-xs uppercase tracking-caps text-ink-strong">antigrav</div>
-        <div className="mt-1 flex items-center gap-1.5 text-xxs text-ink-label">
-          <Badge tone="neutral">agy</Badge>
-          <StatusDot tone="live" />
-        </div>
-      </div>
-
-      <div className="flex min-w-0 flex-col gap-1.5">
-        {pools.map((pool) => (
-          <PoolRow key={pool.id} pool={pool} />
-        ))}
-      </div>
-
-      <div className="min-w-0 text-right">
-        <strong className={`flex justify-end font-mono text-2xl font-normal leading-none tracking-value ${headlineLeft === null ? "text-ink-strong" : remainingClassName(100 - headlineLeft)}`}>
-          {headlineLeft === null ? "--" : Math.round(headlineLeft)}
-          {headlineLeft !== null && <span className="ml-0.5 mt-0.5 text-xs opacity-45">%</span>}
-        </strong>
-        <span className="mt-1 block text-[9px] uppercase tracking-caps text-ink-label">gemini left</span>
-      </div>
-    </article>
+    <QuotaRow name="antigrav" plan="agy" tone={tone} hint={state.status === "ready" && state.stale ? "cached" : undefined}>
+      {state.status === "ready" ? (
+        state.data.pools.map((pool) => <PoolRow key={pool.id} pool={pool} />)
+      ) : (
+        <span className={TEXT_STYLES.content}>{state.status === "error" ? state.error : "checking model quota..."}</span>
+      )}
+    </QuotaRow>
   );
 }

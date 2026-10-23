@@ -22,7 +22,7 @@
         { "harness": "pi", "model": "antigravity/gemini-4-argon", "effort": "high", "provider": "agy" },
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "xhigh", "provider": "codex" }
       ],
-      "why": "Prefer a different model family than the author's: Argon for Sol-written work, Sol otherwise. Argon runs at high (Antigravity's ceiling) only in low-volume tiers because its weekly pool is small. Sol runs at xhigh because Sol high scores below Sol medium. Claude is not used for review: only Sonnet for research and read-only mapping and Haiku for evaluation judging, through Pi; Opus is reserved for the captain's own Claude Code session."
+      "why": "Prefer a different model family than the author's: Argon for Sol-written work, Sol otherwise. Argon runs at high (Antigravity's ceiling) only in low-volume tiers because its weekly pool is small. Sol runs at xhigh because Sol high scores below Sol medium. Claude is not used for review: Sonnet serves research and read-only mapping, Haiku evaluation judging, and Opus only the hardest-work tier, all through Pi."
     },
     {
       "when": "Recon-only, file gathering, narrow lookup, or a trivial mechanical edit (rename, format sweep, typo fix). Not for research that needs current external facts.",
@@ -55,9 +55,11 @@
       "when": "Hardest available work: root-cause investigation, architecture, ambiguous design, or already failed on the workhorse tier.",
       "use": [
         { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "xhigh", "provider": "codex" },
-        { "harness": "pi", "model": "antigravity/gemini-4-argon", "effort": "high", "provider": "agy" }
+        { "harness": "pi", "model": "antigravity/gemini-4-argon", "effort": "high", "provider": "agy" },
+        { "harness": "pi", "model": "claude-bridge/claude-opus-5-5", "effort": "xhigh", "provider": "claude" },
+        { "harness": "pi", "model": "antigravity/claude-opus-5-5", "effort": "xhigh", "provider": "agy" }
       ],
-      "why": "Frontier reasoning for work that justifies maximum cost: Sol xhigh and Argon high (Antigravity's ceiling) are the strongest non-Claude profiles. Claude is not used here: only Sonnet for research and read-only mapping and Haiku for evaluation judging, through Pi; Opus is reserved for the captain's own Claude Code session."
+      "why": "Frontier reasoning for work that justifies maximum cost: Sol xhigh, Argon high (Antigravity's ceiling) and Opus 5.5 xhigh. The captain allowed Opus for workers on 2026-10-23 only for really hard tasks, so this is its only crew rule, through Pi (Claude bridge or Antigravity's Claude pool), never the Claude Code harness."
     },
     {
       "when": "Read-only mapping of an existing application or codebase: as-built feature maps, capability inventories and where-is-it surveys that produce a report and change no files.",

@@ -1,4 +1,5 @@
-import { Badge, StatusDot } from "@babymenu/ui";
+import { QuotaRow, QuotaValue, QuotaWindowRow } from "./shared/quota-components";
+import { TEXT_STYLES, quotaTone } from "./shared/ui-styles";
 import type { QuotaFailure, QuotaWindow } from "./store";
 import { useGrokQuota } from "./store";
 
@@ -10,36 +11,6 @@ function productIdFromLabel(label: string): number | undefined {
   if (label in PRODUCT_IDS) return PRODUCT_IDS[label];
   const match = label.match(/^product (\d+)$/);
   return match ? Number(match[1]) : undefined;
-}
-
-function toneFor(percentUsed: number) {
-  if (percentUsed >= 90) return "danger" as const;
-  if (percentUsed >= 70) return "warn" as const;
-  return "live" as const;
-}
-
-function fillClassName(percentUsed: number) {
-  const clamped = Math.max(0, Math.min(100, percentUsed));
-  const tone = toneFor(clamped);
-  if (tone === "danger") return "h-full rounded-[1px] bg-[rgb(255,106,122)] shadow-[0_0_9px_rgba(255,106,122,.32)]";
-  if (tone === "warn") return "h-full rounded-[1px] bg-[rgb(255,216,107)] shadow-[0_0_9px_rgba(255,216,107,.30)]";
-  return "h-full rounded-[1px] bg-signal-live shadow-[0_0_9px_rgba(106,227,182,.38)]";
-}
-
-function remainingClassName(percentUsed: number) {
-  const tone = toneFor(percentUsed);
-  if (tone === "danger") return "text-signal-danger";
-  if (tone === "warn") return "text-signal-warn";
-  return "text-ink-strong";
-}
-
-function UsageBar({ value }: { value: number }) {
-  const clamped = Math.max(0, Math.min(100, value));
-  return (
-    <div className="h-[7px] overflow-hidden rounded-[2px] border border-[rgba(255,255,255,.08)] bg-[repeating-linear-gradient(90deg,transparent_0,transparent_9px,rgba(255,255,255,.08)_10px),rgba(255,255,255,.035)] shadow-[inset_0_1px_2px_rgba(0,0,0,.55)]">
-      <div className={fillClassName(clamped)} style={{ width: `${clamped}%` }} />
-    </div>
-  );
 }
 
 function formatReset(resetAt?: string): { relative: string; absolute: string } | undefined {
@@ -183,76 +154,36 @@ function successAttrs(
 
 export function GrokQuotaView() {
   const state = useGrokQuota();
-
   if (state.status === "waiting") {
-    return (
-      <article className="grid grid-cols-[86px_minmax(0,1fr)_72px] items-center gap-3 py-3" {...waitingAttrs()}>
-        <span className="text-xs uppercase tracking-caps text-ink-strong">grok</span>
-        <span className="text-sm text-ink-muted">checking usage...</span>
-      </article>
-    );
+    return <QuotaRow name="grok" tone="muted" {...waitingAttrs()}><span className={TEXT_STYLES.content}>checking usage...</span></QuotaRow>;
   }
-
   if (state.status === "failure") {
     return (
-      <article className="grid grid-cols-[86px_minmax(0,1fr)_72px] items-center gap-3 py-3" {...failureAttrs(state.failure, state.checkedAt, state.completedAcquisitions)}>
-        <span className="flex items-center gap-1.5 text-xs uppercase tracking-caps text-ink-strong">
-          grok <StatusDot tone="danger" />
-        </span>
-        <span className="text-sm text-ink-muted">{failureCopy(state.failure)}</span>
-        {state.pending && <span className="text-right text-xxs text-ink-muted">updating...</span>}
-      </article>
+      <QuotaRow name="grok" tone="danger" hint={state.pending ? "updating..." : undefined} {...failureAttrs(state.failure, state.checkedAt, state.completedAcquisitions)}>
+        <span className={TEXT_STYLES.content}>{failureCopy(state.failure)}</span>
+      </QuotaRow>
     );
   }
 
   const { data } = state;
-  const creditsWindow = data.windows.find((w) => w.id === "credits");
-  const displayPrimary = creditsWindow ?? data.windows[0];
-  const productWindows = data.windows.filter((w) => w !== displayPrimary).sort((a, b) => b.percentUsed - a.percentUsed);
-  const secondary = productWindows[0];
-  const resetInfo = formatReset(displayPrimary?.resetAt);
-
+  const primary = data.windows.find((window) => window.id === "credits") ?? data.windows[0];
+  const secondary = data.windows.filter((window) => window !== primary).sort((a, b) => b.percentUsed - a.percentUsed)[0];
+  const resetInfo = formatReset(primary?.resetAt);
+  const displayed = [primary, secondary].filter((window): window is NonNullable<typeof window> => window !== undefined);
   return (
-    <article className="grid grid-cols-[86px_minmax(0,1fr)_72px] items-center gap-3 py-3" {...successAttrs(data, state.checkedAt, state.warning, state.completedAcquisitions)}>
-      <div className="min-w-0">
-        <div className="truncate text-xs uppercase tracking-caps text-ink-strong">grok</div>
-        <div className="mt-1 flex items-center gap-1.5 text-xxs text-ink-label">
-          <Badge tone="neutral">{periodLabel(data.period.type)}</Badge>
-          {data.stale ? <StatusDot tone="warn" /> : <StatusDot tone="live" />}
-        </div>
-      </div>
-
-      <div className="flex min-w-0 flex-col gap-1.5">
-        {displayPrimary ? (
-          <div>
-            <div className="mb-1 flex justify-between gap-2 text-xxs text-ink-soft">
-              <span className="truncate">{displayPrimary.label}</span>
-              <span className="whitespace-nowrap text-ink-label">{resetInfo ? resetInfo.relative : "active"}</span>
-            </div>
-            <UsageBar value={displayPrimary.percentUsed} />
-          </div>
-        ) : (
-          <span className="text-sm text-ink-muted">no metered usage reported</span>
-        )}
-        {secondary && (
-          <div>
-            <div className="mb-1 flex justify-between gap-2 text-xxs text-ink-soft">
-              <span className="truncate">{secondary.label}</span>
-              <span className="whitespace-nowrap text-ink-label">{secondary.resetAt ? "same reset" : "active"}</span>
-            </div>
-            <UsageBar value={secondary.percentUsed} />
-          </div>
-        )}
-        {data.credits && <span className="text-xxs text-ink-muted">prepaid credits {data.credits.remaining}</span>}
-      </div>
-
-      <div className="min-w-0 text-right">
-        <strong className={`flex justify-end font-mono text-2xl font-normal leading-none tracking-value ${displayPrimary ? remainingClassName(displayPrimary.percentUsed) : "text-ink-strong"}`}>
-          {displayPrimary ? Math.round(displayPrimary.percentRemaining) : "--"}
-          {displayPrimary && <span className="ml-0.5 mt-0.5 text-xs opacity-45">%</span>}
-        </strong>
-        <span className="mt-1 block text-[9px] uppercase tracking-caps text-ink-label">{displayPrimary?.label === "Grok Build" ? "build left" : "left"}</span>
-      </div>
-    </article>
+    <QuotaRow name="grok" plan={periodLabel(data.period.type)} tone={data.stale ? "warn" : "live"} hint={data.stale ? "cached" : undefined} {...successAttrs(data, state.checkedAt, state.warning, state.completedAcquisitions)}>
+      {displayed.map((window) => (
+        <QuotaWindowRow
+          key={window.id}
+          label={window.label}
+          remaining={window.percentRemaining}
+          reset={window === primary ? resetInfo?.relative : window.resetAt ? "same reset" : "active"}
+          note={window === primary && data.credits ? "prepaid credits " + data.credits.remaining : undefined}
+        >
+          {window === primary && <QuotaValue value={Math.round(window.percentRemaining)} unit="%" tone={quotaTone(window.percentRemaining)} label={window.label === "Grok Build" ? "build left" : "left"} />}
+        </QuotaWindowRow>
+      ))}
+      {displayed.length === 0 && <span className={TEXT_STYLES.content}>no metered usage reported</span>}
+    </QuotaRow>
   );
 }
