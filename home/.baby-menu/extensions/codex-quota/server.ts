@@ -7,7 +7,8 @@ import type { CodexQuotaSnapshot, QuotaResult } from "./types";
 
 const execFileAsync = promisify(execFile);
 const SNAPSHOT_TABLE = "codex_quota_snapshot";
-const SOURCE = "pi:openai-codex";
+const ACCOUNT_KEY = "openai-codex";
+const SOURCE = `pi:${ACCOUNT_KEY}`;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -24,9 +25,16 @@ function quotaWindow(value: unknown): CodexQuotaSnapshot["windows"][number] | nu
   };
 }
 
+function isPiCodexProvider(item: unknown): item is Record<string, unknown> {
+  if (!isRecord(item) || item.provider !== "codex") return false;
+  // Identical native and Pi credentials now share a row, regardless of which source answered.
+  return item.source === SOURCE || item.accountKey === ACCOUNT_KEY
+    || (Array.isArray(item.accountKeys) && item.accountKeys.includes(ACCOUNT_KEY));
+}
+
 function findProvider(report: unknown): Record<string, unknown> | null {
   if (!isRecord(report) || report.schemaVersion !== 5 || !Array.isArray(report.providers)) return null;
-  const provider = report.providers.find((item: unknown) => isRecord(item) && item.provider === "codex" && item.source === SOURCE);
+  const provider = report.providers.find(isPiCodexProvider);
   return isRecord(provider) ? provider : null;
 }
 
