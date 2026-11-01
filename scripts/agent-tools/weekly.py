@@ -12,7 +12,7 @@ import json
 import os
 import signal
 import subprocess
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import datetime
 from pathlib import Path
 
@@ -53,10 +53,8 @@ def run_install(command, env, timeout):
             # Waiting for the parent alone does not prove its children exited.
             # Kill any survivors, including TERM-ignoring grandchildren, before
             # returning to the transaction's rollback handler.
-            try:
+            with suppress(ProcessLookupError):
                 os.killpg(process.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
             process.wait()
         if rc:
             raise subprocess.CalledProcessError(rc, command)
@@ -68,11 +66,14 @@ def install(repo):
     run_install([str(repo / "scripts/agent-tools/smoke.py")], env, 180)
 
 
-def recover(repo, state):
-    journal = state / "transaction.json"
-    if not journal.exists():
-        return
-    record = json.loads(journal.read_text())
+def _owned_candidate(repo, head, record):
+    committed = git(repo, "show", f"{head}:{PIN}") + "\n"
+    return (git(repo, "rev-parse", "HEAD^") == record["base"]
+            and git(repo, "diff", "--name-only", record["base"], head) == PIN
+            and hashlib.sha256(committed.encode()).hexdigest() == record["digest"])
+
+
+def _check_recovery(repo, record):
     head = git(repo, "rev-parse", "HEAD")
     if git(repo, "branch", "--show-current") != "main":
         raise RuntimeError("interrupted bump needs main checked out; no files changed")
@@ -84,8 +85,17 @@ def recover(repo, state):
     digest = hashlib.sha256((repo / PIN).read_bytes()).hexdigest()
     if digest not in (record["digest"], record["previousDigest"]):
         raise RuntimeError("pin file edited during bump; manual recovery required")
-    if head != record["base"] and (git(repo, "rev-parse", "HEAD^") != record["base"] or git(repo, "diff", "--name-only", record["base"], head) != PIN or hashlib.sha256((git(repo, "show", f"{head}:{PIN}") + "\n").encode()).hexdigest() != record["digest"]):
+    if head != record["base"] and not _owned_candidate(repo, head, record):
         raise RuntimeError("HEAD advanced during bump; manual recovery required")
+    return head
+
+
+def recover(repo, state):
+    journal = state / "transaction.json"
+    if not journal.exists():
+        return
+    record = json.loads(journal.read_text())
+    head = _check_recovery(repo, record)
     git(repo, "restore", f"--source={record['base']}", "--staged", "--worktree", "--", PIN)
     if head != record["base"]:
         git(repo, "update-ref", "-m", "rollback failed tool pins", "refs/heads/main", record["base"], head)

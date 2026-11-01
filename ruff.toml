@@ -1,0 +1,3 @@
+# Match Code Verify's URL-safety audit without replacing Ruff's default rules.
+[lint]
+extend-select = ["S310"]
