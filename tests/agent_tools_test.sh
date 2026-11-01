@@ -83,7 +83,7 @@ case "${1:-}" in
     esac
     touch "$HOME/stub-npm/installed-$(echo "$spec" | tr '/@' '__')"
     for bin in "${bins[@]}"; do
-      printf '#!/usr/bin/env bash\necho "%s $*" >> "$AGENT_TOOLS_HOOK_LOG"\necho %s stub\n' "$bin" "$bin" >"$HOME/stub-npm/bin/$bin"
+      printf '#!/usr/bin/env bash\necho "%s $* PI_TELEMETRY=${PI_TELEMETRY:-unset}" >> "$AGENT_TOOLS_HOOK_LOG"\necho %s stub\n' "$bin" "$bin" >"$HOME/stub-npm/bin/$bin"
       chmod +x "$HOME/stub-npm/bin/$bin"
     done
     ;;
@@ -222,7 +222,7 @@ test_fresh_install() {
   assert_not_contains "$out" "no-mistakes update" "no-mistakes never self-updates"
   assert_not_contains "$out" "treehouse update" "Treehouse never self-updates"
   assert_not_contains "$out" "@latest" "ordinary installs never use latest"
-  assert_contains "$out" "pi install npm:pi-web-access@0.46.0 --no-approve" "Pi npm pins are installed explicitly, not skipped by update"
+  assert_contains "$out" "pi install npm:pi-web-access@0.46.0 --no-approve PI_TELEMETRY=0" "Pi pins install explicitly without outbound telemetry"
   assert_contains "$out" "pi install npm:pi-claude-bridge@0.9.3 --no-approve" "other Pi npm pins install exactly"
   assert_not_contains "$out" "pi update" "no broad updater can discover unpinned project packages"
   assert_contains "$out" "uv: reconciling py-spy==0.4.2" "uv tools use exact pins"

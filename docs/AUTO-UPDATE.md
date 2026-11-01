@@ -55,7 +55,9 @@ ignores unpinned project declarations or concurrent session settings writes.
 It then restores authored resource filters. No broad `pi update --extensions`
 runs in activation; running it manually retains explicitly pinned versions.
 `PI_SKIP_VERSION_CHECK=1` is in the managed user environment and update/smoke
-processes, silencing Pi's latest-version notice.
+processes, silencing Pi's latest-version notice. Install and smoke processes also
+set `PI_TELEMETRY=0`, so this update lane sends no Pi install/update telemetry;
+this does not change the user's interactive telemetry preferences.
 
 Local package paths are not made portable by pinning. In particular, the
 laptop-only telemetry path and maintained compaction checkout remain subject to

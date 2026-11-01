@@ -125,7 +125,7 @@ reconcile_pi_packages() {
     || die "Pi settings are not linked to the managed pin overlay; run rebuild first"
   # Home Manager links settings.json to this effective overlay, not the authored
   # git file. Weekly bumps and ordinary activation use this same pin owner.
-  export PI_SKIP_VERSION_CHECK=1
+  export PI_SKIP_VERSION_CHECK=1 PI_TELEMETRY=0
   # Pi 1.4's updater skips pinned npm sources instead of installing new pins.
   # Explicit installs also avoid project discovery and a concurrent session's
   # mutable settings. Snapshot only authored, validated, pinned remote sources.
