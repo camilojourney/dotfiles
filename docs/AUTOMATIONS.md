@@ -158,7 +158,8 @@ The exporter suite includes a real pinned Pi CLI smoke test with no credentials,
 no provider calls and a temporary local collector. It also tests redaction,
 strict mode, sampling, task carriers and cloned-session identity separation.
 Match the recorded Node, Python, Pi and no-mistakes versions on both hosts; the
-normal tool inventory's self-update policy is not an exact runtime lock.
+normal tool inventory now uses [exact top-level pins](AUTO-UPDATE.md), but is
+not a full lock of transitive dependencies, local package checkouts or runtimes.
 Matching source does not guarantee identical model responses or account quotas.
 
 Use separate operational Firstmate homes on the two machines. Never copy active

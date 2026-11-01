@@ -184,7 +184,7 @@ My rough rule of thumb:
 - use **Homebrew** for GUI apps and macOS-native tools that fit naturally there (declared in `nix/configuration.nix`, or `nix/camilo-extra.nix` for personal-only apps)
 - use **`nix/agent-tools.manifest.lock.json`** for required agent/developer CLIs installed via npm, uv tool, or pinned external release archives
 
-Agent npm globals, uv tool apps, and external tools (`no-mistakes`, `treehouse`) reconcile together on every `rebuild` via `scripts/agent-tools/reconcile.sh`. Add new entries to the manifest instead of ad hoc activation blocks. Run `bash scripts/agent-tools/audit.sh` to see unmanaged top-level tools without deleting anything.
+Agent npm globals, uv tools, Python libraries, Pi npm packages and external tools (`no-mistakes`, `treehouse`) reconcile exact top-level pins on every rebuild. The mini promotes age-qualified, OSV-checked pins on Sundays only after install/smoke success; the laptop pulls those passed pins with its normal daily update. System/Homebrew updates remain daily. See [update and rollback policy](docs/AUTO-UPDATE.md). Add exact entries to the manifest instead of ad hoc activation blocks. Run `bash scripts/agent-tools/audit.sh` to report unmanaged tools without deleting anything.
 
 A good setup does not force every tool through one package manager. It just makes the ownership of each layer clear.
 

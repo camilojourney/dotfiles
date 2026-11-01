@@ -50,12 +50,12 @@ setup_sandbox() {
     "$sandbox/log" "$sandbox/stubs" "$sandbox/repo/scripts/agent-tools"
 
   cp -R "$REPO_ROOT/nix" "$sandbox/repo/"
+  mkdir -p "$sandbox/repo/home/.pi/agent"
+  cp "$REPO_ROOT/home/.pi/agent/settings.json" "$sandbox/repo/home/.pi/agent/"
+  mkdir -p "$sandbox/home/.pi/agent" "$sandbox/home/.local/state/agent-tools"
+  ln -s "$sandbox/home/.local/state/agent-tools/pi-settings.json" "$sandbox/home/.pi/agent/settings.json"
   cp "$REPO_ROOT/scripts/agent-tools/"*.sh "$REPO_ROOT/scripts/agent-tools/"*.py "$sandbox/repo/scripts/agent-tools/"
   chmod +x "$sandbox/repo/scripts/agent-tools/"*.sh
-  # No real uv tool tracks latest, so a fixture entry keeps that path covered.
-  local manifest="$sandbox/repo/nix/agent-tools.manifest.lock.json"
-  "$(command -v jq)" '.uv += [{"name": "example-latest", "version": "latest"}]' "$manifest" >"$manifest.tmp"
-  mv "$manifest.tmp" "$manifest"
 
   : >"$sandbox/uv-tool-list.txt"
   # Copying Apple's signed jq binary causes macOS to kill the copied executable.
@@ -83,7 +83,7 @@ case "${1:-}" in
     esac
     touch "$HOME/stub-npm/installed-$(echo "$spec" | tr '/@' '__')"
     for bin in "${bins[@]}"; do
-      printf '#!/usr/bin/env bash\necho %s stub\n' "$bin" >"$HOME/stub-npm/bin/$bin"
+      printf '#!/usr/bin/env bash\necho "%s $*" >> "$AGENT_TOOLS_HOOK_LOG"\necho %s stub\n' "$bin" "$bin" >"$HOME/stub-npm/bin/$bin"
       chmod +x "$HOME/stub-npm/bin/$bin"
     done
     ;;
@@ -162,6 +162,7 @@ EOF
   cat >"$sandbox/stubs/python3" <<'STUB'
 #!/usr/bin/env bash
 case "${1:-}" in
+  *toolchain.py) exec /opt/homebrew/bin/python3 "$@" ;;
   *python-undeclared.py) echo stray-pkg; exit 0 ;;
 esac
 echo "python3 $* PIP_REQUIRE_VIRTUALENV=${PIP_REQUIRE_VIRTUALENV:-unset}" >>"${AGENT_TOOLS_UV_LOG:?}"
@@ -216,16 +217,19 @@ test_fresh_install() {
   fi
   out=$(cat "$log/stdout.log" "$log/stderr.log" "$log/npm.log" "$log/uv.log" "$log/hooks.log")
 
-  assert_contains "$out" "npm: reconciling @earendil-works/pi-coding-agent@latest" "fresh install installs pi"
-  assert_contains "$out" "npm: reconciling tasks-axi@latest" "fresh install updates tasks-axi from latest"
-  assert_contains "$out" "no-mistakes update --yes" "fresh install self-updates no-mistakes"
-  assert_contains "$out" "treehouse update" "fresh install self-updates Treehouse"
-  assert_contains "$out" "uv: reconciling example-latest at latest" "fresh install installs a latest uv tool"
-  assert_contains "$out" "uv tool install --force --upgrade example-latest" "a latest uv tool installs unpinned with upgrade"
+  assert_contains "$out" "npm: reconciling @earendil-works/pi-coding-agent@1.4.0" "fresh install pins pi"
+  assert_contains "$out" "npm: reconciling tasks-axi@0.2.6" "fresh install pins tasks-axi"
+  assert_not_contains "$out" "no-mistakes update" "no-mistakes never self-updates"
+  assert_not_contains "$out" "treehouse update" "Treehouse never self-updates"
+  assert_not_contains "$out" "@latest" "ordinary installs never use latest"
+  assert_contains "$out" "pi install npm:pi-web-access@0.46.0 --no-approve" "Pi npm pins are installed explicitly, not skipped by update"
+  assert_contains "$out" "pi install npm:pi-claude-bridge@0.9.3 --no-approve" "other Pi npm pins install exactly"
+  assert_not_contains "$out" "pi update" "no broad updater can discover unpinned project packages"
+  assert_contains "$out" "uv: reconciling py-spy==0.4.2" "uv tools use exact pins"
   assert_contains "$out" "uv: reconciling mlx-lm==0.31.3" "fresh install installs mlx-lm on every machine"
   assert_contains "$out" "uv: reconciling mlx-optiq==0.5.13" "fresh install installs mlx-optiq on every machine"
-  assert_contains "$out" "python3 -m pip install --quiet --upgrade --break-system-packages pymupdf pypdf PIP_REQUIRE_VIRTUALENV=0" \
-    "declared global python3 libraries install at latest, bypassing the virtualenv guard"
+  assert_contains "$out" "python3 -m pip install --quiet --break-system-packages pymupdf==1.28.2 pypdf==6.21.4 PIP_REQUIRE_VIRTUALENV=0" \
+    "declared global python3 libraries install exactly, bypassing the virtualenv guard"
   assert_contains "$out" "python3 -m pip uninstall --quiet --yes --break-system-packages stray-pkg" \
     "undeclared global python3 packages are removed"
   assert_contains "$out" "gh-axi setup hooks" "setup hooks run"
@@ -254,9 +258,8 @@ test_idempotent_repeat() {
   fi
   out2=$(cat "$log/second/stdout.log" "$log/second/stderr.log" 2>/dev/null || true)
   assert_contains "$out2" "mlx-lm==0.31.3 already installed" "repeat skips unchanged pinned uv tool"
-  assert_contains "$out2" "uv: reconciling example-latest at latest" "repeat upgrades a latest uv tool every time"
-  assert_contains "$out2" "preserving self-updating no-mistakes" "repeat does not downgrade no-mistakes"
-  assert_contains "$out2" "preserving self-updating treehouse" "repeat does not downgrade Treehouse"
+  assert_contains "$out2" "py-spy==0.4.2 already installed" "repeat keeps pinned uv tools"
+  assert_not_contains "$out2" "self-updating" "repeat cannot run self-updaters"
 
   rm -rf "$sandbox"
   pass "repeat activation is idempotent for unchanged uv tool"
@@ -292,19 +295,14 @@ test_manifest_json_valid() {
   jq -e '
     .npm and .uv and .external and .setupHooks
     and (.profiles | not)
-    and ([.npm[] | type] | all(. == "string"))
-    and (.external["no-mistakes"].version == "latest")
-    and (.external["no-mistakes"].bootstrapVersion == "1.79.0")
-    and (.external["no-mistakes"].selfUpdateCommand == ["update", "--yes"])
-    and (.external["no-mistakes"].selfUpdateFailure == "defer")
-    and (.external.treehouse.version == "latest")
-    and (.external.treehouse.bootstrapVersion == "3.1.0")
-    and (.external.treehouse.selfUpdateCommand == ["update"])
+    and ([.npm[], .uv[], .python[], .external[]] | all(.version | test("^[0-9]+(\\.[0-9]+)+$")))
+    and ([.external[]] | all(has("selfUpdateCommand") | not))
+    and (.piPackages["pi-web-access"] == "0.46.0")
   ' "$REPO_ROOT/nix/agent-tools.manifest.lock.json" >/dev/null
-  pass "manifest.lock.json is one flat list (no per-host profiles), latest npm tools, declared external self-updaters"
+  pass "manifest.lock.json has one flat exact inventory, including Pi packages"
 }
 
-test_deferred_no_mistakes_update_does_not_block_rebuild() {
+test_no_mistakes_self_updater_is_never_called() {
   local sandbox log out rc=0
   sandbox=$(setup_sandbox)
   log="$sandbox/log/deferred-update"
@@ -313,12 +311,11 @@ test_deferred_no_mistakes_update_does_not_block_rebuild() {
   run_reconcile "$log" "$sandbox" || rc=$?
   [ "$rc" -eq 0 ] || fail "deferred no-mistakes update blocked reconciliation (rc=$rc)"
   out=$(cat "$log/stdout.log" "$log/stderr.log" "$log/hooks.log" 2>/dev/null || true)
-  assert_contains "$out" "deferred no-mistakes self-update after exit 42" \
-    "active-run-style no-mistakes refusal is surfaced as deferred"
-  assert_contains "$out" "treehouse update" "other self-updaters still run after a deferred update"
+  assert_not_contains "$out" "no-mistakes update" "active no-mistakes sessions are not self-updated"
+  assert_not_contains "$out" "treehouse update" "other tools are not self-updated either"
 
   rm -rf "$sandbox"
-  pass "a refused no-mistakes self-update is retried on a later rebuild"
+  pass "ordinary rebuilds never call no-mistakes self-update"
 }
 
 test_failed_setup_hook_does_not_block_rebuild() {
@@ -418,7 +415,7 @@ test_fresh_install
 test_idempotent_repeat
 test_missing_npm_fails
 test_manifest_json_valid
-test_deferred_no_mistakes_update_does_not_block_rebuild
+test_no_mistakes_self_updater_is_never_called
 test_failed_setup_hook_does_not_block_rebuild
 test_audit_runs_with_no_arguments
 test_failed_python_install_does_not_block_rebuild

@@ -47,6 +47,15 @@ update_repo() {  # <name> <path>
   fi
 }
 
+# An interrupted candidate is restored before pull or activation can use it.
+# Recovery runs as the tool-owning user, never installs as root.
+if [ -f "$DOTFILES/scripts/agent-tools/weekly.py" ]; then
+  if ! as_user /opt/homebrew/bin/python3 "$DOTFILES/scripts/agent-tools/weekly.py" --recover; then
+    notify "Agent pin recovery failed - rebuild stopped; see /var/log/auto-rebuild.log"
+    exit 1
+  fi
+fi
+
 update_repo dotfiles "$DOTFILES"
 update_repo firstmate "$FIRSTMATE"
 
@@ -94,5 +103,16 @@ if [ -n "$brew_failed" ]; then
   log "homebrew: could not install or upgrade: $brew_failed (everything else applied; retried next run)"
   notify "Homebrew could not update $brew_failed - everything else applied"
 fi
+
+# This shares the daily daemon's serialization and local 05:00 schedule.
+# Only the mini proposes on Sunday; the laptop pulls passed pins on Monday.
+case "$FLAKE_ATTR" in
+  camilo-remote|camilo-remote-total)
+    if ! as_user /opt/homebrew/bin/python3 "$DOTFILES/scripts/agent-tools/weekly.py" --scheduled; then
+      notify "Weekly agent pins failed - see /var/log/auto-rebuild.log"
+      exit 1
+    fi
+    ;;
+esac
 
 log "auto-rebuild: done"

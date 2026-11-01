@@ -39,7 +39,7 @@
             home-manager.extraSpecialArgs = {
               inherit hostProfile userName homeDirectory;
             };
-            home-manager.users.${userName}.imports = [ ./nix/home.nix ];
+            home-manager.users.${userName}.imports = [ ./nix/home.nix ./nix/agent-toolchain.nix ];
           }
         ];
       };

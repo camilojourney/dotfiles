@@ -29,7 +29,7 @@ or automatic model-selection policy.
 | Concern | Authoritative owner |
 | --- | --- |
 | CLI inventory and reconciliation | [Auto-update](AUTO-UPDATE.md), `nix/agent-tools.manifest.lock.json` |
-| Pi packages, defaults and tools | [Pi tools](PI-TOOLS.md), `home/.pi/agent/settings.json` |
+| Pi packages, defaults and tools | [Pi tools](PI-TOOLS.md), authored `home/.pi/agent/settings.json`; effective npm pins in the manifest via [Auto-update](AUTO-UPDATE.md) |
 | Compaction mechanism and thresholds | [Pi compaction](PI-COMPACTION.md) |
 | Model placement | [Existing update-models skill](../.agents/skills/update-models/SKILL.md) |
 | Global skill loading | Fleet's `system/skills/ACTIVE` and `system/skills/link-skills.sh` |
@@ -40,6 +40,13 @@ checker refreshes files, and `pi update` reconciles installations. Neither is a
 read-only status query.
 
 ## Latest operating change
+
+**2026-11-01 update policy:** daily system updates remain enabled. Agent tools
+and Pi npm packages use exact top-level pins, promoted by the mini's unattended
+Sunday age/OSV/install/smoke gate. Firstmate's own daily pull remains unchanged;
+changing that lane is still an open option. Builds and read-only smoke checks
+are not proof of activation or the first live Sunday promotion. See
+[Auto-update](AUTO-UPDATE.md) for owners, credentials, rollback and acceptance.
 
 Decision date: **2026-10-19**. Keep OpenAI native compaction, adopt the existing
 public message-preservation fix, and reduce tool overhead without replacing
@@ -54,7 +61,7 @@ updating, testing, reloading and rollback. Upstream acceptance is not required.
 | --- | --- | --- | --- |
 | Compaction connector | Earlier revisions lost messages or Pi 1.4 tool declarations | Our maintained fork, selected through a local checkout | Validated repair passed real-provider compaction/tool/resume testing; configured source checked on laptop. This documentation update did not reload running sessions. |
 | Codemode | Not enabled | Alongside ordinary tools, not tools-only mode | Real CLI fixture preserved tested Firstmate denial hooks. New-session selection still needed. |
-| Web tools | Older pinned package | Updated, unpinned, deferred schemas | Local CLI fixture verified hiding and discovery, not external search quality. |
+| Web tools | Older pinned package | Deferred schemas; exact effective package pin under the [weekly policy](AUTO-UPDATE.md) | Local CLI fixture verified hiding and discovery, not external search quality. |
 | Waiting workers | No wait-no-turns flags | Presence flags in all eleven existing local homes | Applies to newly generated briefs; no polling-reduction measurement yet. |
 | Codex fast-mode | Installed | Removed | Declaration and local package removed. |
 | Defaults and thresholds | Existing model, trust and compaction policies | Unchanged | No claim that thresholds are optimal. |

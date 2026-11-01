@@ -36,7 +36,7 @@ install_npm_globals() {
     [ -n "$specs" ] || continue
     info "npm: reconciling ${specs}"
     npm install -g --ignore-scripts "$specs"
-  done < <(jq -r '.npm[] | "\(.)@latest"' "$MANIFEST")
+  done < <(jq -r '.npm[] | "\(.name)@\(.version)"' "$MANIFEST")
 }
 
 uv_tool_list() {
@@ -57,13 +57,6 @@ install_uv_tools() {
   local name version current
   while IFS=$'\t' read -r name version; do
     [ -n "$name" ] || continue
-    # "latest" tracks the newest release on every rebuild; --force drops any
-    # earlier ==pin the tool was installed with, which `uv tool upgrade` keeps.
-    if [ "$version" = latest ]; then
-      info "uv: reconciling ${name} at latest"
-      uv tool install --force --upgrade "$name" || die "uv tool install failed for ${name} (latest)"
-      continue
-    fi
     current=$(uv_tool_installed_version "$name" || true)
     if [ "$current" = "$version" ]; then
       info "uv: ${name}==${version} already installed"
@@ -82,20 +75,25 @@ reconcile_python_globals() {
   local py=${AGENT_TOOLS_PYTHON:-$BREW_BIN/python3}
   if [ ! -x "$py" ]; then
     info "python: ${py} not found; skipped"
+    [ "${AGENT_TOOLS_STRICT:-0}" != 1 ] || return 1
     return 0
   fi
   # home.nix sets PIP_REQUIRE_VIRTUALENV=1 so nothing else installs here.
   export PIP_REQUIRE_VIRTUALENV=0
-  local -a declared=() undeclared=()
+  local -a declared=() specs=() undeclared=()
   local name
   while IFS= read -r name; do
     [ -n "$name" ] && declared+=("$name")
   done < <(jq -r '.python[].name' "$MANIFEST")
 
-  if [ "${#declared[@]}" -gt 0 ]; then
-    info "python: reconciling ${declared[*]} at latest"
-    if ! "$py" -m pip install --quiet --upgrade --break-system-packages "${declared[@]}"; then
+  while IFS= read -r name; do
+    [ -n "$name" ] && specs+=("$name")
+  done < <(jq -r '.python[] | "\(.name)==\(.version)"' "$MANIFEST")
+  if [ "${#specs[@]}" -gt 0 ]; then
+    info "python: reconciling ${specs[*]}"
+    if ! "$py" -m pip install --quiet --break-system-packages "${specs[@]}"; then
       printf 'agent-tools: python: install failed; skipping cleanup, the next rebuild will retry\n' >&2
+      [ "${AGENT_TOOLS_STRICT:-0}" != 1 ] || return 1
       return 0
     fi
   fi
@@ -105,8 +103,10 @@ reconcile_python_globals() {
   done < <("$py" "$REPO_ROOT/scripts/agent-tools/python-undeclared.py" ${declared[@]+"${declared[@]}"})
   [ "${#undeclared[@]}" -gt 0 ] || return 0
   info "python: removing undeclared ${undeclared[*]}"
-  "$py" -m pip uninstall --quiet --yes --break-system-packages "${undeclared[@]}" \
-    || printf 'agent-tools: python: cleanup failed; the next rebuild will retry\n' >&2
+  if ! "$py" -m pip uninstall --quiet --yes --break-system-packages "${undeclared[@]}"; then
+    printf 'agent-tools: python: cleanup failed; the next rebuild will retry\n' >&2
+    [ "${AGENT_TOOLS_STRICT:-0}" != 1 ] || return 1
+  fi
 }
 
 install_external_tools() {
@@ -118,33 +118,25 @@ install_external_tools() {
   done < <(jq -r '.external | keys[]' "$MANIFEST")
 }
 
-self_update_external_tools() {
-  local tool failure arg rc
-  local -a args
-  while IFS=$'\t' read -r tool failure; do
-    [ -n "$tool" ] || continue
-    require_cmd "$tool"
-    args=()
-    while IFS= read -r arg; do
-      args+=("$arg")
-    done < <(jq -r --arg tool "$tool" '.external[$tool].selfUpdateCommand[]' "$MANIFEST")
-    [ "${#args[@]}" -gt 0 ] || die "self-update command is empty for ${tool}"
-    info "external: self-updating ${tool}"
-    rc=0
-    "$tool" "${args[@]}" || rc=$?
-    if [ "$rc" -eq 0 ]; then
-      continue
-    fi
-    if [ "$failure" = defer ]; then
-      printf 'agent-tools: external: deferred %s self-update after exit %s; the next rebuild will retry\n' "$tool" "$rc" >&2
-      continue
-    fi
-    die "self-update failed for ${tool} (exit ${rc})"
-  done < <(jq -r '
-    .external | to_entries[]
-    | select((.value.selfUpdateCommand // []) | length > 0)
-    | [.key, (.value.selfUpdateFailure // "error")] | @tsv
-  ' "$MANIFEST")
+reconcile_pi_packages() {
+  local effective="$HOME/.local/state/agent-tools/pi-settings.json" sources source
+  python3 "$REPO_ROOT/scripts/agent-tools/toolchain.py" render --manifest "$MANIFEST" --output "$effective"
+  [ "$HOME/.pi/agent/settings.json" -ef "$effective" ] \
+    || die "Pi settings are not linked to the managed pin overlay; run rebuild first"
+  # Home Manager links settings.json to this effective overlay, not the authored
+  # git file. Weekly bumps and ordinary activation use this same pin owner.
+  export PI_SKIP_VERSION_CHECK=1
+  # Pi 1.4's updater skips pinned npm sources instead of installing new pins.
+  # Explicit installs also avoid project discovery and a concurrent session's
+  # mutable settings. Snapshot only authored, validated, pinned remote sources.
+  sources=$(python3 "$REPO_ROOT/scripts/agent-tools/toolchain.py" sources --manifest "$MANIFEST")
+  while IFS= read -r source; do
+    [ -n "$source" ] || continue
+    pi install "$source" --no-approve
+  done <<<"$sources"
+  # pi install persists its declaration; retain authored resource filters and
+  # preferences rather than relying on the CLI's persistence representation.
+  python3 "$REPO_ROOT/scripts/agent-tools/toolchain.py" render --manifest "$MANIFEST" --output "$effective"
 }
 
 run_setup_hooks() {
@@ -162,6 +154,7 @@ run_setup_hooks() {
     "$tool" setup hooks || rc=$?
     if [ "$rc" -ne 0 ]; then
       printf 'agent-tools: setup hooks: %s failed (exit %s); will retry next rebuild\n' "$tool" "$rc" >&2
+      [ "${AGENT_TOOLS_STRICT:-0}" != 1 ] || return "$rc"
     fi
   done < <(jq -r '.setupHooks.npm[]' "$MANIFEST")
 }
@@ -185,12 +178,14 @@ main() {
   require_cmd jq
   [ -f "$MANIFEST" ] || die "manifest not found: $MANIFEST"
 
+  require_cmd python3
+  python3 "$REPO_ROOT/scripts/agent-tools/toolchain.py" validate --manifest "$MANIFEST"
   info "reconciling agent tool inventory"
   install_npm_globals
   install_uv_tools
   reconcile_python_globals
   install_external_tools
-  self_update_external_tools
+  reconcile_pi_packages
   run_setup_hooks
   verify_bins
   info "reconcile complete"

@@ -61,7 +61,7 @@ fi
 
 unmanaged_npm=()
 for pkg in "${actual_npm[@]:-}"; do
-  if ! jq -e --arg p "$pkg" '.npm[] | select(. == $p)' "$MANIFEST" >/dev/null; then
+  if ! jq -e --arg p "$pkg" '.npm[] | select(.name == $p)' "$MANIFEST" >/dev/null; then
     unmanaged_npm+=("$pkg")
   fi
 done
