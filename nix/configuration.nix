@@ -105,6 +105,7 @@ in
       "herdr" # agent multiplexer for SSH remote machines
       "just" # task runner for Invoz and other projects
       "jscpd" # copy/paste detector used by the /code skill's duplication check
+      "cargo-machete" # unused Rust dependency detector used by the /code skill's residue check
       "lychee" # offline link checker; required by the /specs spec_check
       "markdownlint-cli2" # Markdown linter; required by the /specs spec_check
       "mas" # Mac App Store CLI and MAS cleanup
