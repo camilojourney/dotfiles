@@ -16,6 +16,12 @@ fi
 
 pk=$(sed -n 's/^LANGFUSE_INIT_PROJECT_PUBLIC_KEY=//p' "$secrets")
 sk=$(sed -n 's/^LANGFUSE_INIT_PROJECT_SECRET_KEY=//p' "$secrets")
+# Existing stack projects use runtime names, while bootstrap files use INIT names.
+# Never combine half of one pair with half of the other.
+if [ -z "$pk" ] && [ -z "$sk" ]; then
+  pk=$(sed -n 's/^LANGFUSE_PUBLIC_KEY=//p' "$secrets")
+  sk=$(sed -n 's/^LANGFUSE_SECRET_KEY=//p' "$secrets")
+fi
 # [impl->req~native-tracing.private-header-file~1]
 if [ "${1:-}" = --file ]; then
   # Never publish an empty or incomplete credential after a partial rotation.

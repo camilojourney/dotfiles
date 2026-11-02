@@ -14,6 +14,7 @@ python3 tests/agent_platform_test.py
 python3 tests/agent_platform_langfuse_test.py
 python3 tests/fleet_telemetry_test.py
 python3 tests/langfuse_otel_headers_test.py
+python3 tests/claude_headless_auth_test.py
 ```
 
 `agent_platform_test.py` exercises the encrypted, unlocked, ownership-enabled
@@ -42,7 +43,7 @@ It never touches the real network or host package state.
 
 `pi_settings_test.sh` is a regression test for the declarative Pi settings and model overrides. It also keeps the repository's storage audit skill available in Pi.
 
-It ensures Cursor is absent from Pi packages, Baby Menu, and managed installs, retains the intended telemetry and Argon-discovery pins, selects our maintained local compaction checkout, leaves `pi-web-access` unversioned for daily updates, excludes Codex fast-mode, preserves automatic project trust, enables codemode alongside ordinary tools and `tool_search`, and links deferred web configuration. It keeps GPT-6.1 Sol with high thinking as the Pi default, removes the fixed llama.cpp URL, and limits custom model metadata to DeepSeek's 500,000-token context overrides. See [Pi tools](../docs/PI-TOOLS.md) and [Pi compaction](../docs/PI-COMPACTION.md) for activation and fork maintenance.
+It ensures Cursor is absent from Pi packages, Baby Menu, and managed installs, retains the host-relative telemetry build and Argon-discovery pin, selects our maintained local compaction checkout, leaves `pi-web-access` unversioned for daily updates, excludes Codex fast-mode, preserves automatic project trust, enables codemode alongside ordinary tools and `tool_search`, and links deferred web configuration. It keeps GPT-6.1 Sol with high thinking as the Pi default, removes the fixed llama.cpp URL, and limits custom model metadata to DeepSeek's 500,000-token context overrides. See [Pi tools](../docs/PI-TOOLS.md) and [Pi compaction](../docs/PI-COMPACTION.md) for activation and fork maintenance.
 It also checks that `crew-dispatch.json` routes Claude profiles through Pi, permits Opus 5.5 only on the hardest-work crew rule, and keeps the existing Sonnet, Haiku, Gemini and Codex routing. Secondmates use Pi Opus 5.5 at xhigh, with Gemini 4 Argon and Gemini 3.8 Flash at high as saved manual alternatives. Home Manager links settings, crew dispatch, and both Secondmate selections to their authored owners. The backup is not automatic failover.
 
 `storage_report_test.sh` checks that the read-only storage report includes Firstmate homes, Treehouse, Chrome profiles, and arbitrary unlisted home and Application Support roots using a disposable fake home.
@@ -58,9 +59,19 @@ not maintenance judgment or live fleet delivery.
 false. Skill overrides alone do not stop account-skill downloads. The test reads
 JSON only; it never starts Claude or contacts a provider.
 
+`claude_headless_auth_test.py` evaluates each host's actual zsh environment with
+offline Nix and runs noninteractive, login and interactive shells with isolated
+homes. Synthetic tokens prove the Mini exports the optional private-file token to
+children, a missing file stays absent and preserves an explicitly inherited token,
+and the laptop never loads this Mini-only file. It never reads real credentials
+or starts Claude, Pi or an agent session. See [headless Claude auth](../docs/AUTOMATIONS.md#headless-claude-on-the-mini).
+
 `langfuse_otel_headers_test.py` uses only synthetic keys and isolated homes to
 check shell credential removal, private atomic updates, rotation, failure paths,
-symlink refusal and legacy Claude/`--env` responses. After preparing the stable
+symlink refusal and legacy Claude/`--env` responses. It also checks runtime project
+key names, rejects mixed incomplete pairs and executes the Mini's evaluated
+existing-stack secret-path selection against a relocated synthetic project.
+After preparing the stable
 local Pi extension installation selected in authored settings, also run:
 
 ```bash

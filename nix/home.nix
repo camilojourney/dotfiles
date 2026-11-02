@@ -154,7 +154,10 @@ in
     # nothing. The PI_ prefix keeps these from reaching other OTel programs.
     # Tags arrive per run in the standard OTEL_RESOURCE_ATTRIBUTES
     # (fleet-system system/skills/TRACING.md).
-    envExtra = ''
+    envExtra = lib.optionalString (hostProfile == "camilo-remote") ''
+      # Use this host's existing stack keys; no credential copying or inline auth.
+      export LANGFUSE_SECRETS="''${LANGFUSE_SECRETS:-/Volumes/AgentPlatform/agent-platform/langfuse/project/.env}"
+    '' + ''
       export PI_OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:3000/api/public/otel"
       export PI_OTEL_METRICS_EXPORTER="none"
       export PI_OTEL_SERVICE_NAME="pi"
@@ -167,6 +170,13 @@ in
         export PI_OTEL_EXPORTER_OTLP_HEADERS_FILE="$_pi_otel_headers_file"
       fi
       unset _pi_otel_headers_file
+    '' + lib.optionalString (hostProfile == "camilo-remote") ''
+      # SSH-started agents cannot unlock the login keychain. The captain alone
+      # provisions this private file (0600); .zshenv reaches noninteractive and
+      # interactive children without copying credentials into managed config.
+      if [ -f "$HOME/.config/secrets/claude-code-oauth.env" ]; then
+        . "$HOME/.config/secrets/claude-code-oauth.env"
+      fi
     '';
   };
 

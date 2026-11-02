@@ -14,7 +14,7 @@ def main():
     settings = json.loads((ROOT / "home/.pi/agent/settings.json").read_text())
     selected = [p for p in settings["packages"] if "pi-opentelemetry" in p]
     assert len(selected) == 1, "expected one authored telemetry package"
-    extension = Path(selected[0])
+    extension = Path(selected[0]).expanduser()
     assert extension.is_absolute() and extension.is_dir(), "selected local installation missing"
     received = []
 

@@ -18,8 +18,9 @@
     lib = nixpkgs.lib;
     # One configuration.nix and one home.nix for every machine - identical
     # except userName/homeDirectory, the real per-account identity nix-darwin
-    # needs. hostProfile only reaches home.nix (safe-maintenance.sh's
-    # --profile flag); configuration.nix doesn't need it. flakeAttr is the
+    # needs. hostProfile only reaches home.nix (safe-maintenance.sh's profile
+    # and the Mini's tracing/headless auth); configuration.nix doesn't need it.
+    # flakeAttr is the
     # target's own name, so the daily rebuild re-applies whichever target
     # was last switched to by hand.
     mkDarwin = flakeAttr: { hostProfile, userName, homeDirectory, includeExtras ? false }:

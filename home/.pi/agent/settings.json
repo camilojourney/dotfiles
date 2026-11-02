@@ -127,7 +127,7 @@
   "packages": [
     "npm:pi-web-access",
     "npm:pi-claude-bridge@0.9.3",
-    "/Users/camiloslaptop/.local/share/pi-opentelemetry/install-e097771",
+    "~/.local/share/pi-opentelemetry/install-e097771",
     "git:github.com/Rahularya01/pi-antigravity@f950c08e7a5c1069a0339af88252347a5ecb0f8c",
     "../../github/pi-openai-server-compaction"
   ],

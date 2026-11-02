@@ -113,9 +113,9 @@ before optimization, not a predicted completion date.
 
 ### TM-005: make tool reproduction and skill loading explicit
 
-- **Status:** the telemetry package uses a laptop-only unpublished local path; the installed Arbiter skill is absent from Fleet's current ACTIVE list.
+- **Status:** the telemetry package uses an unpublished home-relative local path that requires the same build installed separately on each host; the installed Arbiter skill is absent from Fleet's current ACTIVE list.
 - **Owner:** [Native reproduction](AUTOMATIONS.md#reproduce-native-agents-on-another-mac) and Fleet's global skill registry.
-- **Risk:** another host cannot reproduce the telemetry path; a skill-link reconciliation can remove an unlisted Arbiter link.
+- **Risk:** another host may lack the selected telemetry build; a skill-link reconciliation can remove an unlisted Arbiter link.
 - **Next:** agree on published/installable sources and intended globally loaded skills before changing either owner.
 - **Done when:** each intended host resolves its declared sources and a reconciliation preserves only the agreed skill set.
 - **Boundary:** do not run global skill reconciliation as a harmless inspection or copy credentials, active sessions, or runtime state between hosts.

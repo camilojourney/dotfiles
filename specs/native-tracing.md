@@ -31,7 +31,14 @@ Needs: impl, utest, itest
 ## Helper interface
 
 `scripts/agent-tools/langfuse-otel-headers.sh` reads `LANGFUSE_SECRETS`, defaulting
-to `~/.config/secrets/langfuse.env`. It never sources the input as shell code.
+to `~/.config/secrets/langfuse.env`. The Mini's managed shell defaults
+`LANGFUSE_SECRETS` to its existing stack project `.env` at
+`/Volumes/AgentPlatform/agent-platform/langfuse/project/.env`, preserving an
+explicit local override. The helper accepts either a complete
+`LANGFUSE_INIT_PROJECT_PUBLIC_KEY` / `LANGFUSE_INIT_PROJECT_SECRET_KEY` pair or,
+when both initialization values are absent, the complete runtime
+`LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` pair. It never mixes the two pairs
+or sources the input as shell code.
 With no flag it retains Claude Code's JSON `otelHeadersHelper` response; `--env`
 retains percent-encoded OTLP header output. Missing secrets yield `{}` or empty
 output respectively for these legacy modes.

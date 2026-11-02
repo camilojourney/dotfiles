@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Synthetic-only shell authentication regression tests."""
 import base64
+from functools import cache
 import json
 import os
 from pathlib import Path
@@ -10,6 +11,16 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 HELPER = ROOT / "scripts/agent-tools/langfuse-otel-headers.sh"
+
+
+@cache
+def evaluated_zsh_environment(host, user):
+    """Relocate the real evaluated environment into an isolated test checkout."""
+    return subprocess.check_output([
+        "nix", "eval", "--offline", "--raw",
+        f"{ROOT}#darwinConfigurations.{host}.config.home-manager.users.{user}.programs.zsh.envExtra",
+    ], text=True, stderr=subprocess.PIPE, timeout=60).replace(
+        f"/Users/{user}/github/dotfiles", str(ROOT))
 
 
 class HeaderTest(unittest.TestCase):
@@ -33,9 +44,8 @@ class HeaderTest(unittest.TestCase):
                               capture_output=True, text=True, timeout=10)
 
     def shell(self, command):
-        # Execute the actual managed zsh environment block with an isolated home.
-        block = (ROOT / "nix/home.nix").read_text().split("envExtra = ''", 1)[1].split("'';", 1)[0]
-        block = block.replace("${dotfilesDir}", str(ROOT))
+        # Evaluate Nix instead of parsing its string syntax: envExtra can compose blocks.
+        block = evaluated_zsh_environment("camilo", "camiloslaptop")
         return subprocess.run(["zsh", "-c", block + "\n" + command],
                               env=self.env, capture_output=True, text=True, timeout=30)
 
@@ -56,6 +66,36 @@ class HeaderTest(unittest.TestCase):
         expected = base64.b64encode(b"fixture-public-rotated:fixture-private-rotated").decode()
         self.assertTrue(path.read_text() == f"Authorization=Basic%20{expected},x-langfuse-ingestion-version=4\n")
         self.assertEqual(sorted(p.name for p in path.parent.iterdir()), ["headers"])
+
+    # [utest->req~native-tracing.private-header-file~1]
+    def test_runtime_project_keys_use_same_private_header_contract(self):
+        self.secrets.write_text("LANGFUSE_PUBLIC_KEY=fixture-public\nLANGFUSE_SECRET_KEY=fixture-private\n")
+        result = self.helper("--file")
+        self.assertEqual(result.returncode, 0)
+        path = Path(result.stdout.strip())
+        self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+        expected = base64.b64encode(b"fixture-public:fixture-private").decode()
+        self.assertTrue(path.read_text() == f"Authorization=Basic%20{expected},x-langfuse-ingestion-version=4\n")
+        self.secrets.write_text("LANGFUSE_INIT_PROJECT_PUBLIC_KEY=fixture-incomplete\n"
+                                "LANGFUSE_PUBLIC_KEY=fixture-public\nLANGFUSE_SECRET_KEY=fixture-private\n")
+        self.assertNotEqual(self.helper("--file").returncode, 0)
+
+    # [utest->req~native-tracing.shell-authentication~1]
+    def test_mini_default_reads_existing_stack_project_keys(self):
+        project = self.home / "stack/project/.env"
+        project.parent.mkdir(parents=True)
+        project.write_text("LANGFUSE_PUBLIC_KEY=fixture-mini-public\nLANGFUSE_SECRET_KEY=fixture-mini-private\n")
+        block = evaluated_zsh_environment("camilo-remote", "camilo_mini").replace(
+            "/Volumes/AgentPlatform/agent-platform/langfuse/project/.env", str(project))
+        expected_path = project.parent / "pi-otel/headers"
+        result = subprocess.run(["zsh", "-c", block + '\ntest "$PI_OTEL_EXPORTER_OTLP_HEADERS_FILE" = "$1"',
+                                 "fixture", str(expected_path)],
+                                env=self.env, capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(expected_path.stat().st_mode & 0o777, 0o600)
+        expected = base64.b64encode(b"fixture-mini-public:fixture-mini-private").decode()
+        self.assertTrue(expected_path.read_text() == f"Authorization=Basic%20{expected},x-langfuse-ingestion-version=4\n")
 
     def test_legacy_json_and_env(self):
         expected = base64.b64encode(b"fixture-public:fixture-private").decode()

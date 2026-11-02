@@ -59,8 +59,9 @@ processes, silencing Pi's latest-version notice. Install and smoke processes als
 set `PI_TELEMETRY=0`, so this update lane sends no Pi install/update telemetry;
 this does not change the user's interactive telemetry preferences.
 
-Local package paths are not made portable by pinning. In particular, the
-laptop-only telemetry path and maintained compaction checkout remain subject to
+Local package paths are not made portable by pinning. The home-relative
+telemetry installation and maintained compaction checkout must exist on each host,
+per
 [the reproduction runbook](AUTOMATIONS.md#reproduce-native-agents-on-another-mac).
 A pin build does not establish that those packages load on the mini.
 

@@ -9,9 +9,9 @@ SETTINGS="$REPO_ROOT/home/.pi/agent/settings.json"
 MODELS="$REPO_ROOT/home/.pi/agent/models.json"
 DISPATCH="$REPO_ROOT/home/.firstmate/crew-dispatch.json"
 WEB_SEARCH="$REPO_ROOT/home/.pi/web-search.json"
-# Laptop-only local install of unpublished commit e097771 (private headers file);
-# restore a published git pin before syncing to another host. See docs/AUTOMATIONS.md.
-OTEL_PACKAGE="/Users/camiloslaptop/.local/share/pi-opentelemetry/install-e097771"
+# Each host installs the same unpublished build in its own home. Pi expands ~.
+# See docs/AUTOMATIONS.md for source-only transfer and host-local credentials.
+OTEL_PACKAGE="~/.local/share/pi-opentelemetry/install-e097771"
 ANTIGRAVITY_PACKAGE="git:github.com/Rahularya01/pi-antigravity@f950c08e7a5c1069a0339af88252347a5ecb0f8c"
 # Our maintained local checkout; see docs/PI-COMPACTION.md.
 COMPACTION_PACKAGE="../../github/pi-openai-server-compaction"
@@ -21,6 +21,7 @@ jq -e --arg otel_package "$OTEL_PACKAGE" \
   .packages as $packages
   | ($packages | map(select(test("cursor"; "i"))) == [])
   and ($packages | map(select(test("opentelemetry"))) == [$otel_package])
+  and ($packages | all(startswith("/Users/") | not))
   and ($packages | map(select(test("pi-antigravity"))) == [$antigravity_package])
   and ($packages | map(select(test("pi-openai-server-compaction"))) == [$compaction_package])
   and ($packages | map(select(test("^npm:pi-web-access(@|$)"))) == ["npm:pi-web-access"])
