@@ -2,6 +2,8 @@
 
 let
   declaredMasAppIds = lib.concatStringsSep " " (map toString (lib.attrValues config.homebrew.masApps));
+  # The pin and first-install preflight must use the same owner as Bundle.
+  brewAsUser = "sudo --user=${lib.escapeShellArg config.homebrew.user} --set-home env HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_UPGRADE=1 ${lib.escapeShellArg config.homebrew.prefix}/bin/brew";
 in
 {
   # If you use Determinate Nix Installer (recommended), let it manage Nix itself.
@@ -84,7 +86,7 @@ in
       # their user data, on every machine. Mac App Store apps need the
       # cleanup script below instead - Homebrew Bundle doesn't reach those.
       cleanup = "uninstall";
-      upgrade = true; # brew upgrade + brew upgrade --cask on each rebuild
+      upgrade = true; # upgrade unpinned packages on each rebuild
     };
     taps = [
       {
@@ -123,7 +125,7 @@ in
       "font-hack-nerd-font" # shared font used by terminal and editor tools
       "gcloud-cli"
       "grok-build"
-      "google-chrome"
+      "google-chrome" # keep declared for cleanup; Google's updater owns updates (pin below)
       # chrome-devtools-axi's CHROME_DEVTOOLS_AXI_CHANNEL is set to "canary"
       # in home.nix so it never collides with the daily-driver google-chrome
       # above; that setting needs this app to actually exist.
@@ -151,8 +153,25 @@ in
     # Homebrew Bundle
     echo >&2 "Homebrew bundle..."
     if [ -f "${config.homebrew.prefix}/bin/brew" ]; then
-      if ! ${config.homebrew.onActivation.brewBundleCmd { onlyCheck = false; }}; then
-        printf >&2 '\e[1;33mwarning: brew bundle had failures (lines ending "has failed!" above); continuing activation\e[0m\n'
+      # nix-darwin's cask options have no pin field. Pin before Bundle can
+      # replace a running Chrome; bootstrap a missing cask first, never upgrade
+      # an existing one here. Reapplying Homebrew's pin is idempotent and does
+      # not disable Google's native security updater. Canary is unchanged.
+      if (
+        if ! ${brewAsUser} list --cask --versions google-chrome >/dev/null; then
+          ${brewAsUser} install --cask google-chrome || exit 1
+        fi
+        ${brewAsUser} pin --cask google-chrome &&
+          chrome_pinned=$(${brewAsUser} list --cask --pinned google-chrome) &&
+          [ "$chrome_pinned" = google-chrome ]
+      ); then
+        if ! ${config.homebrew.onActivation.brewBundleCmd { onlyCheck = false; }}; then
+          printf >&2 '\e[1;33mwarning: brew bundle had failures (lines ending "has failed!" above); continuing activation\e[0m\n'
+        fi
+      else
+        # Stable failure marker consumed by scripts/auto-rebuild.sh.
+        echo >&2 "Pinning google-chrome has failed!"
+        echo >&2 "warning: skipping Homebrew bundle to protect Chrome; continuing other activation steps"
       fi
     else
       echo -e "\e[1;31merror: Homebrew is not installed, skipping...\e[0m" >&2

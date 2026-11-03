@@ -82,14 +82,14 @@ if [ -x "$MAS" ]; then
   fi
 fi
 
-# A Homebrew package that fails to install or upgrade only warns during
-# activation (nix/configuration.nix), so the rebuild still succeeds. Keep a
-# copy of the output to name those packages in the log and a notification.
+# Homebrew package and Chrome-pin failures warn during activation
+# (nix/configuration.nix), so the rebuild still succeeds. Keep a copy of the
+# output to name those failures in the log and a notification.
 REBUILD_OUT=$(mktemp)
 trap 'rm -f "$REBUILD_OUT"' EXIT
 darwin-rebuild switch --flake "$DOTFILES#$FLAKE_ATTR" 2>&1 | tee "$REBUILD_OUT"
 rebuild_status=${PIPESTATUS[0]}
-brew_failed=$(sed -nE 's/^(Installing|Upgrading) (.+) has failed!$/\2/p' "$REBUILD_OUT" | sort -u | paste -sd, - | sed 's/,/, /g')
+brew_failed=$(sed -nE 's/^(Installing|Upgrading|Pinning) (.+) has failed!$/\2/p' "$REBUILD_OUT" | sort -u | paste -sd, - | sed 's/,/, /g')
 
 if [ "$rebuild_status" -eq 0 ]; then
   log "rebuild: ok"
@@ -100,8 +100,8 @@ else
 fi
 
 if [ -n "$brew_failed" ]; then
-  log "homebrew: could not install or upgrade: $brew_failed (everything else applied; retried next run)"
-  notify "Homebrew could not update $brew_failed - everything else applied"
+  log "homebrew: could not install, upgrade or pin: $brew_failed (see activation output; retried next run)"
+  notify "Homebrew failures: $brew_failed - see /var/log/auto-rebuild.log"
 fi
 
 # This shares the daily daemon's serialization and local 05:00 schedule.

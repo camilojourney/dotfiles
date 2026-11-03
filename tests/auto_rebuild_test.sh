@@ -43,6 +43,7 @@ git() {
 }
 darwin-rebuild() {
   echo 'system rebuild' >> "$TEST_TRACE"
+  printf '%s\n' "${TEST_REBUILD_OUTPUT:-}"
   [ -z "${TEST_REBUILD_FAIL:-}" ]
 }
 export -f sudo id launchctl git darwin-rebuild
@@ -85,4 +86,14 @@ if TEST_REBUILD_FAIL=1 /bin/bash "$ROOT/scripts/auto-rebuild.sh" "$USER_ARG" cam
   echo 'FAIL: system failure must stop before promotion' >&2; exit 1
 fi
 assert_absent 'weekly --scheduled'
-echo 'PASS: recovery precedes pull, mini-only promotion follows rebuild, and all lane failures notify safely'
+# Homebrew's activation is deliberately nonfatal. Pin failures must not be
+# hidden by a successful switch: the existing daily log and notification own it.
+for failure in 'Pinning google-chrome has failed!' 'Upgrading wezterm has failed!'; do
+  : > "$TEST_TRACE"
+  TEST_REBUILD_OUTPUT="$failure" /bin/bash "$ROOT/scripts/auto-rebuild.sh" "$USER_ARG" camilo-total > "$SANDBOX/output" 2>&1
+  package=${failure#* }
+  package=${package%% *}
+  grep -q "homebrew: could not install, upgrade or pin: $package" "$SANDBOX/output"
+  grep -q "Homebrew failures: $package" "$TEST_TRACE"
+done
+echo 'PASS: recovery precedes pull, mini-only promotion follows rebuild, and all lane/pin failures notify safely'

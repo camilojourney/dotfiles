@@ -4,10 +4,10 @@ Both Macs run `org.dotfiles.auto-rebuild` at **05:00 local time daily** (or
 next wake). The system lane stays daily; agent tools do not follow `latest`.
 
 | | Laptop (`camiloslaptop`) | Mac mini (`camilo_mini`) |
-|---|---|---|
+| --- | --- | --- |
 | Pulls daily | `~/github/dotfiles`, `~/github/firstmate` | same |
-| Target | last applied: `camilo` or `camilo-total` | last applied: `camilo-remote` or `camilo-remote-total` |
-| Agent pin promotion | consumes passed pins with normal daily pull, normally Monday after Sunday's mini run | Sunday, after the daily system rebuild |
+| Target | last applied laptop variant | last applied mini variant |
+| Agent pins | daily pull, normally Monday | Sunday after system rebuild |
 
 `rebuild.sh` and **`rebuild-total.sh` are in the repository root**. On the mini
 these select `camilo-remote` and `camilo-remote-total`; on the laptop they select
@@ -29,11 +29,68 @@ these select `camilo-remote` and `camilo-remote-total`; on the laptop they selec
   alongside `nix/home.nix` without changing it. It disables the former local
   quota-axi reinstall and the independent extension update activation.
 
-Homebrew formulae/casks (`homebrew.onActivation.upgrade = true`) and App Store
-apps still update daily. Chrome remains self-updating. Nix packages stay pinned
-by `flake.lock`; update that deliberately with `nix flake update`.
+The weekly lane covers only the declared agent-tool pins, not Chrome or all
+applications/dependencies.
+
+| Lane | Update owner and cadence |
+| --- | --- |
+| Homebrew formulae and unpinned casks | Homebrew, daily activation |
+| App Store apps | App Store via `mas`, daily |
+| Regular Google Chrome | Google, native security-update cadence |
+| Declared agent-tool pins | Weekly promotion below, OSV security exception |
+| Nix packages | `flake.lock`, deliberate update |
+
+`homebrew.onActivation.upgrade = true` still upgrades unpinned casks daily,
+including Chrome Canary. Update Nix pins deliberately with `nix flake update`.
 **Firstmate's own daily pull is unchanged.** Moving it to a separate tested
 weekly lane remains an open option, not part of this implementation.
+
+### Regular Chrome: one updater, coordinated relaunch
+
+Keep `google-chrome` declared and `homebrew.onActivation.cleanup = "uninstall"`:
+removing the declaration would uninstall Chrome, not hand it to Google. The
+existing Homebrew activation installs Chrome only if missing, then applies and
+verifies `brew pin --cask google-chrome` **as the Homebrew user before Bundle**.
+The pin is reapplied on every activation, including first bootstrap and an
+already-installed browser. It excludes regular Chrome from both Bundle upgrades
+and ordinary `brew upgrade`, including explicitly named Chrome upgrades. It is
+**not a browser-version freeze**: Google's native updater stays enabled and owns
+regular Chrome security updates. `google-chrome@canary` is unchanged; do not pin
+that channel without verifying its use and native updater health.
+
+Google's updater can update files while Chrome runs, retaining in-use versions;
+relaunch activates fixes in running processes. The browser/workflow owner must
+coordinate an orderly relaunch **within 48 hours of an update**. When Google
+marks a security fix as **exploited in the wild, relaunch the same day** rather
+than waiting for that deadline or the weekly agent lane. Keep Google's default
+update checks and relaunch prompts enabled. Preserve unsaved work and active
+research receipts first, coordinate all profiles/processes using that app, then
+verify the affected workflows after relaunch. There is no forced restart,
+managed Chrome policy, new scheduler or new service enforcing this deadline.
+
+A Homebrew pin does not protect against explicit unpin/reinstall, a vendor
+DMG/pkg replacement, restore, another management tool or a channel change. Those
+are owner-authorized maintenance only: identify and quiesce all processes using
+the app before replacement. Do not bypass the native updater with a fallback
+installer while Chrome runs, or downgrade a browser against a newer profile.
+If native updating is unavailable, arrange prompt owner-authorized repair rather
+than leaving the browser indefinitely pinned and unpatched.
+
+If the Chrome install/pin/verification fails, activation **skips the entire
+Homebrew Bundle step** to avoid unsafe replacement, logs
+`Pinning google-chrome has failed!`, and continues other activation steps. The
+daily job posts its existing Homebrew failure notification and retries next run;
+a successful system rebuild alone does not establish a successful pin or update.
+Check `/var/log/auto-rebuild.log` for the underlying error. Manual activation
+shows the same warning in its output.
+
+Installed app version, Homebrew's cask receipt, Google's updater record and the
+already-running browser version can differ. A pull is not an activation; an
+installed security update is not proof the running browser has relaunched onto
+it. Read-only checks include `brew list --cask --pinned google-chrome`, the
+GoogleUpdater launch-agent/log state on each host, and the installed Chrome
+bundle version. Check runtime version only through an owned browser/profile;
+notifications and startup smoke tests do not prove real-workflow acceptance.
 
 ### Pi settings without editing the authored file
 
@@ -154,7 +211,10 @@ bash scripts/agent-tools/check-pins.sh  # real registries + OSV, writes no pins
 python3 scripts/agent-tools/smoke.py
 python3 tests/agent_toolchain_test.py
 bash tests/agent_tools_test.sh
-nix build .#darwinConfigurations.camilo-total.system .#darwinConfigurations.camilo-remote.system --no-link
+bash tests/chrome_update_test.sh  # effective activation, fake OS boundaries
+bash tests/auto_rebuild_test.sh   # daily failure notifications, no live switch
+nix build .#darwinConfigurations.camilo-total.system \
+  .#darwinConfigurations.camilo-remote.system --no-link
 ```
 
 A build is **not** an applied rebuild. Activation and the first Sunday promotion
@@ -178,9 +238,10 @@ extra-app target. A manual rebuild enables the daemon for the variant you chose.
 - Check daemon: `sudo launchctl print system/org.dotfiles.auto-rebuild`.
 - Run a daily cycle now: `sudo launchctl kickstart system/org.dotfiles.auto-rebuild`.
   On Sunday on the mini this also attempts promotion; it is not read-only.
-- A skipped pull, failed rebuild/promotion/recovery, or Homebrew package failure
-  posts a macOS notification. Homebrew install failures still warn rather than
-  stopping the other system activation steps and are retried next day.
+- A skipped pull, failed rebuild/promotion/recovery, Homebrew package failure or
+  Chrome pin failure posts a macOS notification. Homebrew install failures still
+  warn rather than stopping the other system activation steps. A failed Chrome
+  pin skips Bundle entirely, not just Chrome; both are retried next day.
 
 The daemon pulls this public repo's main and applies it as root without a review
 step. Anything pushed to main reaches both machines unattended; local commits
