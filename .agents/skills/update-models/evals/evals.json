@@ -1,5 +1,9 @@
 [
   {
+    "query": "Reassess crew implementation and review choices from independent role-specific research; keep current placements where benchmarks are stale, contaminated or missing.",
+    "should_trigger": true
+  },
+  {
     "query": "Update our model review so Pi's Meta Muse Wonder route is considered for crew dispatch, even though native Muse Code is not signed in.",
     "should_trigger": true
   },

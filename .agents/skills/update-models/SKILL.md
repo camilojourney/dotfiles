@@ -1,6 +1,6 @@
 ---
 name: update-models
-version: 1.3.1
+version: 1.4.0
 description: Updates fleet models across crew dispatch, active Secondmates, every backup and no-mistakes for intelligence, coding value and subscription-quota use. Verifies routes and picks; keeps reasons concise.
 ---
 
@@ -18,7 +18,7 @@ Quota coverage is a placement concern. Jev classifies the brief using `when`; Fi
 
 Use all current, distinct, capable models across appropriate roles, not every obsolete version or every model in every tier. Separate routes to one model count as extra allowance only when quota evidence proves distinct pools. Within a quality-qualified tier, favor spending included quota over minimizing nominal API price. Cheap, good models still earn high-volume work through quality, speed and useful work per allowance. Never lower the quality bar, invent busywork, enable paid overages, or change billing/authentication/privacy settings to burn quota. Preserve explicit task selections and scoped account pins.
 
-Nothing runs this skill automatically. The daily auto-update (`docs/AUTO-UPDATE.md`) upgrades tools but never changes which models the fleet uses and does not refresh Pi's model catalog. A change pushed to `main` reaches both machines at the next 05:00 run.
+Run this skill only deliberately; keep the current placement as the last known safe version until then. Nothing runs this skill automatically. The daily auto-update (`docs/AUTO-UPDATE.md`) upgrades tools but never changes which models the fleet uses and does not refresh Pi's model catalog. A change pushed to `main` reaches both machines at the next 05:00 run.
 
 This skill lives in `.agents/skills/`; `.claude/skills` is a symlink to that directory, so edit it there only.
 
@@ -57,7 +57,7 @@ For a fleet-wide review, run every catalog. For a scoped model/provider refresh,
 | Harness | Catalog command | Notes |
 |---|---|---|
 | Pi | `pi update --models`, then `pi --list-models <provider>` | A provider extension's list is not proof a model is served. It can keep retired models and miss new ones. Confirm each id in the vendor's own catalog (for Antigravity, `agy models`). An id only Pi lists is not a candidate. Pi also accepts an unlisted `provider/id` with a "Using custom model id" warning; confirm those the same way. |
-| Antigravity | `agy models` | The authority for Antigravity. Lists Gemini and the other vendors' models Antigravity serves, each with effort suffixes. Every listed model is a candidate for every tier, placed by the same rules as the same model elsewhere. Dispatch through Pi only: strip the suffix (`<model>-high` is `antigravity/<model>`) and set effort with Pi's `--thinking`. The highest suffix listed is Antigravity's effort ceiling for that model. Judge it by the index row at that effort, not a higher one it cannot run. |
+| Antigravity | `agy models` | The authority for Antigravity. Lists Gemini and the other vendors' models Antigravity serves, each with effort suffixes. Every listed model is a candidate for every tier, placed by the same rules as the same model elsewhere. Dispatch through Pi only: strip the suffix (`<model>-high` is `antigravity/<model>`) and set effort with Pi's `--thinking`. The highest suffix listed is Antigravity's effort ceiling for that model. Judge it by role-specific evidence at that effort, not a higher one it cannot run. |
 | Codex via Pi | `pi --list-models openai-codex` | |
 | Meta/Muse via Pi | `pi --list-models meta` | Confirm IDs against the [Meta Model API catalog](https://dev.meta.ai/docs/api-reference). Native Muse Code and Cursor routes are separate candidates. |
 | Claude via Pi | `pi --list-models claude-bridge` | The `pi-claude-bridge` extension runs Claude models in Pi through Claude Code's Agent SDK, on the Claude subscription pool. Dispatch through Pi only as `claude-bridge/<id>` with `provider` `claude`, never the `claude` harness. Use exact model ids, never the `opus`/`sonnet`/`haiku` aliases, which silently move. A prior `fable` probe stalled on a usage-credit prompt; retain an explicitly selected candidate and report its current tool-test result rather than removing it from dated prose. |
@@ -89,14 +89,21 @@ Argon discovery example, checked 2026-10-16:
 ## 2. Newer models: is anything better released?
 
 1. `scripts/aa-coding-agents.py --releases` lists recent releases from the vendors the fleet can run, newest first. Also check vendor release notes or news for releases the page has not added.
-2. Within the same cost and latency class (e.g. a new Flash vs an older Flash, or a new frontier model vs an older frontier model), the newest runnable version replaces the older one unless benchmarks or cost-to-run show it worse. Never blindly replace a cheap, fast model (e.g. Gemini Flash) with a slow, expensive frontier reasoning model (e.g. Gemini Argon) on low-effort or special-purpose rules: place each by task effort, cost, and pool size in step 3.
+2. Within the same cost and latency class, prefer the newest runnable version when step 3's role-specific evidence requirements support the change. Compare Flash with Flash or frontier with frontier, not across classes. Never blindly replace a cheap, fast model with a slow, expensive frontier reasoning model on low-effort or special-purpose rules. Place each by task effort, cost, and pool size in step 3.
 3. A release in no catalog yet goes on the watch list for the report.
 
 ## 3. Placement: intelligence, coding value, and quota coverage
 
-Match the **task's effort and volume** to **measured quality, coding ability, wall-clock time and useful work per quota unit**. Token prices and benchmark $/task describe efficiency, not the marginal bill for included subscription usage. Research and cite current figures with dates from all three authoritative sources on every run:
+Match the **task's effort and volume** to **measured quality, coding ability, wall-clock time and useful work per quota unit**. Token prices and benchmark $/task describe efficiency, not the marginal bill for included subscription usage. Research and cite current figures with dates from all three evidence categories on every run:
 
-1. **Benchmark score, $/task, minutes/task, and tokens/task**: run `scripts/aa-coding-agents.py` (`--json` for structured rows; token/step fields may be unavailable) for the [Artificial Analysis Coding Agent Index](https://artificialanalysis.ai/agents/coding-agents), and cross-check any tier change with one independent source (SWE-Bench Pro, DeepSWE, or the vendor's release model card). One benchmark alone misleads: on 2026-10-04 a Flash model reported a strong SWE-Bench Pro score but sat about 20 points under the index leaders. When no independent source is reachable, keep the tier and list the change under Gaps.
+1. **Role-specific benchmark quality, $/task, minutes/task, and tokens/task**: research current results and dated primary methodology for the role, not one overall coding score.
+   - **Everyday feature implementation**: use SWE-rebench's latest qualifying task window, DeepSWE and FrontierCode.
+   - **Hard multi-file changes**: use DeepSWE and FrontierCode. Add BOBA-Bench only when current comparable results establish chained-feature reliability, or Terminal-Bench for environment-heavy work.
+   - **Independent code review**: consult CR-Bench and c-CRAB. Use Martian's online Code Review Bench for review products, not raw-model rankings. Review evidence is thinner: implementation scores never qualify a reviewer by themselves. Treat these as candidate evidence sets, not permanently trusted boards.
+   - Compare exact model, effort, benchmark version, task window, harness and budget. Use fixed-harness results for model comparisons; label native-agent results as model-plus-harness evidence, not measured Pi performance. Keep uncertainty-overlapping candidates tied. Require corroboration from independently built, role-relevant evaluations before changing a placement; a vendor model card is not independent corroboration.
+   - Run `scripts/aa-coding-agents.py` (`--json` for structured rows; token/step fields may be unavailable) for [Artificial Analysis Coding Agent Index](https://artificialanalysis.ai/agents/coding-agents) stack-quality and efficiency context. Inspect the index's current components; never count an aggregate and its components as separate confirming votes. Do not average incompatible scores or transfer an effort margin across benchmarks.
+   - **Stale-benchmark rule**: reassess saturation, contamination, grading validity and maintenance on every refresh. Require documented held-out/original tasks or a verified post-training task window. Unknown cutoff or exposure remains a gap, not proof of freshness. Exclude affected versions or subsets when material test defects, solution leakage, ceiling clustering, obsolete tasks or missing current candidate coverage defeats this role's comparison. Re-admit only with documented repairs and current comparable results. Retain old versions for history, not current placement authority. SWE-bench Verified, unrepaired Pro public splits and frozen SWE-Lancer do not establish autonomous repository-feature or review quality. Neither do algorithm-only LiveCodeBench or UI-preference arenas. New versions earn admission under the same criteria.
+   - When current independent role-specific evidence is missing, conflicting or unreachable, keep the placement and list the exact gap. Do not invent a model ranking or launch a local evaluation without separate authorization.
 2. **Official provider token pricing**: check current $/1M input, output, and cached-input rates on the vendors' pricing pages (OpenAI, Anthropic, Google Gemini, xAI) to catch introductory-rate expirations, long-context multipliers, and cost differences between model classes.
 3. **Account subscription and quota bounds**: run `quota-axi --full` before and after the step 4 probes. Record limiting windows, reset, pace, `spendPriority`, probe drain and shared supervisor load. Map every usable pool to suitable rules; explain any uncovered pool. A small pool is not an exclusion: find enough quality-appropriate work to use it before reset. API credit balances are money, not expiring subscription allowance; do not treat them as a spending target.
 4. Placement rules:
@@ -104,14 +111,14 @@ Match the **task's effort and volume** to **measured quality, coding ability, wa
      - *Quick utility* (`recon`, `web research`, `images`, judging): fast, capable models with the required tools. Do not infer coding or judgment quality from low price alone.
      - *Good-value coding* (`everyday`, `default`): reliable implementation, bug fixes and tests. Include qualified candidates across subscription pools, not just the nominally cheapest vendor. Favor useful work per allowance and latency; let Firstmate spend available quota.
      - *Frontier intelligence* (`large`, `review`, `hardest`): sustained reasoning, risky changes and independent review. Include every verified frontier candidate that clears the role's quality bar; distinguish implementation from judgment evidence. Do not mistake a coding score for general intelligence or assume a small pool must sit idle.
-   - **Effort per model**, from that model's own index rows, never "higher is better". The same step up can help one model a lot, another not at all, and some it hurts. In cost-sensitive tiers (`everyday`, `default`), use the cheapest effort within about 2 points of the model's best. In `large` and `hardest`, use its best-scoring effort. Never use an effort that scores below a cheaper one (e.g. Sol high below Sol medium). An effort with no index row keeps its current setting; say so in the report.
+   - **Effort per model**, from comparable role-specific results for that exact model, never "higher is better". In cost-sensitive tiers (`everyday`, `default`), use the cheapest effort whose quality is indistinguishable within the evaluation's uncertainty. In `large` and `hardest`, use the best-supported effort for the role. Never use an effort reliably worse than a cheaper one under comparable conditions. Missing, conflicting or inconclusive effort evidence keeps the current setting; name the gap in the report.
    - **Newer and as good replaces older** within the same cost/effort class, especially when cheaper.
-   - **Below the tier's best by more than about 2 points** needs a justified cost/speed or fallback trade recorded concisely in the rule's `why`. Spare quota will make an eligible candidate win when higher-priority pools drain.
+   - **Reliably below the tier's best on comparable role-specific evidence** needs a justified cost/speed or fallback trade recorded concisely in the rule's `why`. Spare quota will make an eligible candidate win when higher-priority pools drain.
    - **Spend all usable allowance on suitable work**: quota size informs capacity, not a blanket tier ban. Expand a candidate into another tier only when quality evidence supports it. Keep exhausted candidates configured for reset; flag missing scope mappings and unused pools instead of hiding them. Do not bypass explicit supervisor reservations or account pins.
-   - Scores come from each vendor's own agent; the fleet runs models through Pi. Treat them as directional.
-   - **Our own evidence for judgment tiers** (hardest, review, secondmate): the index ranks reasoning, but to move a model in or out of these tiers on our own runs, use Fleet's principle cases. Grade every model's runs with the same two judges from different families (`skill-creator-fleet/scripts/cross_judge.py`; its `evaluation-workflow.md` section 8). Never compare models that different judges graded: on 2026-10-15 a per-model judge reversed a GPT-versus-Opus reading. Our result overrides the index only when it wins under both judges at sign-test p < 0.05.
+   - Native-agent scores measure model-plus-harness stacks; the fleet runs models through Pi. Treat transfer to Pi as directional, not measured.
+   - **Our own evidence for judgment tiers** (hardest, review, secondmate): local evaluations require separate authorization; external evidence remains role-specific. When authorized to use our own runs for placement, use Fleet's principle cases. Grade every model's runs with the same two judges from different families. Use `skill-creator-fleet/scripts/cross_judge.py` and its `evaluation-workflow.md` section 8. Never compare models that different judges graded. On 2026-10-15, a per-model judge reversed a GPT-versus-Opus reading. Our runs need wins under both judges to support a placement change. Require sign-test p < 0.05 under each judge. Do not treat implementation cases as review qualification.
 
-Special-purpose rules are placed by capability, not the coding index. Re-check which harnesses have each capability:
+Special-purpose rules are placed by capability, not implementation benchmarks. Re-check which harnesses have each capability:
 
 | Rule | Needs | How to find who has it |
 |---|---|---|
@@ -120,7 +127,7 @@ Special-purpose rules are placed by capability, not the coding index. Re-check w
 
 For these, a fast model with a weak coding score is fine.
 
-Show the user the benchmark rows and the proposed placement before editing, unless they already named the change.
+Show the user the role-specific evidence and the proposed placement before editing, unless they already named the change.
 
 ## 4. Verify each new model really works
 
@@ -189,11 +196,11 @@ Then:
 
 Start the answer with this table: no summary, verdict or other table before it. It covers every model that is new, moved, or removed. A model that stays put is not in the table.
 
-| Model | Harness | Change | Used in (tier @ effort) | Score · $/task · min | Verified |
+| Model | Harness | Change | Used in (tier @ effort) | Role-specific sources · quality · $/task · min | Verified |
 |---|---|---|---|---|---|
-| `<model>` | Pi / Grok | 🆕 added · ⬆️ moved · 🔁 effort · ❌ removed | e.g. hardest @ high | index row + token rate + quota bound, with cited sources/dates | ✅ tools · ✅ Firstmate ranks, or ⚠️ with the gap |
+| `<model>` | Pi / Grok | 🆕 added · ⬆️ moved · 🔁 effort · ❌ removed | e.g. hardest @ high | named role-specific sources/results + token rate + quota bound, with citations/dates | ✅ tools · ✅ Firstmate ranks, or ⚠️ with the gap |
 
-Then only these short lists. Add no other sections: placement reasoning belongs in the table's score column.
+Name benchmark versions, task windows and harnesses in each evidence cell. Then only these short lists. Add no other sections: placement reasoning belongs in the table's evidence column.
 
 - **Role coverage**: one line each for crew dispatch, active Secondmates, every backup entry and no-mistakes. Name the selected model(s)/effort, changed/kept/blocked/out-of-scope decision, short reason and verification. A fleet-wide refresh must account for all four roles, even when unchanged; a narrower run must mark excluded roles out of scope.
 - **Watch list**: released but not runnable on this account yet.

@@ -15,6 +15,7 @@ repo="$TMP_ROOT/repo"
 git init -q "$repo"
 cp "$REPO_ROOT/.gitattributes" "$repo/"
 git -C "$repo" config filter.obs-keys.clean "bash $REPO_ROOT/scripts/obs-strip-keys.sh"
+git -C "$repo" config filter.obs-keys.smudge cat
 git -C "$repo" config filter.obs-keys.required true
 profile="$repo/home/.config/obs-studio/basic/profiles/Streaming"
 mkdir -p "$profile"
@@ -53,4 +54,13 @@ printf '%s' "${aitum/live_123_SECRET/live_456_NEWSECRET}" > "$profile/aitum.json
 git -C "$repo" add -A
 git -C "$repo" diff --cached --quiet || fail "rotating a key staged a change"
 
-printf 'PASS: keys and tokens are blanked in commits, kept on disk, hotkeys untouched\n'
+# A fresh checkout must restore sanitized bytes even though the filter is required.
+# Missing smudge configuration used to make checkouts fail before agents could edit.
+rm "$profile/aitum.json" "$profile/service.json" "$profile/basic.ini"
+git -C "$repo" checkout-index -af
+for f in aitum.json service.json basic.ini; do
+  git -C "$repo" show ":home/.config/obs-studio/basic/profiles/Streaming/$f" > "$TMP_ROOT/expected"
+  cmp "$TMP_ROOT/expected" "$profile/$f" || fail "$f checkout changed committed bytes"
+done
+
+printf 'PASS: keys and tokens are blanked in commits, kept on disk, hotkeys untouched; checkout restores sanitized files\n'

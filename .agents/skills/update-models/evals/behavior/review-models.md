@@ -13,8 +13,8 @@ Constraints for this run:
 
 1. Read every step 1 catalog, including `agy models` and `pi --list-models meta`.
 2. Decided each newer release's availability from a tool-test probe, not from a warning or the release list.
-3. Ran the releases list and the coding index.
-4. Left trades recorded in `why` in place unless their gap moved more than about 2 points.
+3. Ran the releases list and gathered independent role-specific benchmark evidence; used the coding index only for stack-quality and efficiency context.
+4. Preserved trades recorded in `why` unless comparable role-specific evidence justified a change; did not transfer point margins across benchmarks.
 5. Tool-tested every model it proposes to add or move, or said why a probe could not run.
 6. Ran Firstmate's validator and the Jev resolver, and reported any unranked candidate as a gap.
 7. Mapped usable subscription pools to quality-appropriate work, favored spending included allowance before reset, and did not treat API credit balances as a spending target.

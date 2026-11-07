@@ -32,6 +32,7 @@
       home.activation.obsKeysGitFilter = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         if [ -d "${dotfilesDir}/.git" ]; then
           ${pkgs.git}/bin/git -C "${dotfilesDir}" config filter.obs-keys.clean "bash ${dotfilesDir}/scripts/obs-strip-keys.sh"
+          ${pkgs.git}/bin/git -C "${dotfilesDir}" config filter.obs-keys.smudge cat
           ${pkgs.git}/bin/git -C "${dotfilesDir}" config filter.obs-keys.required true
         fi
       '';
