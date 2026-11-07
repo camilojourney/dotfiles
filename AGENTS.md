@@ -6,6 +6,7 @@ Deliberate decisions in this repo - do NOT silently revert them:
 - Homebrew's python3 is managed the same way: only the libraries in the `python` list of nix/agent-tools.manifest.lock.json stay, every rebuild uninstalls anything else pip put there, and `PIP_REQUIRE_VIRTUALENV=1` blocks ad-hoc global installs. Project libraries belong in the project's own uv environment and Python CLIs in the manifest's `uv` list. Do not remove the cleanup.
 - Both machines pull this repo's main and rebuild as root every day at 05:00 (docs/AUTO-UPDATE.md). Anything pushed to main reaches both machines unattended, so only push config you would run a rebuild with.
 - For missing Nix, an unmounted store, or daemon connection failures, follow [Nix recovery](docs/RECOVERY.md#nix-is-missing-or-unavailable) before rerunning setup or considering reinstallation.
+- Keep only configuration and required code/assets in the checkout. App roots must remain host-local, not whole-directory links into dotfiles; use the config-only declarations and migration in [docs/CONFIGURATION.md](docs/CONFIGURATION.md). Ignoring runtime files in Git is not sufficient.
 - Never commit .no-mistakes/ validation evidence to this public repo. .no-mistakes/ is gitignored; if a validation pipeline stages evidence into a branch, drop it before merging.
 
 # Maintaining this file

@@ -15,7 +15,12 @@
 # macOS metadata junk
 .DS_Store
 
-# Herdr runtime state (lives under home/.config/herdr via HM symlink)
+# OBS rewrites *.bak on every save. Stream keys are blanked on commit by the
+# obs-keys filter (.gitattributes), not ignored.
+home/.config/obs-studio/basic/**/*.bak
+
+# Legacy runtime guard only; app state is relocated outside the checkout.
+# See docs/CONFIGURATION.md. These files must not live here after migration.
 home/.config/herdr/*.log
 home/.config/herdr/*.sock
 home/.config/herdr/*.sock.agent

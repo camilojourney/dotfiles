@@ -61,15 +61,20 @@ jq -e '
 ' "$WEB_SEARCH" >/dev/null
 
 jq -e '
-  (.providers | keys) == ["deepseek"]
+  (.providers | keys) == ["deepseek", "ollama"]
+  and (.providers.ollama.baseUrl == "http://127.0.0.1:11434/v1")
+  and ([.providers.ollama.models[].cost | .input, .output] | all(. == 0))
   and (.providers.deepseek.modelOverrides | keys | sort == ["deepseek-v4-flash", "deepseek-v4-pro"])
   and ([.providers.deepseek.modelOverrides[].contextWindow] | all(. == 500000))
 ' "$MODELS" >/dev/null
 
 # Claude models run only through Pi, never the Claude Code harness (captain,
-# 2026-10-19): Sonnet 5.5 for external-facts research (rule 0) and read-only
-# mapping (rule 7), Haiku 5.5 for evaluation judging (rule 8). Opus 5.5 serves
-# only the hardest-work tier (rule 6; captain, 2026-10-23); Fable is not dispatched.
+# 2026-10-19). No provider family is preferred (captain, 2026-10-30): each rule
+# lists its best candidates, one per quota pool, and Firstmate picks by quota.
+# Opus in review and hardest, Fable in large, Sonnet for routine coding and
+# mapping, Haiku for recon and judging; Gemini Flash covers quick research,
+# images and recon. Secondmate choices stay separate.
+# No rule uses Gemini Argon: the captain has no Argon quota (2026-10-29).
 jq -e '
   def profiles($v): if ($v | type) == "array" then $v else [$v] end;
   def sonnet: .model == "claude-bridge/claude-sonnet-5-5" and .provider == "claude"
@@ -77,34 +82,43 @@ jq -e '
   def haiku: .model == "claude-bridge/claude-haiku-5-5" and .provider == "claude";
   def opus: .model == "claude-bridge/claude-opus-5-5" and .provider == "claude"
     or .model == "antigravity/claude-opus-5-5" and .provider == "agy";
+  def fable: .model == "claude-bridge/claude-fable-5-1" and .provider == "claude";
   def keys_using(f): [.rules | to_entries[] | select(.value.use | profiles(.) | any(f)) | .key];
   ([.rules[].use, .default] | map(profiles(.)) | add) as $all
-  | ($all | all(.harness == "pi"))
-  and ($all | all(sonnet or haiku or opus or ((.model | test("claude|opus|sonnet|fable|haiku"; "i") | not) and .provider != "claude")))
-  and (keys_using(sonnet) == [0, 7])
-  and (keys_using(haiku) == [8])
-  and (keys_using(opus) == [6])
-  and ([.rules[6].use] | map(profiles(.)) | all(any(opus and .provider == "claude" and .effort == "xhigh") and any(opus and .provider == "agy" and .effort == "xhigh")))
-  and ([.rules[0].use, .rules[7].use] | map(profiles(.)) | all(any(sonnet and .provider == "claude" and .effort == "medium") and any(sonnet and .provider == "agy" and .effort == "medium")))
+  | (has("preferred_provider") | not)
+  and ($all | all(.harness == "pi"))
+  and ($all | all(sonnet or haiku or opus or fable or ((.model | test("claude|opus|sonnet|fable|haiku"; "i") | not) and .provider != "claude")))
+  and (keys_using(sonnet) == [0, 4, 7])
+  and (keys_using(haiku) == [3, 8])
+  and (keys_using(opus) == [2, 6])
+  and (keys_using(fable) == [5])
+  # Evaluation judging is Haiku first again after the local Qwen trial (captain, 2026-10-25).
+  and (.rules[8].use[0].model == "claude-bridge/claude-haiku-5-5")
+  and ([.rules[7].use] | map(profiles(.)) | all(any(sonnet and .provider == "claude" and .effort == "medium") and any(sonnet and .provider == "agy" and .effort == "medium")))
+  # Quick research keeps Flash and no Claude-bridge candidate.
+  and ([.rules[0].use] | map(profiles(.)) | all(any(sonnet and .provider == "agy" and .effort == "medium") and (any(.provider == "claude") | not)))
   and (.rules[7].when | test("^Read-only mapping"))
   and (.rules[8].when | test("^Evaluation judging"))
   and ([.rules[7].use] | map(profiles(.)) | all(any(.model == "openai-codex/gpt-6.1-sol" and .effort == "medium" and .provider == "codex")))
   and ([.rules[2].use, .rules[6].use] | map(profiles(.)) | all(any(.model == "openai-codex/gpt-6.1-sol" and .effort == "xhigh" and .provider == "codex")))
   and ([.rules[0].use, .rules[1].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-3.8-flash" and .effort == "medium" and .provider == "agy")))
   and ([.rules[3].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-3.8-flash" and .effort == "low" and .provider == "agy")))
-  and ([.rules[2].use, .rules[5].use, .rules[6].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-4-argon" and .effort == "high" and .provider == "agy")))
-  and ([.rules[4].use, .default] | map(profiles(.)) | all((first.model == "openai-codex/gpt-6.1-sol" and first.effort == "medium") and (any(.model == "antigravity/gemini-4-argon") | not)))
-  # Luna xhigh codes only ordinary, clear-path work (captain, 2026-10-19): an eval
-  # found it faster and cheaper than Sol xhigh but it missed a subtle edge Sol caught.
+  and (keys_using(.model == "antigravity/gemini-4-argon") == [])
+  and ([.rules[4].use, .default] | map(profiles(.)) | all((first | sonnet and .provider == "claude" and .effort == "medium") and any(.model == "openai-codex/gpt-6.1-sol" and .effort == "medium" and .provider == "codex")))
   and (.rules[4].when | test("^Ordinary implementation"))
-  and (keys_using(.model == "openai-codex/gpt-6-luna" and .effort == "xhigh" and .provider == "codex") == [4])
+  # Luna stays only as the judging fallback (captain, 2026-10-25); Terra low replaced it in recon.
+  and (keys_using(.model == "openai-codex/gpt-6-luna") == [8])
+  and ([.rules[3].use] | map(profiles(.)) | all(any(.model == "openai-codex/gpt-6.1-terra" and .effort == "low" and .provider == "codex")))
 ' "$DISPATCH" >/dev/null
 
 # Each selection has one authored owner, linked into Firstmate by Home Manager.
-# Second mates run Opus 5.5 (captain, 2026-10-23). The manual backup lists Argon,
-# then Flash, which draws on a separate Antigravity pool from Argon's.
-[[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness") == "pi claude-bridge/claude-opus-5-5 xhigh" ]]
-[[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness.backup") == $'pi antigravity/gemini-4-argon high\npi antigravity/gemini-3.8-flash high' ]]
+# Second mates run Codex Sol (captain, 2026-10-23, replacing Opus); pythia-v2-lab is pinned to
+# Opus high. The manual backup is Flash;
+# Argon was dropped because the captain has no Argon quota (2026-10-29).
+[[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness") == $'pi openai-codex/gpt-6.1-sol xhigh\nmate pythia-v2-lab: pi claude-bridge/claude-opus-5-5 high' ]]
+[[ $(<"$REPO_ROOT/home/.firstmate/secondmate-harness.backup") == "pi antigravity/gemini-3.8-flash high" ]]
+[[ $(<"$REPO_ROOT/home/.firstmate/supervision-branch-model") == "openai-codex/gpt-6-luna" ]]
+[[ $(<"$REPO_ROOT/home/.firstmate/supervision-branch-effort") == "medium" ]]
 # Match literal Nix interpolation, not a shell variable.
 # shellcheck disable=SC2016
 grep -Fq '"github/firstmate/config/crew-dispatch.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/crew-dispatch.json";' "$REPO_ROOT/nix/home.nix"
@@ -112,6 +126,10 @@ grep -Fq '"github/firstmate/config/crew-dispatch.json".source = config.lib.file.
 grep -Fq '"github/firstmate/config/secondmate-harness".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/secondmate-harness";' "$REPO_ROOT/nix/home.nix"
 # shellcheck disable=SC2016
 grep -Fq '"github/firstmate/config/secondmate-harness.backup".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/secondmate-harness.backup";' "$REPO_ROOT/nix/home.nix"
+# shellcheck disable=SC2016
+grep -Fq '"github/firstmate/config/supervision-branch-model".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/supervision-branch-model";' "$REPO_ROOT/nix/home.nix"
+# shellcheck disable=SC2016
+grep -Fq '"github/firstmate/config/supervision-branch-effort".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/supervision-branch-effort";' "$REPO_ROOT/nix/home.nix"
 # shellcheck disable=SC2016
 grep -Fq '".pi/agent/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.pi/agent/settings.json";' "$REPO_ROOT/nix/home.nix"
 

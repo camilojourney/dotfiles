@@ -1,20 +1,22 @@
 ---
 name: update-models
-version: 1.1.0
-description: Reviews and updates fleet models after releases, retirements or provider changes. Discovers Pi routes including Meta/Muse, verifies tools, and places candidates in crew-dispatch tiers.
+version: 1.3.1
+description: Updates fleet models across crew dispatch, active Secondmates, every backup and no-mistakes for intelligence, coding value and subscription-quota use. Verifies routes and picks; keeps reasons concise.
 ---
 
 # update-models
 
-The goal is three things, in this order:
+The goal is useful work from every available subscription pool:
 
-1. **Newest**: no tier uses a model when a newer, better one is runnable.
-2. **Available**: every model in the config actually runs on this account, with tools, through the harness the config names.
-3. **Right place**: each model sits in the tier its quality (or capability) earns.
+1. **Capable and runnable**: each candidate meets its task's quality bar and runs tools through its configured route.
+2. **Use the quota**: cover every usable pool so earned allowance is spent on real work before reset, not left idle.
+3. **Right role**: distinguish frontier intelligence, good-value coding and quick utility work; prefer newer models within each class.
 
 Models, scores, efforts and quota pools change all the time. Every rule below is a method; concrete model examples are dated evidence, not defaults to impose. Explicit task selections and approved trades take precedence: preserve them, unrelated defaults and account pins during a scoped refresh. A discovery fix does not authorize a tier sweep.
 
-Quota is not this skill's concern. At dispatch time Jev picks, within a tier, the candidate with the most spare quota (`spendPriority` from `quota-axi`) and skips an exhausted provider until its reset. So never drop a model for being low on quota today. One consequence matters: a candidate with spare quota wins most of its tier's tasks. So every candidate in a tier must be good enough for that tier's work.
+Quota coverage is a placement concern. Jev classifies the brief using `when`; Firstmate then ranks that rule's eligible candidates by `quota-axi`'s `spendPriority`, which accounts for runway and reset, not just percent remaining. Array order is not a quota preference. Never remove a capable model because its pool is exhausted today, or reserve a pool so narrowly that its allowance routinely expires unused.
+
+Use all current, distinct, capable models across appropriate roles, not every obsolete version or every model in every tier. Separate routes to one model count as extra allowance only when quota evidence proves distinct pools. Within a quality-qualified tier, favor spending included quota over minimizing nominal API price. Cheap, good models still earn high-volume work through quality, speed and useful work per allowance. Never lower the quality bar, invent busywork, enable paid overages, or change billing/authentication/privacy settings to burn quota. Preserve explicit task selections and scoped account pins.
 
 Nothing runs this skill automatically. The daily auto-update (`docs/AUTO-UPDATE.md`) upgrades tools but never changes which models the fleet uses and does not refresh Pi's model catalog. A change pushed to `main` reaches both machines at the next 05:00 run.
 
@@ -33,7 +35,16 @@ This skill lives in `.agents/skills/`; `.claude/skills` is a symlink to that dir
 | `tests/pi_settings_test.sh` | Pins Pi `defaultModel`; must match settings.json | Run `bash tests/pi_settings_test.sh` |
 | `home/.claude/settings.json` | Claude Code's interactive default `model` | Next Claude Code session |
 
-Review both Secondmate files, including each route, model and effort. Preserve explicit selections outside the requested scope. Firstmate reads only `secondmate-harness`; editing the backup does not switch agents.
+## Required coverage for a fleet refresh
+
+A fleet-wide model update includes every role below unless the user explicitly narrows scope. Reading a file or listing its current model is not a completed model decision.
+
+- **Crew dispatch**: assess all rules and the default for quality, capability and quota coverage.
+- **Active Secondmates**: select the route, model and effort for sustained supervision and judgment, not just coding throughput.
+- **Every backup entry**: assess each saved route, model and effort independently for role quality and alternative quota coverage. Firstmate reads `secondmate-harness` for active launches; the backup is manual, not automatic failover.
+- **no-mistakes**: select its pipeline-wide `agent` and model/effort in `agent_config` for coding, independent review and long validation runs. Inspect effective argument overrides too; do not invent per-step model routing.
+
+For each role, apply a supported improvement or explicitly mark **kept**, **blocked** or **out of scope**, with a short reason and verification result. Existing configuration is not an instruction to keep an obsolete model. Preserve explicit user pins, but still assess and report their verification or gaps. Do not call a fleet refresh complete while any role is silently skipped.
 
 Keep the family alias (e.g. `opus`) in `home/.claude/settings.json`: it follows each new release. Exact ids belong in dispatch config, where runs must be reproducible.
 
@@ -81,22 +92,22 @@ Argon discovery example, checked 2026-10-16:
 2. Within the same cost and latency class (e.g. a new Flash vs an older Flash, or a new frontier model vs an older frontier model), the newest runnable version replaces the older one unless benchmarks or cost-to-run show it worse. Never blindly replace a cheap, fast model (e.g. Gemini Flash) with a slow, expensive frontier reasoning model (e.g. Gemini Argon) on low-effort or special-purpose rules: place each by task effort, cost, and pool size in step 3.
 3. A release in no catalog yet goes on the watch list for the report.
 
-## 3. Placement: weigh task effort, cost-to-run, and quota bounds
+## 3. Placement: intelligence, coding value, and quota coverage
 
-Every tier is placed by matching the **task's effort and volume** against **measured quality, cost-to-run, wall-clock time, token pricing, and account quota bounds**. Research and cite current figures with dates from all three authoritative sources on every run:
+Match the **task's effort and volume** to **measured quality, coding ability, wall-clock time and useful work per quota unit**. Token prices and benchmark $/task describe efficiency, not the marginal bill for included subscription usage. Research and cite current figures with dates from all three authoritative sources on every run:
 
-1. **Benchmark score, $/task, minutes/task, and tokens/task**: run `scripts/aa-coding-agents.py` (`--json` for tokens/steps) for the [Artificial Analysis Coding Agent Index](https://artificialanalysis.ai/agents/coding-agents), and cross-check any tier change with one independent source (SWE-Bench Pro, DeepSWE, or the vendor's release model card). One benchmark alone misleads: on 2026-10-04 a Flash model reported a strong SWE-Bench Pro score but sat about 20 points under the index leaders. When no independent source is reachable, keep the tier and list the change under Gaps.
+1. **Benchmark score, $/task, minutes/task, and tokens/task**: run `scripts/aa-coding-agents.py` (`--json` for structured rows; token/step fields may be unavailable) for the [Artificial Analysis Coding Agent Index](https://artificialanalysis.ai/agents/coding-agents), and cross-check any tier change with one independent source (SWE-Bench Pro, DeepSWE, or the vendor's release model card). One benchmark alone misleads: on 2026-10-04 a Flash model reported a strong SWE-Bench Pro score but sat about 20 points under the index leaders. When no independent source is reachable, keep the tier and list the change under Gaps.
 2. **Official provider token pricing**: check current $/1M input, output, and cached-input rates on the vendors' pricing pages (OpenAI, Anthropic, Google Gemini, xAI) to catch introductory-rate expirations, long-context multipliers, and cost differences between model classes.
-3. **Account subscription and quota bounds**: run `quota-axi --full` before and after the step 4 probes. Note which windows bound each provider scope (e.g. 5-hour session vs 7-day weekly vs model-specific weekly windows), how much a handful of probes drains each window, and whether supervisor roles (Firstmate, second mates) already draw from that pool.
+3. **Account subscription and quota bounds**: run `quota-axi --full` before and after the step 4 probes. Record limiting windows, reset, pace, `spendPriority`, probe drain and shared supervisor load. Map every usable pool to suitable rules; explain any uncovered pool. A small pool is not an exclusion: find enough quality-appropriate work to use it before reset. API credit balances are money, not expiring subscription allowance; do not treat them as a spending target.
 4. Placement rules:
    - **Match task effort and volume to cost and pool size**:
-     - *Trivial or non-coding rules* (`recon`, `web research`, `images`): high volume, low reasoning effort. Use fast, low-cost models on large quota pools (e.g. Luna, Gemini Flash) so workhorse and frontier pools are not burned on lookups or asset calls.
-     - *Workhorse coding* (`everyday`, `default`): high volume, moderate effort. Lead with the model that delivers strong coding quality at the lowest $/task and minutes/task (e.g. Sol medium at $0.70/task and 10.9 min rather than a $5-$14/task, 35-87 min frontier model).
-     - *High-effort, low-volume tiers* (`large`, `review`, `hardest`): complex multi-file refactors, cross-family review, and root-cause/architecture work justify higher $/task, longer runtimes, and small weekly quota pools (e.g. Claude max models, Sol xhigh, Gemini Argon high, Antigravity Opus high).
+     - *Quick utility* (`recon`, `web research`, `images`, judging): fast, capable models with the required tools. Do not infer coding or judgment quality from low price alone.
+     - *Good-value coding* (`everyday`, `default`): reliable implementation, bug fixes and tests. Include qualified candidates across subscription pools, not just the nominally cheapest vendor. Favor useful work per allowance and latency; let Firstmate spend available quota.
+     - *Frontier intelligence* (`large`, `review`, `hardest`): sustained reasoning, risky changes and independent review. Include every verified frontier candidate that clears the role's quality bar; distinguish implementation from judgment evidence. Do not mistake a coding score for general intelligence or assume a small pool must sit idle.
    - **Effort per model**, from that model's own index rows, never "higher is better". The same step up can help one model a lot, another not at all, and some it hurts. In cost-sensitive tiers (`everyday`, `default`), use the cheapest effort within about 2 points of the model's best. In `large` and `hardest`, use its best-scoring effort. Never use an effort that scores below a cheaper one (e.g. Sol high below Sol medium). An effort with no index row keeps its current setting; say so in the report.
    - **Newer and as good replaces older** within the same cost/effort class, especially when cheaper.
    - **Below the tier's best by more than about 2 points** needs a justified cost/speed or fallback trade recorded concisely in the rule's `why`. Spare quota will make an eligible candidate win when higher-priority pools drain.
-   - **Small quota windows stay in low-volume tiers**: if `quota-axi --full` shows a model or route has a small weekly/session window (a few probes move it by several percent, such as Antigravity's `claude_gpt` pool or Argon's separate weekly window) or shares a heavily loaded supervisor pool, restrict it to low-volume tiers (`review`, `large`, `hardest`).
+   - **Spend all usable allowance on suitable work**: quota size informs capacity, not a blanket tier ban. Expand a candidate into another tier only when quality evidence supports it. Keep exhausted candidates configured for reset; flag missing scope mappings and unused pools instead of hiding them. Do not bypass explicit supervisor reservations or account pins.
    - Scores come from each vendor's own agent; the fleet runs models through Pi. Treat them as directional.
    - **Our own evidence for judgment tiers** (hardest, review, secondmate): the index ranks reasoning, but to move a model in or out of these tiers on our own runs, use Fleet's principle cases. Grade every model's runs with the same two judges from different families (`skill-creator-fleet/scripts/cross_judge.py`; its `evaluation-workflow.md` section 8). Never compare models that different judges graded: on 2026-10-15 a per-model judge reversed a GPT-versus-Opus reading. Our result overrides the index only when it wins under both judges at sign-test p < 0.05.
 
@@ -113,8 +124,7 @@ Show the user the benchmark rows and the proposed placement before editing, unle
 
 ## 4. Verify each new model really works
 
-For every model you add or move, through the exact configured extension source, harness and effort:
-Include changed primary and backup Secondmate selections; a saved backup is not proof its route works.
+Tool-test every model you add or move through the exact configured extension source, harness and effort. During a fleet-wide refresh, also test every selected active Secondmate, every backup entry and the no-mistakes selection, including kept selections. Reuse a current-run probe only for an identical route, model and effort. A working crew candidate does not verify another role's different route or effort; a saved backup is not proof its route works. Report a blocked probe rather than claiming verification.
 
 - **Pi**: run this probe, substituting the selected model and effort:
 
@@ -134,21 +144,25 @@ Dispatch profile shape:
 
 - `pi` profiles declare `provider` as `quota-axi` names it, not the Pi model prefix (`openai-codex/` is `codex`, `claude-bridge/` is `claude`, `xai/` is `grok`, `antigravity/` is `agy`, `cursor/` is `cursor`).
 - Only `pi` and `grok` harnesses; Claude (`claude-bridge/`) and Antigravity (`antigravity/`) models go through Pi, never the `claude` or `agy` harnesses.
+- Never set the top-level `preferred_provider`. Each rule lists the best qualified candidates for its tier, one per quota pool; Jev picks the rule and Firstmate picks among its candidates by quota. A preference for one vendor shows only in which candidates a rule lists.
 - Meta/Muse profiles use `harness: pi` and the catalog-confirmed `meta/<id>`. Resolve their quota provider from the selected authentication route, not its name. Report an unbound Jev candidate under Gaps; never relabel it as native Muse to obtain a quota match.
 - `when` is the only rule text the dispatch classifier sees. It reads the brief's intent and spec and picks one `when` as a Choice option; it never sees `use`, `why` or quota. Write `when` so a reader of the brief alone can pick the right rule:
   - Describe the task, never the model, harness, effort or cost.
   - Start with the kind of work, then concrete examples in the words briefs use.
   - Separate neighbouring tiers with an observable trait (size, ambiguity, prior failure) or an explicit "Not for ..." clause.
-  - Keep it to one or two short sentences.
-- `why` states **only the decisive reason for that tier's candidate choice and order** (capability requirement, effort/cost boundary, cross-family rule, quota-window bound, or non-monotonic effort). Firstmate reads it when the classifier does not decide, and people read it when editing.
+  - Maximum 30 words and two short sentences; usually one. Keep only examples that separate neighbouring rules.
+- `why` states **only the decisive reason for that tier's candidate eligibility and fallback trade** (capability requirement, effort/cost boundary, cross-family rule, quota-window bound, or non-monotonic effort). Firstmate reads it when the classifier does not decide, and people read it when editing.
   - Omit anything that does not change a routing decision: no dates, history ("added on ...", "replaces ..."), benchmark numbers (put those in the step 6 report), or filler.
   - Write present-tense claims about this rule's `use` only ("Sol runs at xhigh because Sol high scores below Sol medium").
-  - Re-read each `why` after every edit to confirm every claim matches its rule's `use`.
+  - Maximum 35 words and two short sentences; usually one. State the trade, not the research behind it.
+  - Re-read each `why` after every edit to confirm every claim matches its rule's `use`. Never describe array order as overriding quota ranking.
+
+Run `bash tests/model_routing_test.sh` after edits. Its word limits guard every rule, not just the changed ones.
 
 Then:
 
 1. Edit all files consistently. Edit JSON with `jq` or exact full-line matches, and keep the file's one-line-per-profile style.
-   Keep Secondmate selections and their assertions in `tests/pi_settings_test.sh` consistent. A primary-only change leaves the backup unchanged.
+   Update each in-scope role's selected harness, model and effort, matching assertions and documentation. Keep Secondmate selections and their assertions in `tests/pi_settings_test.sh` consistent. For no-mistakes, check `agent`, the matching `agent_config` block and any winning argument overrides together. Confirm effective files resolve to the authored selections. A scoped primary-only change leaves the backup unchanged; a fleet-wide refresh requires a separate decision for every backup entry.
 2. Validate `crew-dispatch.json` with Firstmate's own checker (do not run the whole `fm-bootstrap.sh`):
    ```sh
    cd ~/github/firstmate
@@ -158,7 +172,18 @@ Then:
      FM_HOME=$PWD CONFIG=$S/cfg; . $S/v.sh; crew_dispatch_validate"
    ```
    No output means valid.
-3. Confirm Jev can rank each new candidate: write a brief whose `## Captain's intent` and `## Firstmate spec` fit the tier, then run `bin/fm-dispatch-resolve.sh <brief> --project <name>` from `~/github/firstmate`. Every candidate must show `-> eligible` with a `scope=` and a numeric `spendPriority`; which one wins today does not matter. `eligible, unranked: no applicable quota row` means the resolver cannot bind the model to a quota row, so it never wins. That is a resolver or config gap to fix or flag, not a quota state. (As of 2026-10-10, Antigravity models rank only with firstmate PR #6569, which binds `antigravity/<id>` to quota-axi's `gemini`/`claude_gpt` scopes; check whether it has merged.) Rerun once before trusting an `unknown` row.
+3. **Quick live pick check**: run the actual resolver on a short synthetic brief per changed rule (all rules after a fleet-wide text rewrite). Jev chooses `when`; Firstmate, not Jev, binds quota and ranks candidates. Run from `~/github/firstmate`:
+   ```sh
+   B=$(mktemp)
+   printf "## Captain's intent\nFix a bounded parser bug.\n\n## Firstmate spec\nChange one function and add focused tests; the implementation path is clear.\n" > "$B"
+   bin/fm-dispatch-resolve.sh "$B" --project model-routing-smoke
+   rm "$B"
+   ```
+   Confirm the expected rule, `status: clear`, and a `profile:` naming one of that rule's candidates at its configured effort. Check every candidate has `scope=` and numeric `spendPriority`. An available candidate must show `-> eligible`; an exhausted pool may be ineligible until reset and is not a mapping failure. A genuine tie/approval escalation is not a clear pick: report it. An off resolver, low-confidence match, API error or zero exit alone is not a pass.
+
+   This resolver check covers crew dispatch only. It does not select or verify Secondmates, backups or no-mistakes: check their effective selections and exact-route tool probes separately, without launching a full validation pipeline merely to test a model.
+
+   `eligible, unranked: no applicable quota row` is a resolver/config gap, not exhaustion; fix or flag it. Rerun an `unknown` row once, unless the quota endpoint is rate-limited: respect its retry-after and stop additional live checks rather than hammering it. Check neighboring rules with contrasting briefs so shortening `when` does not merge their meanings. Keep this a direct check, not a new harness or swarm. Run Firstmate's existing offline resolver tests if changing resolver code; a mocked pass is not live Jev verification.
 
 ## 6. Report
 
@@ -166,12 +191,16 @@ Start the answer with this table: no summary, verdict or other table before it. 
 
 | Model | Harness | Change | Used in (tier @ effort) | Score · $/task · min | Verified |
 |---|---|---|---|---|---|
-| `<model>` | Pi / Grok | 🆕 added · ⬆️ moved · 🔁 effort · ❌ removed | e.g. hardest @ high | index row + token rate + quota bound, with cited sources/dates | ✅ tools · ✅ Jev ranks, or ⚠️ with the gap |
+| `<model>` | Pi / Grok | 🆕 added · ⬆️ moved · 🔁 effort · ❌ removed | e.g. hardest @ high | index row + token rate + quota bound, with cited sources/dates | ✅ tools · ✅ Firstmate ranks, or ⚠️ with the gap |
 
 Then only these short lists. Add no other sections: placement reasoning belongs in the table's score column.
 
+- **Role coverage**: one line each for crew dispatch, active Secondmates, every backup entry and no-mistakes. Name the selected model(s)/effort, changed/kept/blocked/out-of-scope decision, short reason and verification. A fleet-wide refresh must account for all four roles, even when unchanged; a narrower run must mark excluded roles out of scope.
 - **Watch list**: released but not runnable on this account yet.
 - **Kept out on purpose**: model and reason.
-- **Gaps**: anything that blocks a candidate from being picked (e.g. unranked in Jev), or a catalog that lists models the vendor does not serve.
+- **Gaps**: blocked/unranked candidates, unused quota pools, catalog drift, and quick-pick results (expected rule, actual profile, or concrete failure). Include validation commands/results here; do not call an unrun check passed.
 - **Rule text**: each `when` or `why` edit, with the claim it fixes.
+
+Keep the report compact: one brief reason per table row or list item, no research narrative. State whether edits are committed/pushed; never ship a known routing regression.
+
 - Reminder: secondmate homes only receive `crew-dispatch.json` when their sync is not skipped, and remote (Mac mini) homes refuse it while it is a symlink.

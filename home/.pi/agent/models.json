@@ -9,6 +9,19 @@
           "contextWindow": 500000
         }
       }
+    },
+    "ollama": {
+      "name": "Local Ollama (free)",
+      "baseUrl": "http://127.0.0.1:11434/v1",
+      "api": "openai-completions",
+      "apiKey": "local-ollama-needs-no-key-7f3c9e2a",
+      "compat": {
+        "thinkingFormat": "openai",
+        "supportsDeveloperRole": false,
+        "supportsStore": false,
+        "maxTokensField": "max_tokens"
+      },
+      "models": []
     }
   }
 }

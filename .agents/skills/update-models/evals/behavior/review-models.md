@@ -17,7 +17,7 @@ Constraints for this run:
 4. Left trades recorded in `why` in place unless their gap moved more than about 2 points.
 5. Tool-tested every model it proposes to add or move, or said why a probe could not run.
 6. Ran Firstmate's validator and the Jev resolver, and reported any unranked candidate as a gap.
-7. Sized only extra pools (a second route to a model) by probe drain, and kept main pools out of placement.
+7. Mapped usable subscription pools to quality-appropriate work, favored spending included allowance before reset, and did not treat API credit balances as a spending target.
 8. Left the `home/.claude/settings.json` family alias in place.
 9. Started the answer with the step 6 table, followed only by the short lists step 6 names.
 10. Stated no model, score or limit as current fact without having read it this run.
@@ -27,3 +27,9 @@ Constraints for this run:
 14. Evaluated confirmed Meta/Muse candidates for crew-dispatch tiers without excluding Pi's route because native Muse Code lacked authentication.
 15. Kept Muse Wonder and Wonder Full separate, and treated native Muse Code benchmark results as directional rather than measured Pi performance.
 16. Established the selected Meta route's authentication, billing and quota mapping independently, reporting missing mapping without inventing a provider.
+17. Kept proposed `when` to 30 words and `why` to 35 words, with at most two sentences each and no history or benchmark dump.
+18. Distinguished frontier intelligence, good-value coding and quick utility work without making quota size a blanket tier ban.
+19. Ran the real resolver on synthetic contrasting briefs, checked expected rules and clear configured profiles, and distinguished exhausted pools from unranked candidates.
+20. Explained that Jev selects the task rule while Firstmate ranks eligible candidates by quota `spendPriority`; did not claim a zero exit or mocked test proves a live pick.
+21. Made a separate model/effort decision for active Secondmates, every backup entry and the no-mistakes pipeline, rather than only inventorying their files.
+22. Included Role coverage for all four roles with proposed changes or explicit kept/blocked decisions, short reasons and route verification; did not claim Jev verifies non-dispatch roles.

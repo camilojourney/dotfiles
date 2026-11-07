@@ -1,1 +1,521 @@
-{"Controllers":[{"Actions":{"0,0":{"ActionID":"0ff47041-dd0b-4c17-8250-5de5e982164c","LinkedTitle":true,"Name":"Parent Folder","Resources":null,"Settings":{},"State":0,"States":[{}],"UUID":"com.elgato.streamdeck.profile.backtoparent"},"0,1":{"ActionID":"2621f032-6333-4fdd-8c42-7862b5e7e869","LinkedTitle":true,"Name":"Text","Resources":null,"Settings":{"isSendingEnter":false,"pastedText":"👎"},"State":0,"States":[{"Image":"Images/B1IICW5EHP6RJ6NGCL97V43NDSZ.png"}],"UUID":"com.elgato.streamdeck.system.text"},"0,2":{"ActionID":"d3eafbba-b8b5-4140-b80e-eb02643021cf","LinkedTitle":true,"Name":"Text","Resources":null,"Settings":{"isSendingEnter":false,"pastedText":"💩"},"State":0,"States":[{"Image":"Images/T0EIVSKG2526R6NMPB1BIKPWHOZ.png"}],"UUID":"com.elgato.streamdeck.system.text"},"1,0":{"ActionID":"c0e8842c-f6d8-4d52-94d2-31c3a42208a3","LinkedTitle":true,"Name":"Hotkey","Resources":null,"Settings":{"Coalesce":true,"Hotkeys":[{"KeyCmd":true,"KeyCtrl":true,"KeyModifiers":10,"KeyOption":false,"KeyShift":false,"NativeCode":49,"QTKeyCode":32,"VKeyCode":49},{"KeyCmd":false,"KeyCtrl":false,"KeyModifiers":0,"KeyOption":false,"KeyShift":false,"NativeCode":-1,"QTKeyCode":33554431,"VKeyCode":-1},{"KeyCmd":false,"KeyCtrl":false,"KeyModifiers":0,"KeyOption":false,"KeyShift":false,"NativeCode":-1,"QTKeyCode":33554431,"VKeyCode":-1},{"KeyCmd":false,"KeyCtrl":false,"KeyModifiers":0,"KeyOption":false,"KeyShift":false,"NativeCode":-1,"QTKeyCode":33554431,"VKeyCode":-1}]},"State":0,"States":[{"FontFamily":"","FontSize":12,"FontStyle":"","FontUnderline":false,"Image":"Images/R05JM02Q8D3474QJ85IDT0AGA4Z.png","OutlineThickness":2,"ShowTitle":true,"Title":"Emoji\n\n\n\nKeyboard","TitleAlignment":"bottom","TitleColor":"#ffffff"}],"UUID":"com.elgato.streamdeck.system.hotkey"},"1,1":{"ActionID":"1dedabfe-ba9d-4e8b-b30b-6076a91ce69b","LinkedTitle":true,"Name":"Text","Resources":null,"Settings":{"isSendingEnter":false,"pastedText":"👍"},"State":0,"States":[{"Image":"Images/7VB03JQ4GD47J3PBMOSAGDEETSZ.png"}],"UUID":"com.elgato.streamdeck.system.text"},"1,2":{"ActionID":"f16aebd2-deac-4491-aba0-c227522f5151","LinkedTitle":true,"Name":"Text","Resources":null,"Settings":{"isSendingEnter":false,"pastedText":"🍆"},"State":0,"States":[{"Image":"Images/17D6QREL0P2BJFILRA51M08GOKZ.png"}],"UUID":"com.elgato.streamdeck.system.text"},"2,0":{"ActionID":"f3b6a973-fc15-496f-87ef-8bcfb2854242","LinkedTitle":true,"Name":"Text","Resources":null,"Settings":{"isSendingEnter":false,"pastedText":"👀"},"State":0,"States":[{"Image":"Images/0D6TANRA5L7W33PTHORSCP2IPCZ.png"}],"UUID":"com.elgato.streamdeck.system.text"},"2,1":{"ActionID":"0284cf79-c491-45aa-a503-772f577ad59b","LinkedTitle":true,"Name":"Text","Resources":null,"Settings":{"isSendingEnter":false,"pastedText":"👉👈🥺"},"State":0,"States":[{"Image":"Images/HQ412N3EM92DTDPQQPNS4KCON4Z.png"}],"UUID":"com.elgato.streamdeck.system.text"},"2,2":{"ActionID":"a5cc5b3c-0a88-4feb-b0f9-a40465f01114","LinkedTitle":true,"Name":"Text","Resources":null,"Settings":{"isSendingEnter":false,"pastedText":"ಠ_ಠ"},"State":0,"States":[{"Image":"Images/4LP3BTTTSP5EH9DS6VMNKK2910Z.png"}],"UUID":"com.elgato.streamdeck.system.text"},"3,0":{"ActionID":"37f457b1-3b04-49a1-bc22-109aab85a419","LinkedTitle":true,"Name":"Text","Resources":null,"Settings":{"isSendingEnter":false,"pastedText":"🔥"},"State":0,"States":[{"Image":"Images/MC56TWD1H575D5664AJGO6H180Z.png"}],"UUID":"com.elgato.streamdeck.system.text"},"3,1":{"ActionID":"e17da04d-b8e2-4c7d-8e44-47ec43196b99","LinkedTitle":true,"Name":"Text","Resources":null,"Settings":{"isSendingEnter":false,"pastedText":"👁👄👁"},"State":0,"States":[{"Image":"Images/WR4O8I4CP96MT3IR1KVDL06QTGZ.png"}],"UUID":"com.elgato.streamdeck.system.text"},"3,2":{"ActionID":"848f7d16-fd93-4f3f-bce5-b519445d6491","LinkedTitle":true,"Name":"Text","Resources":null,"Settings":{"isSendingEnter":false,"pastedText":"(╯°□°)╯︵ ┻━┻"},"State":0,"States":[{"Image":"Images/DS6EF0J7CH1M12NQBWDHIBKTKKZ.png"}],"UUID":"com.elgato.streamdeck.system.text"},"4,0":{"ActionID":"f2b50531-cd26-4267-9375-39cabdd79379","LinkedTitle":true,"Name":"Text","Resources":null,"Settings":{"isSendingEnter":false,"pastedText":"💅"},"State":0,"States":[{"Image":"Images/9JH4SAQSOL77NF9MPACVHGKVB0Z.png"}],"UUID":"com.elgato.streamdeck.system.text"},"4,1":{"ActionID":"21f3c03f-c12d-40fd-b20b-1bce4608eeb5","LinkedTitle":true,"Name":"Text","Resources":null,"Settings":{"isSendingEnter":false,"pastedText":"💯"},"State":0,"States":[{"Image":"Images/PJ7M9AN23D5DJ1J35BK078EGDCZ.png"}],"UUID":"com.elgato.streamdeck.system.text"},"4,2":{"ActionID":"923a717d-8fe2-416f-9387-ff192e1c19d2","LinkedTitle":true,"Name":"Text","Resources":null,"Settings":{"isSendingEnter":false,"pastedText":"( ͡° ͜ʖ ͡°)"},"State":0,"States":[{"Image":"Images/5TJLB8KVO90DH3GCFACRAHG3JSZ.png"}],"UUID":"com.elgato.streamdeck.system.text"}},"Type":"Keypad"}],"Icon":"","Name":""}
+{
+  "Controllers": [
+    {
+      "Actions": {
+        "0,0": {
+          "ActionID": "0ff47041-dd0b-4c17-8250-5de5e982164c",
+          "LinkedTitle": true,
+          "Name": "Parent Folder",
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {}
+          ],
+          "UUID": "com.elgato.streamdeck.profile.backtoparent"
+        },
+        "0,1": {
+          "ActionID": "2621f032-6333-4fdd-8c42-7862b5e7e869",
+          "LinkedTitle": true,
+          "Name": "Text",
+          "Resources": null,
+          "Settings": {
+            "isSendingEnter": false,
+            "pastedText": "\ud83d\udc4e"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/B1IICW5EHP6RJ6NGCL97V43NDSZ.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.text"
+        },
+        "0,2": {
+          "ActionID": "d3eafbba-b8b5-4140-b80e-eb02643021cf",
+          "LinkedTitle": true,
+          "Name": "Text",
+          "Resources": null,
+          "Settings": {
+            "isSendingEnter": false,
+            "pastedText": "\ud83d\udca9"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/T0EIVSKG2526R6NMPB1BIKPWHOZ.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.text"
+        },
+        "1,0": {
+          "ActionID": "c0e8842c-f6d8-4d52-94d2-31c3a42208a3",
+          "LinkedTitle": true,
+          "Name": "Hotkey",
+          "Resources": null,
+          "Settings": {
+            "Coalesce": true,
+            "Hotkeys": [
+              {
+                "KeyCmd": true,
+                "KeyCtrl": true,
+                "KeyModifiers": 10,
+                "KeyOption": false,
+                "KeyShift": false,
+                "NativeCode": 49,
+                "QTKeyCode": 32,
+                "VKeyCode": 49
+              },
+              {
+                "KeyCmd": false,
+                "KeyCtrl": false,
+                "KeyModifiers": 0,
+                "KeyOption": false,
+                "KeyShift": false,
+                "NativeCode": -1,
+                "QTKeyCode": 33554431,
+                "VKeyCode": -1
+              },
+              {
+                "KeyCmd": false,
+                "KeyCtrl": false,
+                "KeyModifiers": 0,
+                "KeyOption": false,
+                "KeyShift": false,
+                "NativeCode": -1,
+                "QTKeyCode": 33554431,
+                "VKeyCode": -1
+              },
+              {
+                "KeyCmd": false,
+                "KeyCtrl": false,
+                "KeyModifiers": 0,
+                "KeyOption": false,
+                "KeyShift": false,
+                "NativeCode": -1,
+                "QTKeyCode": 33554431,
+                "VKeyCode": -1
+              }
+            ]
+          },
+          "State": 0,
+          "States": [
+            {
+              "FontFamily": "",
+              "FontSize": 12,
+              "FontStyle": "",
+              "FontUnderline": false,
+              "Image": "Images/R05JM02Q8D3474QJ85IDT0AGA4Z.png",
+              "OutlineThickness": 2,
+              "ShowTitle": true,
+              "Title": "Emoji\n\n\n\nKeyboard",
+              "TitleAlignment": "bottom",
+              "TitleColor": "#ffffff"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.hotkey"
+        },
+        "1,1": {
+          "ActionID": "1dedabfe-ba9d-4e8b-b30b-6076a91ce69b",
+          "LinkedTitle": true,
+          "Name": "Text",
+          "Resources": null,
+          "Settings": {
+            "isSendingEnter": false,
+            "pastedText": "\ud83d\udc4d"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/7VB03JQ4GD47J3PBMOSAGDEETSZ.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.text"
+        },
+        "1,2": {
+          "ActionID": "f16aebd2-deac-4491-aba0-c227522f5151",
+          "LinkedTitle": true,
+          "Name": "Text",
+          "Resources": null,
+          "Settings": {
+            "isSendingEnter": false,
+            "pastedText": "\ud83c\udf46"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/17D6QREL0P2BJFILRA51M08GOKZ.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.text"
+        },
+        "2,0": {
+          "ActionID": "f3b6a973-fc15-496f-87ef-8bcfb2854242",
+          "LinkedTitle": true,
+          "Name": "Text",
+          "Resources": null,
+          "Settings": {
+            "isSendingEnter": false,
+            "pastedText": "\ud83d\udc40"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/0D6TANRA5L7W33PTHORSCP2IPCZ.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.text"
+        },
+        "2,1": {
+          "ActionID": "0284cf79-c491-45aa-a503-772f577ad59b",
+          "LinkedTitle": true,
+          "Name": "Text",
+          "Resources": null,
+          "Settings": {
+            "isSendingEnter": false,
+            "pastedText": "\ud83d\udc49\ud83d\udc48\ud83e\udd7a"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/HQ412N3EM92DTDPQQPNS4KCON4Z.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.text"
+        },
+        "2,2": {
+          "ActionID": "a5cc5b3c-0a88-4feb-b0f9-a40465f01114",
+          "LinkedTitle": true,
+          "Name": "Text",
+          "Resources": null,
+          "Settings": {
+            "isSendingEnter": false,
+            "pastedText": "\u0ca0_\u0ca0"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/4LP3BTTTSP5EH9DS6VMNKK2910Z.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.text"
+        },
+        "3,0": {
+          "ActionID": "37f457b1-3b04-49a1-bc22-109aab85a419",
+          "LinkedTitle": true,
+          "Name": "Text",
+          "Resources": null,
+          "Settings": {
+            "isSendingEnter": false,
+            "pastedText": "\ud83d\udd25"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/MC56TWD1H575D5664AJGO6H180Z.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.text"
+        },
+        "3,1": {
+          "ActionID": "e17da04d-b8e2-4c7d-8e44-47ec43196b99",
+          "LinkedTitle": true,
+          "Name": "Text",
+          "Resources": null,
+          "Settings": {
+            "isSendingEnter": false,
+            "pastedText": "\ud83d\udc41\ud83d\udc44\ud83d\udc41"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/WR4O8I4CP96MT3IR1KVDL06QTGZ.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.text"
+        },
+        "3,2": {
+          "ActionID": "848f7d16-fd93-4f3f-bce5-b519445d6491",
+          "LinkedTitle": true,
+          "Name": "Text",
+          "Resources": null,
+          "Settings": {
+            "isSendingEnter": false,
+            "pastedText": "(\u256f\u00b0\u25a1\u00b0)\u256f\ufe35 \u253b\u2501\u253b"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/DS6EF0J7CH1M12NQBWDHIBKTKKZ.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.text"
+        },
+        "4,0": {
+          "ActionID": "f2b50531-cd26-4267-9375-39cabdd79379",
+          "LinkedTitle": true,
+          "Name": "Text",
+          "Resources": null,
+          "Settings": {
+            "isSendingEnter": false,
+            "pastedText": "\ud83d\udc85"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/9JH4SAQSOL77NF9MPACVHGKVB0Z.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.text"
+        },
+        "4,1": {
+          "ActionID": "21f3c03f-c12d-40fd-b20b-1bce4608eeb5",
+          "LinkedTitle": true,
+          "Name": "Text",
+          "Resources": null,
+          "Settings": {
+            "isSendingEnter": false,
+            "pastedText": "\ud83d\udcaf"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/PJ7M9AN23D5DJ1J35BK078EGDCZ.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.text"
+        },
+        "4,2": {
+          "ActionID": "923a717d-8fe2-416f-9387-ff192e1c19d2",
+          "LinkedTitle": true,
+          "Name": "Text",
+          "Resources": null,
+          "Settings": {
+            "isSendingEnter": false,
+            "pastedText": "( \u0361\u00b0 \u035c\u0296 \u0361\u00b0)"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/5TJLB8KVO90DH3GCFACRAHG3JSZ.png"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.text"
+        },
+        "0,3": {
+          "ActionID": "b989136d-6753-40d7-ae08-c4f57cf10a7f",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "~/.config/herdr/bin/switch-wKE"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "FirstMate"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open-8b74b597-000b-4544-b17f-967706367877"
+        },
+        "1,3": {
+          "ActionID": "40f4cb11-6501-4618-8a96-80f958e483d5",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "~/.config/herdr/bin/switch-wKF"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "fleet"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open-5d9ba93d-42c6-477b-8528-95b1cc595589"
+        },
+        "2,3": {
+          "ActionID": "61519472-067e-4581-9cd7-ea91daa3b6f8",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "~/.config/herdr/bin/switch-wKG"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "genpeli"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open-bfc4fb0b-86c7-4e43-affd-a368535eaa1e"
+        },
+        "3,3": {
+          "ActionID": "63d4c6fa-51ed-4a3b-8d4a-f9148da14b53",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "~/.config/herdr/bin/switch-wKH"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "holusight"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open-99798d77-cc77-4126-87a1-3919d1d83f11"
+        },
+        "4,3": {
+          "ActionID": "21515ee9-8363-467f-a823-b462317c2f7b",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "~/.config/herdr/bin/switch-wKK"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "job-tracker"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open-90e847f6-d9b3-4f45-add9-f0596e7082f5"
+        },
+        "0,4": {
+          "ActionID": "8d95afa3-c8ed-44bb-b16d-fc33258fe299",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "~/.config/herdr/bin/switch-wKN"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "phrona"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open-c1b074af-3b25-46e2-93e5-238fecf71dce"
+        },
+        "1,4": {
+          "ActionID": "747452f2-9846-4e03-b283-3e6255509ad2",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "~/.config/herdr/bin/switch-wKP"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "pilaster"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open-4e7363e0-b4fe-4bb3-9626-1a6f8c616213"
+        },
+        "2,4": {
+          "ActionID": "1ab5ea0c-5caa-494d-a21e-0dfaa97dd4d5",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "~/.config/herdr/bin/switch-wKQ"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "syncloom"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open-c90d25fa-09b0-4e89-a5cf-29aa17872bfb"
+        },
+        "3,4": {
+          "ActionID": "8ec8a205-c7e4-44a7-879a-857268ddaaf9",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "~/.config/herdr/bin/switch-wKR"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "invoz"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open-8478ed13-9f80-43b5-94f6-aa220e5280f8"
+        },
+        "4,4": {
+          "ActionID": "e3c132ee-c0c7-4188-a81b-32af35792179",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "~/.config/herdr/bin/switch-wK0"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "vault"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open-f291272a-f12a-465b-8652-f90c8e47a1ab"
+        }
+      },
+      "Type": "Keypad"
+    }
+  ],
+  "Icon": "",
+  "Name": ""
+}

@@ -16,6 +16,14 @@
     "should_trigger": true
   },
   {
+    "query": "Update models for crew dispatch, active Secondmates, every saved backup entry and the no-mistakes pipeline; do not silently skip any role.",
+    "should_trigger": true
+  },
+  {
+    "query": "Refresh all fleet models for intelligence and cheap good coding, use subscription quota before reset, keep when and why short, and quickly check Jev can select the agents.",
+    "should_trigger": true
+  },
+  {
     "query": "Run the already configured crew dispatcher on this task without changing its model choices.",
     "should_trigger": false
   },

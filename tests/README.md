@@ -8,6 +8,7 @@ bash tests/rebuild_test.sh
 bash tests/agent_tools_test.sh
 bash tests/baby_menu_config_test.sh
 bash tests/pi_settings_test.sh
+bash tests/model_routing_test.sh
 bash tests/storage_report_test.sh
 bash tests/claude_settings_test.sh
 python3 tests/agent_platform_test.py
@@ -43,8 +44,13 @@ It never touches the real network or host package state.
 
 `pi_settings_test.sh` is a regression test for the declarative Pi settings and model overrides. It also keeps the repository's storage audit skill available in Pi.
 
+<<<<<<< Updated upstream
 It ensures Cursor is absent from Pi packages, Baby Menu, and managed installs, retains the host-relative telemetry build and Argon-discovery pin, selects our maintained local compaction checkout, leaves `pi-web-access` unversioned for daily updates, excludes Codex fast-mode, preserves automatic project trust, enables codemode alongside ordinary tools and `tool_search`, and links deferred web configuration. It keeps GPT-6.1 Sol with high thinking as the Pi default, removes the fixed llama.cpp URL, and limits custom model metadata to DeepSeek's 500,000-token context overrides. See [Pi tools](../docs/PI-TOOLS.md) and [Pi compaction](../docs/PI-COMPACTION.md) for activation and fork maintenance.
 It also checks that `crew-dispatch.json` routes Claude profiles through Pi, permits Opus 5.5 only on the hardest-work crew rule, and keeps the existing Sonnet, Haiku, Gemini and Codex routing. Secondmates use Pi Opus 5.5 at xhigh, with Gemini 4 Argon and Gemini 3.8 Flash at high as saved manual alternatives. Home Manager links settings, crew dispatch, and both Secondmate selections to their authored owners. The backup is not automatic failover.
+=======
+It ensures Cursor is absent from Pi packages, Baby Menu, and managed installs, retains the intended telemetry and Argon-discovery pins, selects our maintained local compaction checkout, leaves `pi-web-access` unversioned for daily updates, excludes Codex fast-mode, preserves automatic project trust, enables codemode alongside ordinary tools and `tool_search`, and links deferred web configuration. It keeps GPT-6.1 Sol with high thinking as the Pi default, removes the fixed llama.cpp URL, and limits custom model metadata to DeepSeek's 500,000-token context overrides. See [Pi tools](../docs/PI-TOOLS.md) and [Pi compaction](../docs/PI-COMPACTION.md) for activation and fork maintenance.
+It also checks that `crew-dispatch.json` sets no preferred provider family, so Firstmate picks within each rule by quota, and routes Claude profiles through Pi: Opus 5.5 in review and hardest work, Fable 5.1 in large changes, Sonnet for routine coding and mapping, Haiku for recon and judging, alongside Gemini Flash and Codex routes. `model_routing_test.sh` guards one candidate per quota scope in each rule (shared scopes tie in Firstmate ranking), quota coverage and concise rule text (30 words for `when`, 35 for `why`). Live Jev classification and Firstmate quota ranking still require the update-models skill's synthetic resolver smoke check. Secondmates use Pi GPT-6.1 Sol at xhigh (pythia-v2-lab is pinned to Opus 5.5 high), with Gemini 3.8 Flash at high as the saved manual alternative. Home Manager links settings, crew dispatch, and both Secondmate selections to their authored owners. The backup is not automatic failover.
+>>>>>>> Stashed changes
 
 `storage_report_test.sh` checks that the read-only storage report includes Firstmate homes, Treehouse, Chrome profiles, and arbitrary unlisted home and Application Support roots using a disposable fake home.
 

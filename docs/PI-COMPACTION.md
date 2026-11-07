@@ -8,7 +8,7 @@
 |---|---|---|
 | 9 Claude models through `claude-bridge` (1M) | 400,000 | 40,000 |
 | 15 Gemini and Claude models through `antigravity` (1M) | 400,000 | 40,000 |
-| `openai-codex/gpt-6.1-sol` (500K) | 275,000 | Pi default 20,000 |
+| `openai-codex/gpt-6.1-sol` and `gpt-6.1-terra` (500K) | 275,000 | Pi default 20,000 |
 | `cursor/*`, `antigravity/gpt-oss-120b`, everything else | Pi defaults | Pi default 20,000 |
 
 **Activating a change.** Pi reads these at startup or `/reload` only. A session
@@ -66,7 +66,7 @@ that remains declared is our local OpenAI fork described under Maintenance.
 
 | Model/provider | Configured window | `reserveTokens` | Pi threshold | `keepRecentTokens` | Compaction mechanism |
 |---|---|---|---|---|---|
-| `openai-codex/gpt-6.1-sol` | 500K | 225000 | 275K | Default 20000 | Existing OpenAI server-side compaction extension, with fallback |
+| `openai-codex/gpt-6.1-sol`, `openai-codex/gpt-6.1-terra` | 500K | 225000 | 275K | Default 20000 | Existing OpenAI server-side compaction extension, with fallback |
 | Listed 1M `claude-bridge` models | 1M | 600000 | 400K | 40000 | Pi text-summary compaction using the active model |
 | Listed 1M `antigravity` models | 1.0M | 600000 | 400K | 40000 | Pi text-summary compaction using the active model |
 | Grok | Not registered as a Pi provider | n/a | n/a | n/a | Its own CLI, outside Pi's compaction entirely |

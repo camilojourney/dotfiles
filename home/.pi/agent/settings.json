@@ -23,6 +23,9 @@
       "openai-codex/gpt-6.1-sol": {
         "reserveTokens": 225000
       },
+      "openai-codex/gpt-6.1-terra": {
+        "reserveTokens": 225000
+      },
       "claude-bridge/claude-fable-5": {
         "reserveTokens": 600000,
         "keepRecentTokens": 40000

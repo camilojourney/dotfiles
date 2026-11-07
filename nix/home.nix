@@ -10,6 +10,41 @@ let
     "${config.home.homeDirectory}/Library/Mobile Documents/iCloud~md~obsidian/Documents/My Vault";
 in
 {
+  imports = map (import ./config-directory.nix) [
+    {
+      name = "herdr";
+      source = "home/.config/herdr";
+      target = ".config/herdr";
+      files = [ "config.toml" ];
+    }
+    {
+      name = "wezterm";
+      source = "home/.config/wezterm";
+      target = ".config/wezterm";
+      files = [ "wezterm.lua" ];
+    }
+    {
+      name = "nvim";
+      source = "home/.config/nvim";
+      target = ".config/nvim";
+      files = [
+        "init.lua"
+        "lazy-lock.json"
+        "markdown-preview.css"
+        "README.md"
+        "lua/keys.lua"
+        "lua/plugin.lua"
+        "lua/vim_config.lua"
+        "lua/obsidian/picker/_snacks.lua"
+        "lua/plugins/colorscheme.lua"
+        "lua/plugins/git.lua"
+        "lua/plugins/markdown.lua"
+        "lua/plugins/navigation.lua"
+        "lua/plugins/ui.lua"
+      ];
+    }
+  ];
+
   home.username = userName;
   home.homeDirectory = homeDirectory;
   home.stateVersion = "23.11";
@@ -195,6 +230,8 @@ in
     "github/firstmate/config/crew-dispatch.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/crew-dispatch.json";
     "github/firstmate/config/secondmate-harness".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/secondmate-harness";
     "github/firstmate/config/secondmate-harness.backup".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/secondmate-harness.backup";
+    "github/firstmate/config/supervision-branch-model".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/supervision-branch-model";
+    "github/firstmate/config/supervision-branch-effort".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.firstmate/supervision-branch-effort";
     # force: replaces the pre-existing hand-made config on first activation; its
     # content was merged into the dotfiles copy.
     ".no-mistakes/config.yaml" = {
@@ -204,9 +241,6 @@ in
     ".baby-menu/extensions".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.baby-menu/extensions";
     ".baby-menu/agents.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.baby-menu/agents.json";
     ".baby-menu/preferences.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.baby-menu/preferences.json";
-    ".config/wezterm".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.config/wezterm";
-    ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.config/nvim";
-    ".config/herdr".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.config/herdr";
     ".claude/settings.json".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/.claude/settings.json";
     # One global instructions file for every agent: edit home/AGENTS.md only.
     ".claude/CLAUDE.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/home/AGENTS.md";

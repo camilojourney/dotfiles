@@ -24,6 +24,22 @@ This does not prove every Firstmate workflow or external web provider works.
 Firstmate's supervision branch separately controls its resource loading; global
 extension settings do not enable or select its supervision model.
 
+## Background supervision settings
+
+Main's background supervisor uses Codex Luna with medium reasoning. The authored
+settings are `home/.firstmate/supervision-branch-model` and
+`home/.firstmate/supervision-branch-effort`. Home Manager links them into
+`~/github/firstmate/config/` on each machine; credentials remain machine-local.
+Second mate homes are unchanged and do not inherit these settings.
+
+Edit the dotfiles files directly to keep the shared choice. Firstmate's
+`/supervision-model` picker atomically replaces its local files, so using it
+replaces these symlinks with local overrides. Manual edits take effect when the
+background conversation next opens or reopens, not necessarily on its next task.
+To use the settings on another machine, sync dotfiles and run the normal Home
+Manager rebuild. Existing conflicting local settings must be preserved before
+activation; these declarations do not force replacement.
+
 ## Waiting workers
 
 Firstmate's `config/wait-no-turns` is a per-operational-home presence flag,

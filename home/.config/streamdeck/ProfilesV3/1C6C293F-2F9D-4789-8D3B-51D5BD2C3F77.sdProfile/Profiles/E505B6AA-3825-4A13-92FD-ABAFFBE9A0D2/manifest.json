@@ -1,1 +1,424 @@
-{"Controllers":[{"Actions":{"0,0":{"ActionID":"210c346e-6320-4cce-8805-a49068c7aabc","LinkedTitle":true,"Name":"Parent Folder","Plugin":{"Name":"Open Parent Folder","UUID":"com.elgato.streamdeck.profile.backtoparent","Version":"1.0"},"Resources":null,"Settings":{},"State":0,"States":[{}],"UUID":"com.elgato.streamdeck.profile.backtoparent"},"0,1":{"ActionID":"8c005740-71e1-4f66-adb1-f6f907eb812c","LinkedTitle":true,"Name":"Open","Plugin":{"Name":"Open","UUID":"com.elgato.streamdeck.system.open","Version":"1.0"},"Resources":null,"Settings":{"path":"\"/Users/camiloslaptop/Applications/Cursor Launchers/Cursor Vault.app\""},"State":0,"States":[{"Title":"Vault"}],"UUID":"com.elgato.streamdeck.system.open"},"0,2":{"ActionID":"5026faeb-ee04-46b3-b71b-fbcfcf7731bb","LinkedTitle":true,"Name":"Open Application","Plugin":{"Name":"Open Application","UUID":"com.elgato.streamdeck.system.openapp","Version":"1.0"},"Resources":null,"Settings":{"app_name":"Obsidian","args":"","bring_to_front":true,"bundle_id":"md.obsidian","bundle_path":"/Applications/Obsidian.app","exec":"/Applications/Obsidian.app/Contents/MacOS/Obsidian","is_bundle":true,"long_press":"quit","source":"/Applications/Obsidian.app"},"State":0,"States":[{}],"UUID":"com.elgato.streamdeck.system.openapp"},"1,0":{"ActionID":"f1dcf8a1-b154-4677-9285-5e44cd175835","LinkedTitle":true,"Name":"Open","Plugin":{"Name":"Open","UUID":"com.elgato.streamdeck.system.open","Version":"1.0"},"Resources":null,"Settings":{"path":"\"/Users/camiloslaptop/Applications/Cursor Launchers/Cursor Fleet.app\""},"State":0,"States":[{"Title":"fleet"}],"UUID":"com.elgato.streamdeck.system.open"},"1,1":{"ActionID":"859d7142-4450-4d06-a85c-6cb837f47e90","LinkedTitle":true,"Name":"Open","Plugin":{"Name":"Open","UUID":"com.elgato.streamdeck.system.open","Version":"1.0"},"Resources":null,"Settings":{"path":"\"/Users/camiloslaptop/Applications/Cursor Launchers/Cursor Genpeli.app\""},"State":0,"States":[{"Title":"Genpeli"}],"UUID":"com.elgato.streamdeck.system.open"},"2,0":{"ActionID":"1d2af888-fbee-4525-b48e-65da10d16aca","LinkedTitle":true,"Name":"Open","Plugin":{"Name":"Open","UUID":"com.elgato.streamdeck.system.open","Version":"1.0"},"Resources":null,"Settings":{"path":"\"/Users/camiloslaptop/Applications/Cursor Launchers/Cursor Invoz.app\""},"State":0,"States":[{"Title":"Invoz"}],"UUID":"com.elgato.streamdeck.system.open"},"2,1":{"ActionID":"2ecce9cd-8e49-4c15-95da-86d2a29a353d","LinkedTitle":true,"Name":"Open","Plugin":{"Name":"Open","UUID":"com.elgato.streamdeck.system.open","Version":"1.0"},"Resources":null,"Settings":{"path":"\"/Users/camiloslaptop/Applications/Cursor Launchers/Cursor Holus.app\""},"State":0,"States":[{"Title":"holus"}],"UUID":"com.elgato.streamdeck.system.open"},"2,2":{"ActionID":"c8ea1f6e-4868-432c-a989-03f38a29ee31","LinkedTitle":true,"Name":"Open Application","Plugin":{"Name":"Open Application","UUID":"com.elgato.streamdeck.system.openapp","Version":"1.0"},"Resources":null,"Settings":{"app_name":"Claude","args":"","bring_to_front":true,"bundle_id":"com.anthropic.claudefordesktop","bundle_path":"/Applications/Claude.app","exec":"/Applications/Claude.app/Contents/MacOS/Claude","is_bundle":true,"long_press":"quit","source":"/Applications/Claude.app"},"State":0,"States":[{}],"UUID":"com.elgato.streamdeck.system.openapp"},"3,0":{"ActionID":"3b22d22d-8ce1-49b0-bbfc-25d29b3204fc","LinkedTitle":true,"Name":"Open","Plugin":{"Name":"Open","UUID":"com.elgato.streamdeck.system.open","Version":"1.0"},"Resources":null,"Settings":{"path":"\"/Users/camiloslaptop/Applications/Cursor Launchers/Cursor Job Tracker.app\""},"State":0,"States":[{"Title":"Jobs"}],"UUID":"com.elgato.streamdeck.system.open"},"3,1":{"ActionID":"8584678b-4d2d-49d6-a523-40dd2d789036","LinkedTitle":true,"Name":"Open","Plugin":{"Name":"Open","UUID":"com.elgato.streamdeck.system.open","Version":"1.0"},"Resources":null,"Settings":{"path":"\"/Users/camiloslaptop/Applications/Cursor Launchers/Cursor Pilaster.app\""},"State":0,"States":[{"Title":"pilaster"}],"UUID":"com.elgato.streamdeck.system.open"},"3,2":{"ActionID":"6677df03-0f84-4213-8a9c-2fcbddf02229","LinkedTitle":true,"Name":"Open Application","Plugin":{"Name":"Open Application","UUID":"com.elgato.streamdeck.system.openapp","Version":"1.0"},"Resources":null,"Settings":{"app_name":"Codex","args":"","bring_to_front":true,"bundle_id":"com.openai.codex","bundle_path":"/Applications/Codex.app","exec":"/Applications/Codex.app/Contents/MacOS/Codex","is_bundle":true,"long_press":"quit","source":"/Applications/Codex.app"},"State":0,"States":[{}],"UUID":"com.elgato.streamdeck.system.openapp"},"4,1":{"ActionID":"546c0c3b-1083-4726-b6e8-6ec3ec9869a5","LinkedTitle":true,"Name":"Open","Plugin":{"Name":"Open","UUID":"com.elgato.streamdeck.system.open","Version":"1.0"},"Resources":null,"Settings":{"path":"\"/Users/camiloslaptop/Applications/Cursor Launchers/Cursor Pythia.app\""},"State":0,"States":[{"Title":"pythia"}],"UUID":"com.elgato.streamdeck.system.open"},"4,2":{"ActionID":"b5677720-3c04-4b2d-8b13-fc242d92e1e3","LinkedTitle":true,"Name":"Open Application","Plugin":{"Name":"Open Application","UUID":"com.elgato.streamdeck.system.openapp","Version":"1.0"},"Resources":null,"Settings":{"app_name":"WezTerm","args":"","bring_to_front":true,"bundle_id":"com.github.wez.wezterm","bundle_path":"/Users/camiloslaptop/Downloads/WezTerm-macos-20240203-110809-5046fc22/WezTerm.app","exec":"/Users/camiloslaptop/Downloads/WezTerm-macos-20240203-110809-5046fc22/WezTerm.app/Contents/MacOS/wezterm-gui","is_bundle":true,"long_press":"quit","source":"/Users/camiloslaptop/Downloads/WezTerm-macos-20240203-110809-5046fc22/WezTerm.app"},"State":0,"States":[{}],"UUID":"com.elgato.streamdeck.system.openapp"}},"Type":"Keypad"}],"Icon":"","Name":""}
+{
+  "Controllers": [
+    {
+      "Actions": {
+        "0,0": {
+          "ActionID": "210c346e-6320-4cce-8805-a49068c7aabc",
+          "LinkedTitle": true,
+          "Name": "Parent Folder",
+          "Plugin": {
+            "Name": "Open Parent Folder",
+            "UUID": "com.elgato.streamdeck.profile.backtoparent",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {}
+          ],
+          "UUID": "com.elgato.streamdeck.profile.backtoparent"
+        },
+        "0,1": {
+          "ActionID": "8c005740-71e1-4f66-adb1-f6f907eb812c",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "\"/Users/camiloslaptop/Applications/Cursor Launchers/Cursor Vault.app\""
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "Vault"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open"
+        },
+        "0,2": {
+          "ActionID": "5026faeb-ee04-46b3-b71b-fbcfcf7731bb",
+          "LinkedTitle": true,
+          "Name": "Open Application",
+          "Plugin": {
+            "Name": "Open Application",
+            "UUID": "com.elgato.streamdeck.system.openapp",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "app_name": "Obsidian",
+            "args": "",
+            "bring_to_front": true,
+            "bundle_id": "md.obsidian",
+            "bundle_path": "/Applications/Obsidian.app",
+            "exec": "/Applications/Obsidian.app/Contents/MacOS/Obsidian",
+            "is_bundle": true,
+            "long_press": "quit",
+            "source": "/Applications/Obsidian.app"
+          },
+          "State": 0,
+          "States": [
+            {}
+          ],
+          "UUID": "com.elgato.streamdeck.system.openapp"
+        },
+        "1,1": {
+          "ActionID": "859d7142-4450-4d06-a85c-6cb837f47e90",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "\"/Users/camiloslaptop/Applications/Cursor Launchers/Cursor Genpeli.app\""
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "Genpeli"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open"
+        },
+        "1,2": {
+          "ActionID": "8a4f399b-d878-43a0-a64e-82723d4b8d19",
+          "LinkedTitle": true,
+          "Name": "Open Application",
+          "Plugin": {
+            "Name": "Open Application",
+            "UUID": "com.elgato.streamdeck.system.openapp",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "app_name": "NoMachine",
+            "args": "",
+            "bring_to_front": true,
+            "bundle_id": "com.nomachine.nxdock",
+            "bundle_path": "/Applications/NoMachine.app",
+            "exec": "/Applications/NoMachine.app/Contents/MacOS/nxdock",
+            "is_bundle": true,
+            "long_press": "quit",
+            "source": "/Applications/NoMachine.app/"
+          },
+          "State": 0,
+          "States": [
+            {}
+          ],
+          "UUID": "com.elgato.streamdeck.system.openapp"
+        },
+        "2,0": {
+          "ActionID": "1d2af888-fbee-4525-b48e-65da10d16aca",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "\"/Users/camiloslaptop/Applications/Cursor Launchers/Cursor Invoz.app\""
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "Invoz"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open"
+        },
+        "2,1": {
+          "ActionID": "2ecce9cd-8e49-4c15-95da-86d2a29a353d",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "\"/Users/camiloslaptop/Applications/Cursor Launchers/Cursor Holus.app\""
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "holus"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open"
+        },
+        "3,0": {
+          "ActionID": "3b22d22d-8ce1-49b0-bbfc-25d29b3204fc",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "\"/Users/camiloslaptop/Applications/Cursor Launchers/Cursor Job Tracker.app\""
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "Jobs"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open"
+        },
+        "3,1": {
+          "ActionID": "8584678b-4d2d-49d6-a523-40dd2d789036",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "\"/Users/camiloslaptop/Applications/Cursor Launchers/Cursor Pilaster.app\""
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "pilaster"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open"
+        },
+        "4,0": {
+          "ActionID": "1330f95b-74b1-48f8-85c0-2d46ada830b1",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "\"/Users/camiloslaptop/Applications/Cursor Launchers/Cursor Firstmate.app\""
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "Firstmate"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open"
+        },
+        "4,1": {
+          "ActionID": "546c0c3b-1083-4726-b6e8-6ec3ec9869a5",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "\"/Users/camiloslaptop/Applications/Cursor Launchers/Cursor Pythia.app\""
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "pythia"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open"
+        },
+        "4,2": {
+          "ActionID": "b5677720-3c04-4b2d-8b13-fc242d92e1e3",
+          "LinkedTitle": true,
+          "Name": "Open Application",
+          "Plugin": {
+            "Name": "Open Application",
+            "UUID": "com.elgato.streamdeck.system.openapp",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "app_name": "WezTerm",
+            "args": "",
+            "bring_to_front": true,
+            "bundle_id": "com.github.wez.wezterm",
+            "bundle_path": "/Users/camiloslaptop/Downloads/WezTerm-macos-20240203-110809-5046fc22/WezTerm.app",
+            "exec": "/Users/camiloslaptop/Downloads/WezTerm-macos-20240203-110809-5046fc22/WezTerm.app/Contents/MacOS/wezterm-gui",
+            "is_bundle": true,
+            "long_press": "quit",
+            "source": "/Users/camiloslaptop/Downloads/WezTerm-macos-20240203-110809-5046fc22/WezTerm.app"
+          },
+          "State": 0,
+          "States": [
+            {}
+          ],
+          "UUID": "com.elgato.streamdeck.system.openapp"
+        },
+        "2,3": {
+          "ActionID": "dc478576-71c2-43ff-9d2c-b18f1325a6ed",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "~/.config/herdr/bin/switch-wKG"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "genpeli"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open-25d90c49-03f1-4cc8-81f1-e0e3262b854e"
+        },
+        "3,3": {
+          "ActionID": "d30ba3a2-8a5c-47f7-a935-b7e40c7b47ec",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "~/.config/herdr/bin/switch-wKH"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "holusight"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open-ac4429c9-15d3-4d78-8229-d97dbd01c4ba"
+        },
+        "4,3": {
+          "ActionID": "be73069c-63f3-4107-8bf4-8b9f1f3985d1",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "~/.config/herdr/bin/switch-wKK"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "job-tracker"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open-7f7505c1-7b1e-4e67-a641-c550b88a39cf"
+        },
+        "2,4": {
+          "ActionID": "86a18540-2179-4b40-96d0-0a09b3cf32eb",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "~/.config/herdr/bin/switch-wKQ"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "syncloom"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open-5785b331-2ddb-465c-a94e-7c6827b5ce7c"
+        },
+        "3,4": {
+          "ActionID": "69aa9ff5-9870-456e-975b-51855c0c05df",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "~/.config/herdr/bin/switch-wKR"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "invoz"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open-6e547887-bed1-49f7-b99f-fe6d675c621b"
+        },
+        "4,4": {
+          "ActionID": "df66b985-6bc3-42b0-b513-a18fc295716e",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "~/.config/herdr/bin/switch-wK0"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "vault"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open-6845a796-3e8c-4207-9428-0dbc840e2a0a"
+        },
+        "5,0": {
+          "ActionID": "1023d378-0107-4067-b754-aa9addb75a41",
+          "LinkedTitle": true,
+          "Name": "Open",
+          "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "path": "/Users/camiloslaptop/.config/herdr/bin/switch-wKE"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Title": "TEST: FirstMate"
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.system.open-8b7adbd4-c32a-4151-9c83-95be08e506b3"
+        }
+      },
+      "Type": "Keypad"
+    }
+  ],
+  "Icon": "",
+  "Name": ""
+}

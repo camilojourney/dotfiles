@@ -13,7 +13,7 @@ return {
     end,
   },
   {
-    -- Bridges Snacks Picker/Explorer to PKief's actual Material Icon Theme.
+    -- Bridges Snacks Picker to PKief's actual Material Icon Theme.
     -- WezTerm uses mini.icons as a safe fallback; Ghostty and Kitty render the
     -- theme's original PNG/SVG assets through the Kitty Graphics Protocol.
     'Mirsmog/real-icons.nvim',
@@ -29,14 +29,26 @@ return {
   },
   {
     'stevearc/oil.nvim',
+    lazy = false,
     opts = {
+      default_file_explorer = true,
       view_options = { show_hidden = true },
+      win_options = { signcolumn = 'yes:2' },
       keymaps = {
         ['y.'] = 'actions.copy_to_system_clipboard',
         ['<C-p>'] = { 'actions.preview', opts = { vertical = true, split = 'botright' } },
       },
     },
-    keys = { { '<leader>o', '<cmd>Oil<cr>', desc = 'Oil File Browser' } },
+    keys = {
+      { '<leader>e', '<cmd>Oil<cr>', desc = 'Oil File Browser' },
+      { '<leader>o', '<cmd>Oil<cr>', desc = 'Oil File Browser' },
+    },
+  },
+  {
+    'refractalize/oil-git-status.nvim',
+    lazy = false,
+    dependencies = { 'stevearc/oil.nvim' },
+    opts = {},
   },
   {
     'folke/snacks.nvim',
@@ -46,41 +58,12 @@ return {
       picker = {
         enabled = true,
         ui_select = true,
-        sources = {
-          explorer = {
-            -- Keep the explorer focused while the selected text file renders in
-            -- the main editor window to its right.
-            -- Keep the sidebar visually quiet. `/` focuses the hidden search
-            -- field whenever filtering is needed.
-            layout = { preset = 'sidebar', preview = 'main', auto_hide = { 'input' } },
-            actions = {
-              skim_open = function(picker, item)
-                if not item or not item.file or item.dir then
-                  vim.notify('Select a file in the explorer first', vim.log.levels.WARN)
-                  return
-                end
-                vim.fn.jobstart({ 'open', '-a', 'Skim', item.file }, { detach = true })
-              end,
-            },
-            win = {
-              list = {
-                keys = {
-                  -- Bring the selected file forward in Skim. Skim determines
-                  -- whether it is a supported PDF.
-                  ['S'] = 'skim_open',
-                },
-              },
-            },
-          },
-        },
       },
-      explorer = { enabled = true, replace_netrw = true },
+      explorer = { enabled = false },
       notifier = { enabled = true },
       input = { enabled = true },
     },
     keys = {
-      { '<leader>e', function() Snacks.explorer() end, desc = 'File Explorer' },
-      { '<leader>E', function() Snacks.explorer.reveal() end, desc = 'Reveal Current File' },
       { '<leader>f', function() Snacks.picker.files() end, desc = 'Find Files' },
       { '<leader>s', function() Snacks.picker.grep() end,  desc = 'Search Text' },
       { '<leader>b', function() Snacks.picker.buffers() end, desc = 'Buffers' },

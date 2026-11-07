@@ -12,7 +12,7 @@ I run this on two Macs: my laptop, and a Mac mini I use as a remote work compute
 - install GUI apps and macOS-native tools declaratively with Homebrew
 - keep selected app config in the repo and link it into place
 
-Editor, terminal, and agent configuration live here as real, current files - not stripped-down examples. Credentials, session state, and other host-local runtime data are never committed.
+Editor, terminal, and agent configuration live here as real, current files - not stripped-down examples. Keep only configuration, source code, lockfiles, and required assets in the checkout. Credentials, logs, caches, session state, and generated helpers stay outside it, not merely Git-ignored. See [configuration/state separation](docs/CONFIGURATION.md) for link ownership and migration.
 
 Claude Code account-skill synchronization is disabled by `syncClaudeAiSkills: false`
 in `home/.claude/settings.json`, linked to `~/.claude/settings.json`.
@@ -37,7 +37,7 @@ Everything here works fine on a single machine - you just won't need all of it:
 - `nix/configuration.nix` - system-level config (macOS defaults, Homebrew), identical on both machines
 - `nix/home.nix` - user-level config (shell, packages, prompt, symlinks), identical on both machines
 - `nix/camilo-extra.nix` - personal apps (Camo, OBS, WhatsApp, Dato, Notion, Obsidian, and more) - never installed by plain `rebuild.sh`, only by `rebuild-total.sh`
-- `home/.config/` - live WezTerm / Neovim / herdr configs (symlinked by Home Manager)
+- `home/.config/` - selected WezTerm / Neovim / Herdr configuration and required assets, linked individually by Home Manager; declared OBS profile/scene files in `home/.config/obs-studio/` (total targets). App directories and runtime state stay local.
 - `home/.claude/` and `home/.firstmate/` - authored agent, crew-dispatch, and secondmate harness configuration (symlinked by Home Manager)
 - `home/.pi/agent/` - authored Pi models, settings, themes, and extensions (symlinked by Home Manager); per-model compaction triggers and verbatim retention are explained in [`docs/PI-COMPACTION.md`](docs/PI-COMPACTION.md), whose "Start here" section carries the current values, the measured multiplier that makes a retention setting deliver about 3.8 times its stated size, and the reminder that Pi applies these only at startup or `/reload`
 - `upstream/kunchenguid/` - complete upstream mirror, selected config snapshot, and adoption decisions for [Kun's configs](https://github.com/kunchenguid/dotfiles)

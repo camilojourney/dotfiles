@@ -1,0 +1,6 @@
+# OBS stores stream keys and login tokens next to its settings; commit the
+# settings with secrets blanked (scripts/obs-strip-keys.sh, wired by
+# nix/camilo-extra.nix).
+home/.config/obs-studio/basic/profiles/*/aitum.json filter=obs-keys
+home/.config/obs-studio/basic/profiles/*/service.json filter=obs-keys
+home/.config/obs-studio/basic/profiles/*/basic.ini filter=obs-keys
