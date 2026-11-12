@@ -22,9 +22,10 @@ unlisted files remain host-local.
 
 Pi and Baby Menu already keep runtime data outside their authored settings and
 code directories. Their extension/theme/widget source is required code, not a
-cache. Dato and Stream Deck are explicit configuration backups, not live app-root
-links; Stream Deck button images and its importable profile export are restore
-assets. See their READMEs under `home/.config/`.
+cache. Dato, Stream Deck and the Keyball61+ keyboard layout are explicit
+configuration backups, not live app-root links; Stream Deck button images and its
+importable profile export are restore assets. See their READMEs under
+`home/.config/`.
 
 ## Existing machines
 
