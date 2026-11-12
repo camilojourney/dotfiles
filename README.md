@@ -148,18 +148,13 @@ same script, plus that one extra module:
 ./rebuild-total.sh
 ```
 
-Both machines also update themselves every day at 05:00 (or at the next
-wake): the `org.dotfiles.auto-rebuild` launchd daemon in
-`nix/configuration.nix` runs [`scripts/auto-rebuild.sh`](scripts/auto-rebuild.sh)
-as root, which fast-forwards `~/github/dotfiles` and `~/github/firstmate`,
-then runs the same rebuild as `./rebuild-total.sh` on the laptop or
-`./rebuild.sh` on the remote box. It logs to `/var/log/auto-rebuild.log` and
-posts a notification on failure. Because it pulls this repo and applies it as
-root, anything pushed to `main` reaches both machines unattended. The rebuild
-also uses local commits and tracked edits even if the pull is skipped; not pushing
-a change does not keep it inactive locally.
-See [`docs/AUTO-UPDATE.md`](docs/AUTO-UPDATE.md) for logs, enabling it, and
-the design notes.
+There is no scheduled rebuild. To pull `~/github/dotfiles` and
+`~/github/firstmate` and rebuild in one step, run
+[`scripts/auto-rebuild.sh`](scripts/auto-rebuild.sh) by hand as root
+(`sudo bash scripts/auto-rebuild.sh <macOS user> <flake attr>`). It logs to
+`/var/log/auto-rebuild.log` and posts a notification on failure. The rebuild
+uses local commits and tracked edits even if the pull is skipped.
+See [`docs/AUTO-UPDATE.md`](docs/AUTO-UPDATE.md) for logs and the design notes.
 [Automations](docs/AUTOMATIONS.md) lists every scheduled job, including this one.
 
 ## Tool maintenance conversations
@@ -184,7 +179,7 @@ My rough rule of thumb:
 - use **Homebrew** for GUI apps and macOS-native tools that fit naturally there (declared in `nix/configuration.nix`, or `nix/camilo-extra.nix` for personal-only apps)
 - use **`nix/agent-tools.manifest.lock.json`** for required agent/developer CLIs installed via npm, uv tool, or pinned external release archives
 
-Agent npm globals, uv tools, Python libraries, Pi npm packages and external tools (`no-mistakes`, `treehouse`) reconcile exact top-level pins on every rebuild. The mini promotes age-qualified, OSV-checked pins on Sundays only after install/smoke success; the laptop pulls those passed pins with its normal daily update. System/Homebrew updates remain daily. See [update and rollback policy](docs/AUTO-UPDATE.md). Add exact entries to the manifest instead of ad hoc activation blocks. Run `bash scripts/agent-tools/audit.sh` to report unmanaged tools without deleting anything.
+Agent npm globals, uv tools, Python libraries, Pi npm packages and external tools (`no-mistakes`, `treehouse`) reconcile exact top-level pins on every rebuild. The mini promotes age-qualified, OSV-checked pins on Sundays only after install/smoke success; the laptop pulls those passed pins when its update script is run. System/Homebrew updates run only when you run it by hand. See [update and rollback policy](docs/AUTO-UPDATE.md). Add exact entries to the manifest instead of ad hoc activation blocks. Run `bash scripts/agent-tools/audit.sh` to report unmanaged tools without deleting anything.
 
 A good setup does not force every tool through one package manager. It just makes the ownership of each layer clear.
 

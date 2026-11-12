@@ -17,29 +17,6 @@ in
   # floor regardless of this setting.
   power.sleep.computer = "never";
 
-  # Rebuild every day at 05:00 (or at the next wake) after fast-forwarding
-  # this repo and Firstmate, so neither machine needs a manual update. Runs
-  # as root, so it needs no sudo password; whatever is pushed to this repo's
-  # main is applied unattended. It rebuilds the same target this system was
-  # built from, so whichever of ./rebuild.sh or ./rebuild-total.sh ran last
-  # is what keeps getting applied.
-  # docs/AUTO-UPDATE.md explains the design, including why the plist points
-  # at scripts/auto-rebuild.sh by path rather than through the Nix store.
-  launchd.daemons.auto-rebuild.serviceConfig = {
-    Label = "org.dotfiles.auto-rebuild";
-    ProgramArguments = [
-      "/bin/bash"
-      "${homeDirectory}/github/dotfiles/scripts/auto-rebuild.sh"
-      userName
-      flakeAttr
-    ];
-    StartCalendarInterval = [ { Hour = 5; Minute = 0; } ];
-    StandardOutPath = "/var/log/auto-rebuild.log";
-    StandardErrorPath = "/var/log/auto-rebuild.log";
-    # Keep the rebuild alive if launchd reloads this job mid-run.
-    AbandonProcessGroup = true;
-  };
-
   # One existing 15-minute collector: enrich quiet Pi attempts with Fleet skill
   # usage and flush Firstmate's durable outcome snapshots. The normal login
   # environment supplies the existing native OTLP destination/authentication.
@@ -67,16 +44,6 @@ in
     StandardOutPath = "${homeDirectory}/Library/Logs/fleet-skill-usage.log";
     StandardErrorPath = "${homeDirectory}/Library/Logs/fleet-skill-usage.log";
   };
-
-  # Rotate the daily rebuild log with macOS's own newsyslog: at 1 MB keep up
-  # to 8 old copies (8 MB at most). Rotated copies stay uncompressed so Baby
-  # Menu's system-usage widget can still read the last run from .0 right
-  # after a rotation. B: plain-text log, add no syslog header line. N: no
-  # process to signal (launchd reopens the log on every run).
-  environment.etc."newsyslog.d/org.dotfiles.auto-rebuild.conf".text = ''
-    # logfilename                 [owner:group]  mode  count  size(KB)  when  flags
-    /var/log/auto-rebuild.log     root:wheel     644   8      1024      *     BN
-  '';
 
   homebrew = {
     enable = true;

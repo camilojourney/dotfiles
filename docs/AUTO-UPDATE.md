@@ -1,7 +1,10 @@
 # Daily system updates and weekly agent pins
 
-Both Macs run `org.dotfiles.auto-rebuild` at **05:00 local time daily** (or
-next wake). The system lane stays daily; agent tools do not follow `latest`.
+**No schedule runs this.** The former `org.dotfiles.auto-rebuild` launchd daemon
+(05:00 daily) is removed from `nix/configuration.nix`; the update is run
+**manually** with `scripts/auto-rebuild.sh` (or `./rebuild.sh` / `./rebuild-total.sh`).
+Agent tools do not follow `latest`. Where this page says daily, nightly or
+05:00, read it as the cadence of that manual run.
 
 | | Laptop (`camiloslaptop`) | Mac mini (`camilo_mini`) |
 | --- | --- | --- |
@@ -15,7 +18,7 @@ these select `camilo-remote` and `camilo-remote-total`; on the laptop they selec
 
 ## Owners and daily behavior
 
-- `nix/configuration.nix`: root launchd daemon, fixed script path and 05:00 schedule.
+- `nix/configuration.nix`: no longer declares a daemon or schedule for this.
 - [`scripts/auto-rebuild.sh`](../scripts/auto-rebuild.sh): recovers interrupted
   pin transactions as the user, then fast-forwards both repos as the user,
   upgrades App Store apps with root-owned `mas`, and runs `darwin-rebuild switch`.
@@ -124,11 +127,10 @@ A pin build does not establish that those packages load on the mini.
 
 ## Sunday promotion, unattended
 
-The mini's existing daily daemon invokes
+On the mini, `scripts/auto-rebuild.sh` (run by hand on a Sunday) invokes
 [`weekly.py --scheduled`](../scripts/agent-tools/weekly.py) **as `camilo_mini`**
-after the Sunday rebuild. It shares the daemon's serialization instead of racing
-a separate 05:00 launch agent. The laptop does not propose pins: its daily
-fast-forward pull receives the mini's passed commit, normally Monday 05:00.
+after the Sunday rebuild. It runs inside that one manual run instead of a separate launch agent. The laptop does not propose pins: its
+fast-forward pull receives the mini's passed commit when run.
 No agent, reviewer, model request or captain approval runs in this path.
 
 1. Require a clean `main`, matching the daily pull's `origin/main` tracking ref,
@@ -230,28 +232,22 @@ git -C ~/github/dotfiles pull --ff-only origin main
 ```
 
 Use `./rebuild-total.sh` in that same directory only if deliberately adopting the
-extra-app target. A manual rebuild enables the daemon for the variant you chose.
+extra-app target. The variant you rebuild last is the one to pass to `scripts/auto-rebuild.sh`.
 
 ## Logs and trust
 
-- Daily and weekly output: `/var/log/auto-rebuild.log`.
-- Check daemon: `sudo launchctl print system/org.dotfiles.auto-rebuild`.
-- Run a daily cycle now: `sudo launchctl kickstart system/org.dotfiles.auto-rebuild`.
+- Output of `scripts/auto-rebuild.sh`: `/var/log/auto-rebuild.log` (no longer rotated automatically).
+- Run an update now, as root: `sudo bash ~/github/dotfiles/scripts/auto-rebuild.sh <macOS user> <flake attr>`.
   On Sunday on the mini this also attempts promotion; it is not read-only.
 - A skipped pull, failed rebuild/promotion/recovery, Homebrew package failure or
   Chrome pin failure posts a macOS notification. Homebrew install failures still
   warn rather than stopping the other system activation steps. A failed Chrome
-  pin skips Bundle entirely, not just Chrome; both are retried next day.
+  pin skips Bundle entirely, not just Chrome; both are retried on the next run.
 
-The daemon pulls this public repo's main and applies it as root without a review
-step. Anything pushed to main reaches both machines unattended; local commits
-and edits can also activate when a pull is skipped. Keep unservable package pins
-out of that checkout. The mini is now also trusted to publish manifest-only
-commits after its checks. To disable all unattended system updates, remove the
-`launchd.daemons.auto-rebuild` declaration and rebuild.
+The script pulls this public repo's main and applies it as root without a review
+step. Local commits and edits can also activate when a pull is skipped. The mini
+is still trusted to publish manifest-only commits after its checks.
 
-The plist intentionally points to the script by a fixed checkout path, not a
-changing Nix store path, so activation does not reload launchd and kill its own
-rebuild. The daemon sets `SUDO_USER`/`SUDO_UID` for the user-owned repository and
+The script sets `SUDO_USER`/`SUDO_UID` for the user-owned repository and
 App Store account. It upgrades App Store apps with root-owned Nix `mas` inside
 the user's login session; never substitute a user-writable `mas` for that step.

@@ -6,18 +6,16 @@ rebuilding removes it.
 
 | Job | When | Runs as | What it does | Log |
 | --- | --- | --- | --- | --- |
-| `org.dotfiles.auto-rebuild` | 05:00 daily, or at the next wake | root | Pulls this repository and Firstmate, then rebuilds | `/var/log/auto-rebuild.log` |
-| newsyslog rotation | When the rebuild log passes 1 MB | root | Keeps 8 old copies of the rebuild log | - |
 | `org.dotfiles.fleet-skill-usage` | Every 15 minutes | you | Adds skill usage and flushes task outcome evidence to Langfuse | `~/Library/Logs/fleet-skill-usage.log` |
 
 The agent platform's launchd templates in `services/agent-platform/` are not
 scheduled by a rebuild. Each is installed by hand, as
 [agent platform](AGENT-PLATFORM.md) describes.
 
-## Daily rebuild
+## Rebuild (manual)
 
-[Auto-update](AUTO-UPDATE.md) explains the daemon, its failure notification and
-how to turn it off.
+The former daily `org.dotfiles.auto-rebuild` daemon is removed. [Auto-update](AUTO-UPDATE.md)
+explains `scripts/auto-rebuild.sh`, which you run by hand.
 
 ## Fleet skill usage and task outcomes
 
@@ -138,7 +136,7 @@ Transfer only source and its lockfile over SSH, never credentials or `node_modul
 Publication and a tested `git:` pin remain the eventual portable upgrade path.
 The reproduction kit's
 manifest records the tested candidate separately; copying the kit does not activate
-it. The daily rebuild uses local commits too, even without a push.
+it. The manual rebuild uses local commits too, even without a push.
 
 For a published upgrade, preserve any managed-cache edits first, update the authored
 pin and its regression together, run `bash tests/pi_settings_test.sh`, then run

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Mini-only Sunday pin promotion. Never switches Nix or calls an agent.
 
-The daily daemon runs recovery before pulling, and --scheduled after its rebuild.
+scripts/auto-rebuild.sh (run by hand) runs recovery before pulling, and --scheduled after its rebuild.
 Only a clean, current main may propose a pin-only commit. A durable journal keeps
 interrupted installs from reaching an ordinary rebuild before recovery.
 """

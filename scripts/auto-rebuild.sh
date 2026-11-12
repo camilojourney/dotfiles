@@ -1,6 +1,7 @@
 #!/bin/bash
-# Daily unattended update, run as root by the org.dotfiles.auto-rebuild
-# launchd daemon (nix/configuration.nix) on both machines:
+# Manual update, run by hand as root (sudo). No launchd daemon schedules it any
+# more; the former org.dotfiles.auto-rebuild daemon was removed from
+# nix/configuration.nix. Steps:
 #   1. fast-forward ~/github/dotfiles and ~/github/firstmate (each skips,
 #      never forces, when it cannot fast-forward cleanly)
 #   2. the same rebuild as ./rebuild-total.sh (laptop) or ./rebuild.sh (remote)
@@ -8,10 +9,6 @@
 # Output goes to /var/log/auto-rebuild.log; any failure, including a single
 # Homebrew package that could not be installed or upgraded, posts a macOS
 # notification to the logged-in user.
-#
-# The daemon runs this file by path instead of from the Nix store on purpose:
-# a store path would change the daemon's plist whenever this script changes,
-# and activation would then reload the daemon and kill the rebuild running it.
 set -uo pipefail
 
 USER_NAME=${1:?usage: auto-rebuild.sh <macOS user> <flake attr>}
@@ -104,7 +101,7 @@ if [ -n "$brew_failed" ]; then
   notify "Homebrew failures: $brew_failed - see /var/log/auto-rebuild.log"
 fi
 
-# This shares the daily daemon's serialization and local 05:00 schedule.
+# Only runs when this script is invoked by hand on a Sunday (no schedule remains).
 # Only the mini proposes on Sunday; the laptop pulls passed pins on Monday.
 case "$FLAKE_ATTR" in
   camilo-remote|camilo-remote-total)
