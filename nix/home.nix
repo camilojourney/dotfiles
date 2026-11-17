@@ -160,8 +160,8 @@ in
       # One script for both hosts: rebuild.sh detects the account and picks
       # the right flake attr, so this alias never needs a host override.
       rebuild = "~/github/dotfiles/rebuild.sh";
-      # Same persistent profile as chrome-devtools-axi's default, but with a
       rebuild-total = "~/github/dotfiles/rebuild-total.sh";
+      # Same persistent profile as chrome-devtools-axi's default, but with a
       # visible window so a running automation can be watched/debugged live.
       axi-watch = "CHROME_DEVTOOLS_AXI_HEADED=1 chrome-devtools-axi";
       storage-report = "bash ~/github/dotfiles/scripts/storage-report.sh";
