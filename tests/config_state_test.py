@@ -1,11 +1,15 @@
 """Configuration/state separation with real directories, symlink chains and sockets."""
+import errno
 import importlib.util
 import os
+import shutil
 import socket
 import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stderr
+from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
@@ -187,7 +191,7 @@ class AdoptAppChangesTest(unittest.TestCase):
         self.assertEqual(self.repo_file.read_text(), "live\n")
         self.assertTrue(self.live_file.is_symlink())
         self.assertEqual(self.live_file.resolve(), self.repo_file.resolve())
-        self.assertEqual(self.backed_up_texts(), ["live\n", "repo\n"])
+        self.assertEqual(self.backed_up_texts(), ["live\n", "live\n", "repo\n"])
         self.assertIn("adopted", result.stdout)
         self.assertIn(str(self.backups), result.stdout)
 
@@ -196,7 +200,7 @@ class AdoptAppChangesTest(unittest.TestCase):
         result = self.run_adopt("--adopt-app-changes")
         self.assertEqual(self.repo_file.read_text(), "repo\n")
         self.assertTrue(self.live_file.is_symlink())
-        self.assertEqual(self.backed_up_texts(), ["live\n", "repo\n"])
+        self.assertEqual(self.backed_up_texts(), ["live\n", "live\n", "repo\n"])
         self.assertIn("kept the repo version", result.stdout)
 
     def test_identical_app_file_is_claimed_and_backed_up_before_relinking(self):
@@ -204,7 +208,7 @@ class AdoptAppChangesTest(unittest.TestCase):
         self.run_adopt("--adopt-app-changes")
         self.assertTrue(self.live_file.is_symlink())
         self.assertEqual(self.repo_file.read_text(), "repo\n")
-        self.assertEqual(self.backed_up_texts(), ["repo\n", "repo\n"])
+        self.assertEqual(self.backed_up_texts(), ["repo\n", "repo\n", "repo\n"])
 
     def test_save_after_claim_is_adopted_on_retry_in_every_reconciliation_case(self):
         rename = os.rename
@@ -236,14 +240,14 @@ class AdoptAppChangesTest(unittest.TestCase):
                     self.assertEqual(self.live_file.read_text(), "concurrent save\n")
                     self.assertEqual(self.repo_file.read_text(), adopted)
                     self.assertEqual(self.repo_file.stat().st_mtime_ns, max(app_mtime_ns, self.repo_mtime_ns))
-                    self.assertEqual(self.backed_up_texts(), sorted([*before, original, "repo\n"]))
+                    self.assertEqual(self.backed_up_texts(), sorted([*before, original, original, "repo\n"]))
 
                     self.run_adopt("--adopt-app-changes")
                     self.assertTrue(self.live_file.is_symlink())
                     self.assertEqual(self.live_file.resolve(), self.repo_file)
                     self.assertEqual(self.repo_file.read_text(), "concurrent save\n")
                     self.assertEqual(self.repo_file.stat().st_mtime_ns, replacement_mtime_ns)
-                    self.assertEqual(self.backed_up_texts(), sorted([*before, original, "repo\n", adopted, "concurrent save\n"]))
+                    self.assertEqual(self.backed_up_texts(), sorted([*before, original, original, "repo\n", adopted, "concurrent save\n", "concurrent save\n"]))
 
     def test_repeated_adoptions_keep_every_snapshot_even_in_the_same_second(self):
         with patch.dict(os.environ, HOME=str(self.root / "home")), patch.object(migration.time, "strftime", return_value="fixed-second-"):
@@ -253,7 +257,125 @@ class AdoptAppChangesTest(unittest.TestCase):
                 migration.separate(self.source, self.target, ["scenes/Streaming.json"], adopt=True)
         self.assertEqual(self.repo_file.read_text(), "second save\n")
         self.assertTrue(self.live_file.is_symlink())
-        self.assertEqual(self.backed_up_texts(), ["first save\n", "first save\n", "repo\n", "second save\n"])
+        self.assertEqual(self.backed_up_texts(), ["first save\n", "first save\n", "first save\n", "repo\n", "second save\n", "second save\n"])
+
+    def test_save_during_backup_is_claimed_and_both_app_versions_survive(self):
+        self.app_saved("first save\n")
+        copy2 = shutil.copy2
+        replacement_mtime_ns = self.repo_mtime_ns + 200_000_000_000
+
+        def save_after_snapshot(source, destination, *args, **kwargs):
+            result = copy2(source, destination, *args, **kwargs)
+            if Path(source) == self.live_file:
+                replacement = self.live_file.with_suffix(".new")
+                replacement.write_text("second save\n")
+                os.utime(replacement, ns=(replacement_mtime_ns, replacement_mtime_ns))
+                os.replace(replacement, self.live_file)
+            return result
+
+        with patch.dict(os.environ, HOME=str(self.root / "home")), patch.object(shutil, "copy2", save_after_snapshot):
+            migration.separate(self.source, self.target, ["scenes/Streaming.json"], adopt=True)
+        self.assertTrue(self.live_file.is_symlink())
+        self.assertEqual(self.repo_file.read_text(), "second save\n")
+        self.assertEqual(self.repo_file.stat().st_mtime_ns, replacement_mtime_ns)
+        self.assertEqual(self.backed_up_texts(), ["first save\n", "repo\n", "second save\n"])
+
+    def test_io_failures_preserve_complete_files_and_allow_retry(self):
+        before_claim = ("repo-backup", "app-backup", "repo-backup-mode", "app-backup-mode", "claim")
+        after_claim = ("claimed-mode", "temp-create", "temp-copy", "temp-metadata", "publish", "relink")
+        for stage in (*before_claim, *after_claim):
+            for concurrent in ((False,) if stage in before_claim else (False, True)):
+                with self.subTest(stage=stage, concurrent=concurrent):
+                    self._assert_io_failure(stage, concurrent)
+
+    def _assert_io_failure(self, stage, concurrent):
+        copy2, chmod, utime = shutil.copy2, Path.chmod, os.utime
+        mkdtemp, replace, symlink, rename = tempfile.mkdtemp, os.replace, os.symlink, os.rename
+        self.live_file.unlink(missing_ok=True)
+        self.repo_file.write_text("repo\n")
+        os.utime(self.repo_file, ns=(self.repo_mtime_ns, self.repo_mtime_ns))
+        self.app_saved("live\n")
+        app_mtime_ns = self.live_file.stat().st_mtime_ns
+        live_inode = self.live_file.stat().st_ino
+        replacement_mtime_ns = self.repo_mtime_ns + 200_000_000_000
+
+        def fail_copy(source, destination, *args, **kwargs):
+            path = Path(destination)
+            backup = path.is_relative_to(self.backups)
+            if (stage == "repo-backup" and backup and path.parent.name == "repo") or (stage == "app-backup" and backup and path.parent.name == "app") or (stage == "temp-copy" and path.is_relative_to(self.source)):
+                path.write_text("partial\n")
+                raise OSError(errno.ENOSPC, "simulated partial copy")
+            return copy2(source, destination, *args, **kwargs)
+
+        def fail_chmod(path, mode, *args, **kwargs):
+            if path.is_relative_to(self.backups) and ((stage == "repo-backup-mode" and path.parent.name == "repo") or (stage == "app-backup-mode" and path.name == self.live_file.name and path.parent.name == "app") or (stage == "claimed-mode" and path.name.startswith(".claimed-"))):
+                raise PermissionError(errno.EACCES, "simulated chmod failure")
+            return chmod(path, mode, *args, **kwargs)
+
+        def fail_utime(path, *args, **kwargs):
+            if stage == "temp-metadata" and Path(path).is_relative_to(self.source):
+                raise OSError(errno.EIO, "simulated metadata failure")
+            return utime(path, *args, **kwargs)
+
+        def fail_mkdtemp(*args, **kwargs):
+            directory = kwargs.get("dir", args[2] if len(args) > 2 else None)
+            if stage == "temp-create" and directory == self.repo_file.parent:
+                raise OSError(errno.ENOSPC, "simulated temporary directory failure")
+            return mkdtemp(*args, **kwargs)
+
+        def fail_replace(source, destination, *args, **kwargs):
+            if stage == "publish" and Path(destination) == self.repo_file:
+                raise OSError(errno.EIO, "simulated publish failure")
+            return replace(source, destination, *args, **kwargs)
+
+        def fail_symlink(source, destination, *args, **kwargs):
+            if stage == "relink" and Path(destination) == self.live_file:
+                raise PermissionError(errno.EACCES, "simulated relink failure")
+            return symlink(source, destination, *args, **kwargs)
+
+        def claim_and_save(source, destination, *args, **kwargs):
+            if stage == "claim" and Path(source) == self.live_file:
+                raise OSError(errno.EIO, "simulated claim failure")
+            result = rename(source, destination, *args, **kwargs)
+            if concurrent and Path(source) == self.live_file:
+                replacement = self.live_file.with_suffix(".new")
+                replacement.write_text("concurrent save\n")
+                os.utime(replacement, ns=(replacement_mtime_ns, replacement_mtime_ns))
+                os.replace(replacement, self.live_file)
+            return result
+
+        errors = StringIO()
+        with (
+            patch.dict(os.environ, HOME=str(self.root / "home")),
+            patch.object(shutil, "copy2", fail_copy),
+            patch.object(Path, "chmod", fail_chmod),
+            patch.object(os, "utime", fail_utime),
+            patch.object(tempfile, "mkdtemp", fail_mkdtemp),
+            patch.object(os, "replace", fail_replace),
+            patch.object(os, "symlink", fail_symlink),
+            patch.object(os, "rename", claim_and_save),
+            redirect_stderr(errors),
+            self.assertRaisesRegex(OSError, "simulated"),
+        ):
+            migration.separate(self.source, self.target, ["scenes/Streaming.json"], adopt=True)
+        self.assertFalse(self.live_file.is_symlink())
+        expected = "concurrent save\n" if concurrent else "live\n"
+        expected_mtime_ns = replacement_mtime_ns if concurrent else app_mtime_ns
+        self.assertEqual(self.live_file.read_text(), expected)
+        self.assertEqual(self.live_file.stat().st_mtime_ns, expected_mtime_ns)
+        if not concurrent:
+            self.assertEqual(self.live_file.stat().st_ino, live_inode)
+        self.assertEqual(self.repo_file.read_text(), "live\n" if stage == "relink" else "repo\n")
+        self.assertEqual(self.repo_file.stat().st_mtime_ns, app_mtime_ns if stage == "relink" else self.repo_mtime_ns)
+        self.assertEqual(list(self.repo_file.parent.iterdir()), [self.repo_file])
+        if concurrent:
+            self.assertIn(str(self.live_file), errors.getvalue())
+            self.assertIn(str(self.backups), errors.getvalue())
+            self.assertIn("claimed version remains", errors.getvalue())
+        self.run_adopt("--adopt-app-changes")
+        self.assertTrue(self.live_file.is_symlink())
+        self.assertEqual(self.repo_file.read_text(), expected)
+        self.assertEqual(self.repo_file.stat().st_mtime_ns, expected_mtime_ns)
 
     def test_backups_are_private_because_they_can_hold_stream_keys(self):
         self.app_saved("live\n")

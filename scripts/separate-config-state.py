@@ -111,20 +111,28 @@ def _adopt(entry, destination):
         root = Path.home() / ".local/state/config-adopt"
         root.mkdir(parents=True, exist_ok=True)
         backup = Path(tempfile.mkdtemp(prefix=time.strftime("%Y%m%d-%H%M%S-"), dir=root))
-        app = backup / "app"
-        app.mkdir()
-        saved = destination.rename(app / destination.name)
-        saved.chmod(0o600)
+        _private_copy(entry, backup / "repo")
+        _private_copy(destination, backup / "app")
     finally:
         os.umask(previous)
-    _private_copy(entry, backup / "repo")
-    saved_stat = saved.stat()
-    if saved_stat.st_mtime_ns > entry.stat().st_mtime_ns:
-        shutil.copyfile(saved, entry)
-        os.utime(entry, ns=(saved_stat.st_atime_ns, saved_stat.st_mtime_ns))
-        outcome = "adopted the app's newer file into the repository"
-    else:
-        outcome = "kept the repo version (the app's file was not newer)"
+    saved = destination.rename(backup / "app" / (".claimed-" + destination.name))
+    try:
+        saved.chmod(0o600)
+        if saved.stat().st_mtime_ns > entry.stat().st_mtime_ns:
+            with tempfile.TemporaryDirectory(prefix=".config-adopt-", dir=entry.parent) as staging:
+                replacement = Path(staging) / entry.name
+                shutil.copy2(saved, replacement)
+                os.replace(replacement, entry)
+            outcome = "adopted the app's newer file into the repository"
+        else:
+            outcome = "kept the repo version (the app's file was not newer)"
+        destination.symlink_to(entry)
+    except OSError:
+        try:
+            os.link(saved, destination)
+        except FileExistsError:
+            print(f"separate-config-state: replacement preserved at {destination}; claimed version remains at {saved}", file=sys.stderr)
+        raise
     return f"{destination}: {outcome}; both versions saved in {backup}"
 
 
@@ -135,7 +143,7 @@ def _apply(entries, adopt=False):
         if is_config:
             if adopt and destination.is_file() and not destination.is_symlink():
                 print(f"separate-config-state: {_adopt(entry, destination)}")
-            if not destination.is_symlink():
+            elif not destination.is_symlink():
                 destination.symlink_to(entry)
         else:
             # mv -n also protects against a live app creating the destination

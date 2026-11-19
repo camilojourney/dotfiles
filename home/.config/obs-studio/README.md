@@ -33,10 +33,12 @@ OBS replaces a linked file with a real one when it saves. The next
 `./rebuild-total.sh` takes the newer version into this directory, keeps both in
 `~/.local/state/config-adopt/` (owner-only), and links the file again. Adoption
 starts after this app's migration plan is conflict-free, not after a run-wide
-check. If OBS saves a replacement during adoption, that save stays local and
-relinking stops; retry the rebuild to reconcile it. Adoption retains the original
-modification time so the retry selects the later save. Both claimed versions remain
-saved. Review the repository change with `git diff`, then commit.
+check. Both files are snapshotted before the app file is touched; the atomically
+claimed file is also retained in case OBS saved during backup. Repository updates
+are published atomically, preserving the original modification time. On handled
+I/O errors the claimed file is restored unless a replacement OBS saved occupies
+its path. That replacement is kept and both paths are reported; retry the rebuild
+to reconcile it. All snapshots remain saved. Review the repository change with `git diff`, then commit.
 
 ## Scenes
 
