@@ -15,6 +15,9 @@
 # macOS metadata junk
 .DS_Store
 
+# Python bytecode
+__pycache__/
+
 # OBS rewrites *.bak on every save. Stream keys are blanked on commit by the
 # obs-keys filter (.gitattributes), not ignored.
 home/.config/obs-studio/basic/**/*.bak

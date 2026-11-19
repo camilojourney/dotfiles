@@ -102,7 +102,7 @@ class Trial:
         )
 
     def request(self, route, body=None):
-        request = urllib.request.Request(
+        request = urllib.request.Request(  # noqa: S310 - base URL is checked against two loopback addresses in __init__
             self._base + route,
             data=None if body is None else json.dumps(body).encode(),
             headers={
