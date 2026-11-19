@@ -44,7 +44,8 @@ can leave a changed local file. For apps that do this on every save (OBS, declar
 with `adoptAppChanges = true` in `nix/camilo-extra.nix`) activation reconciles it:
 adoption starts only after the OBS migration plan is conflict-free. The app file
 is atomically moved into a private backup and the repository version is saved
-there before either is adopted. The newer version becomes the repository file
+there before either is adopted. The newer version becomes the repository file,
+retaining its original modification time so retries compare the real save order,
 and the link is restored. Backups live under `~/.local/state/config-adopt/`
 (owner-only, they can hold stream keys), including when the files are identical.
 A replacement OBS saves during adoption is never overwritten: it stops relinking

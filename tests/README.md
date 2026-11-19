@@ -50,11 +50,12 @@ contact a backend, start a VM or claim browser/load acceptance. The independent
 operational proof is private, not committed here.
 
 `agent_update_now_test.py` checks default in-place updates, weekly and hand-formatted
-manifest byte preservation, lane limits, safeguards, and installed-pin verification.
+manifest byte preservation, no queries to unselected registries, shared safeguards,
+and installed-pin verification.
 `aa_coding_agents_test.py` checks decoded HTTP payloads and both data CLI paths
 with offline responses. `config_state_test.py` isolates adoption backups through
-HOME and checks private snapshots, concurrent saves, repeated adoption, and strict
-conflicts. `rebuild_test.sh` also checks update/verify/smoke ordering, rollback,
+HOME and checks private snapshots, chronological retries after concurrent saves,
+repeated adoption, and strict conflicts. `rebuild_test.sh` also checks update/verify/smoke ordering, rollback,
 INT/TERM cleanup at every pending stage, and the opt-out with activation stubs.
 
 `agent_tools_test.sh` exercises the agent-tool reconciliation and audit scripts with stubbed `npm`, `uv`, external installers, and Homebrew.

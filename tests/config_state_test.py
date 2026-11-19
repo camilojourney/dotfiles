@@ -155,6 +155,8 @@ class AdoptAppChangesTest(unittest.TestCase):
         self.repo_file = self.source / "scenes/Streaming.json"
         self.live_file = self.target / "scenes/Streaming.json"
         self.repo_file.write_text("repo\n")
+        self.repo_mtime_ns = 1_700_000_000_000_000_000
+        os.utime(self.repo_file, ns=(self.repo_mtime_ns, self.repo_mtime_ns))
 
     def run_adopt(self, *extra, success=True, files=("scenes/Streaming.json",)):
         env = dict(os.environ, HOME=str(self.root / "home"))
@@ -204,28 +206,44 @@ class AdoptAppChangesTest(unittest.TestCase):
         self.assertEqual(self.repo_file.read_text(), "repo\n")
         self.assertEqual(self.backed_up_texts(), ["repo\n", "repo\n"])
 
-    def test_save_after_claim_survives_in_every_reconciliation_case(self):
+    def test_save_after_claim_is_adopted_on_retry_in_every_reconciliation_case(self):
         rename = os.rename
-        for original, newer in (("repo\n", True), ("live\n", True), ("live\n", False)):
-            with self.subTest(original=original, newer=newer):
-                self.repo_file.write_text("repo\n")
-                self.app_saved(original, newer=newer)
-                before = self.backed_up_texts()
+        replacement_mtime_ns = self.repo_mtime_ns + 200_000_000_000
+        for original in ("repo\n", "live\n"):
+            for delta_ns in (-100_000_000_000, 0, 100_000_000_000):
+                with self.subTest(original=original, delta_ns=delta_ns):
+                    self.live_file.unlink(missing_ok=True)
+                    self.repo_file.write_text("repo\n")
+                    os.utime(self.repo_file, ns=(self.repo_mtime_ns, self.repo_mtime_ns))
+                    self.live_file.write_text(original)
+                    app_mtime_ns = self.repo_mtime_ns + delta_ns
+                    os.utime(self.live_file, ns=(app_mtime_ns, app_mtime_ns))
+                    before = self.backed_up_texts()
+                    adopted = original if delta_ns > 0 else "repo\n"
 
-                def save_after_claim(source, destination, *args, **kwargs):
-                    result = rename(source, destination, *args, **kwargs)
-                    if Path(source) == self.live_file:
-                        replacement = self.live_file.with_suffix(".new")
-                        replacement.write_text("concurrent save\n")
-                        os.replace(replacement, self.live_file)
-                    return result
+                    def save_after_claim(source, destination, *args, **kwargs):
+                        result = rename(source, destination, *args, **kwargs)
+                        if Path(source) == self.live_file:
+                            replacement = self.live_file.with_suffix(".new")
+                            replacement.write_text("concurrent save\n")
+                            os.utime(replacement, ns=(replacement_mtime_ns, replacement_mtime_ns))
+                            os.replace(replacement, self.live_file)
+                        return result
 
-                with patch.dict(os.environ, HOME=str(self.root / "home")), patch.object(os, "rename", save_after_claim), self.assertRaises(FileExistsError):
-                    migration.separate(self.source, self.target, ["scenes/Streaming.json"], adopt=True)
-                self.assertFalse(self.live_file.is_symlink())
-                self.assertEqual(self.live_file.read_text(), "concurrent save\n")
-                self.assertEqual(self.repo_file.read_text(), original if newer else "repo\n")
-                self.assertEqual(self.backed_up_texts(), sorted([*before, original, "repo\n"]))
+                    with patch.dict(os.environ, HOME=str(self.root / "home")), patch.object(os, "rename", save_after_claim), self.assertRaises(FileExistsError):
+                        migration.separate(self.source, self.target, ["scenes/Streaming.json"], adopt=True)
+                    self.assertFalse(self.live_file.is_symlink())
+                    self.assertEqual(self.live_file.read_text(), "concurrent save\n")
+                    self.assertEqual(self.repo_file.read_text(), adopted)
+                    self.assertEqual(self.repo_file.stat().st_mtime_ns, max(app_mtime_ns, self.repo_mtime_ns))
+                    self.assertEqual(self.backed_up_texts(), sorted([*before, original, "repo\n"]))
+
+                    self.run_adopt("--adopt-app-changes")
+                    self.assertTrue(self.live_file.is_symlink())
+                    self.assertEqual(self.live_file.resolve(), self.repo_file)
+                    self.assertEqual(self.repo_file.read_text(), "concurrent save\n")
+                    self.assertEqual(self.repo_file.stat().st_mtime_ns, replacement_mtime_ns)
+                    self.assertEqual(self.backed_up_texts(), sorted([*before, original, "repo\n", adopted, "concurrent save\n"]))
 
     def test_repeated_adoptions_keep_every_snapshot_even_in_the_same_second(self):
         with patch.dict(os.environ, HOME=str(self.root / "home")), patch.object(migration.time, "strftime", return_value="fixed-second-"):

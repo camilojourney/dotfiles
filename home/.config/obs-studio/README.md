@@ -34,7 +34,8 @@ OBS replaces a linked file with a real one when it saves. The next
 `~/.local/state/config-adopt/` (owner-only), and links the file again. Adoption
 starts after this app's migration plan is conflict-free, not after a run-wide
 check. If OBS saves a replacement during adoption, that save stays local and
-relinking stops; retry the rebuild to reconcile it. Both claimed versions remain
+relinking stops; retry the rebuild to reconcile it. Adoption retains the original
+modification time so the retry selects the later save. Both claimed versions remain
 saved. Review the repository change with `git diff`, then commit.
 
 ## Scenes

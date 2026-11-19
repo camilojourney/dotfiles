@@ -14,7 +14,6 @@ The manifest is hand-formatted, so only version and digest values are edited in
 place. Nothing is committed or pushed.
 """
 import argparse
-import copy
 import json
 import os
 import re
@@ -26,7 +25,6 @@ from pathlib import Path
 
 from toolchain import ROOT, Registry, select, validate
 
-LANES = ("npm", "external")
 PIN = ROOT / "nix/agent-tools.manifest.lock.json"
 
 
@@ -126,15 +124,6 @@ def verify(manifest, probe):
     return 1 if found else 0
 
 
-def lane_selection(manifest, now, registry):
-    """The weekly selection, kept only for the lanes this manual update may move."""
-    selected, decisions = select(manifest, now, registry)
-    expected = copy.deepcopy(manifest)
-    for lane in LANES:
-        expected[lane] = selected[lane]
-    return expected, [line for line in decisions if line.split("/", 1)[0] in LANES]
-
-
 def report(found):
     if not found:
         print("\nagent tools: no eligible changes; every pin is current for the seven-day rule")
@@ -162,7 +151,7 @@ def main(argv=None, registry=None, now=None, probe=None):
     validate(manifest)
     if args.verify:
         return verify(manifest, probe or Installed())
-    expected, decisions = lane_selection(manifest, now or datetime.now(UTC), registry or Registry())
+    expected, decisions = select(manifest, now or datetime.now(UTC), registry or Registry(), lanes=("npm", "external"))
     print("\n".join(decisions))
     found = changes(manifest, expected)
     report(found)

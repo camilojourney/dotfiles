@@ -271,10 +271,10 @@ def _entries(manifest, lane):
     return [(name, {"version": entry} if isinstance(entry, str) else entry) for name, entry in entries.items()]
 
 
-def select(manifest, now, registry):
+def select(manifest, now, registry, lanes=("npm", "uv", "python", "piPackages", "external")):
     validate(manifest)
     result, decisions = copy.deepcopy(manifest), []
-    for lane in ("npm", "uv", "python", "piPackages", "external"):
+    for lane in lanes:
         for name, entry in _entries(result, lane):
             picked, checksums, notes = _select_entry(lane, name, entry, now, registry)
             entry["version"] = picked
