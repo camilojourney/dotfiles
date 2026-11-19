@@ -14,6 +14,9 @@ cat > "$SANDBOX/bin/sudo" <<'EOF'
 #!/bin/bash
 printf '%s\n' "$@" > "$STUB_LOG"
 echo rebuild >> "${STUB_ORDER:-/dev/null}"
+if [ "${STUB_SIGNAL_PHASE:-}" = rebuild ]; then
+  kill "-${STUB_SIGNAL:-TERM}" "$PPID"
+fi
 if [ "${STUB_REBUILD_FAIL_FIRST:-0}" = 1 ] && [ ! -f "$STUB_LOG.failed-once" ]; then
   : > "$STUB_LOG.failed-once"
   exit 1
@@ -23,6 +26,9 @@ chmod +x "$SANDBOX/bin/sudo"
 cat > "$SANDBOX/bin/open" <<'EOF'
 #!/bin/bash
 printf 'open %s\n' "$*" > "$STUB_OPEN_LOG"
+if [ "${STUB_SIGNAL_PHASE:-}" = open ]; then
+  kill "-${STUB_SIGNAL:-TERM}" "$PPID"
+fi
 EOF
 chmod +x "$SANDBOX/bin/open"
 
@@ -80,8 +86,14 @@ echo "PASS: rebuild.sh rejects an unrecognized account"
 # and installed-version check are covered by agent_update_now_test.py; here python3
 # is a stub, so only the ordering and the rollback guarantees of rebuild.sh are checked.
 cp "$ROOT/rebuild-total.sh" "$SANDBOX/"
-mkdir -p "$SANDBOX/nix" "$SANDBOX/scripts/agent-tools"
-for tool in bash cp mktemp rm cmp cat; do
+mkdir -p "$SANDBOX/nix" "$SANDBOX/scripts/agent-tools" "$SANDBOX/tmp"
+REAL_MKTEMP=$(command -v mktemp)
+cat > "$SANDBOX/bin/mktemp" <<EOF
+#!/bin/bash
+exec "$REAL_MKTEMP" "$SANDBOX/tmp/pins.XXXXXX"
+EOF
+chmod +x "$SANDBOX/bin/mktemp"
+for tool in bash cp rm cmp cat; do
   ln -sf "$(command -v "$tool")" "$SANDBOX/bin/$tool"
 done
 : > "$SANDBOX/scripts/agent-tools/update-now.py"
@@ -90,18 +102,26 @@ cat > "$SANDBOX/bin/python3" <<'EOF'
 #!/bin/bash
 case "$1" in
   */update-now.py)
-    if [ "$2" = --verify ]; then
+    if [ "$#" -eq 2 ] && [ "$2" = --verify ]; then
+      phase=verify
       echo verify >> "$STUB_ORDER"
       [ "${STUB_VERIFY_FAIL:-0}" != 1 ] || exit 1
-    else
+    elif [ "$#" -eq 1 ]; then
+      phase=update
       echo update >> "$STUB_ORDER"
       [ "${STUB_UPDATE_FAIL:-0}" != 1 ] || exit 1
       echo UPDATED >> "$STUB_MANIFEST"
+    else
+      exit 2
     fi ;;
   */smoke.py)
+    phase=smoke
     echo smoke >> "$STUB_ORDER"
     [ "${STUB_SMOKE_FAIL:-0}" != 1 ] || exit 1 ;;
 esac
+if [ "${STUB_SIGNAL_PHASE:-}" = "$phase" ]; then
+  kill "-${STUB_SIGNAL:-TERM}" "$PPID"
+fi
 EOF
 chmod +x "$SANDBOX/bin/python3"
 printf 'original manifest\n' > "$SANDBOX/manifest.orig"
@@ -119,6 +139,10 @@ run_update_case() { # run_update_case SCRIPT [ENV=VAL ...] -- ARGS...
     STUB_MANIFEST="$SANDBOX/nix/agent-tools.manifest.lock.json" \
     DARWIN_REBUILD_BIN="$SANDBOX/darwin-rebuild" REBUILD_ACCOUNT=camiloslaptop \
     ${envs[@]+"${envs[@]}"} /bin/bash "$SANDBOX/$script" "$@" >"$SANDBOX/case-out" 2>&1 || CASE_STATUS=$?
+  if compgen -G "$SANDBOX/tmp/*" >/dev/null; then
+    echo "FAIL: temporary pin backup was not cleaned up" >&2
+    exit 1
+  fi
 }
 manifest_is_original() { cmp -s "$SANDBOX/manifest.orig" "$SANDBOX/nix/agent-tools.manifest.lock.json"; }
 order() { if [ -f "$SANDBOX/order" ]; then tr '\n' ' ' < "$SANDBOX/order"; fi; }
@@ -129,14 +153,8 @@ expect_order() { [ "$(order)" = "$1" ] || { echo "FAIL: expected '$1' but ran '$
 run_update_case rebuild.sh --
 test "$CASE_STATUS" -eq 0
 expect_order "update rebuild verify smoke "
-! manifest_is_original
+manifest_is_original && { echo "FAIL: verified pins were not kept" >&2; exit 1; }
 echo "PASS: rebuild.sh updates the tools by default, verifies and smoke-checks them"
-
-# --update-tools is accepted and means the same as the default.
-run_update_case rebuild.sh -- --update-tools
-test "$CASE_STATUS" -eq 0
-expect_order "update rebuild verify smoke "
-echo "PASS: --update-tools is accepted and equals the default"
 
 # --no-update-tools is the explicit opt-out: nothing about the tools runs.
 run_update_case rebuild.sh -- --no-update-tools
@@ -184,6 +202,27 @@ test "$CASE_STATUS" -ne 0
 expect_order "update rebuild verify smoke rebuild "
 manifest_is_original
 echo "PASS: a failed smoke check rolls the pins back and reinstalls them"
+
+for signal in INT TERM; do
+  expected_status=130
+  [ "$signal" != TERM ] || expected_status=143
+  for phase in update rebuild verify smoke; do
+    run_update_case rebuild.sh "STUB_SIGNAL=$signal" "STUB_SIGNAL_PHASE=$phase" --
+    test "$CASE_STATUS" -eq "$expected_status"
+    manifest_is_original
+    case "$phase" in
+      update) expect_order "update " ;;
+      rebuild) expect_order "update rebuild " ;;
+      verify) expect_order "update rebuild verify " ;;
+      smoke) expect_order "update rebuild verify smoke " ;;
+    esac
+  done
+  run_update_case rebuild.sh "STUB_SIGNAL=$signal" STUB_SIGNAL_PHASE=open --
+  test "$CASE_STATUS" -eq "$expected_status"
+  expect_order "update rebuild verify smoke "
+  manifest_is_original && { echo "FAIL: verified pins were not kept" >&2; exit 1; }
+  echo "PASS: $signal restores pending pins and keeps successfully verified pins"
+done
 
 # A mistyped option must fail loudly instead of silently doing a plain rebuild.
 run_update_case rebuild.sh -- --update-tool

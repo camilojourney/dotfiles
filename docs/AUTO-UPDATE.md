@@ -139,15 +139,17 @@ external downloads, no downgrades.
   treehouse). Python and uv libraries stay on the Sunday lane, because a major
   jump there can break scripts that import them.
 - Order: select and edit the manifest in place
-  ([`update-now.py`](../scripts/agent-tools/update-now.py); run it alone with no
-  flag to preview), rebuild, check with `update-now.py --verify` that every npm and
+  ([`update-now.py`](../scripts/agent-tools/update-now.py); running it alone also
+  updates in place), rebuild, check with `update-now.py --verify` that every npm and
   external tool is installed at its pin, then run the same
   [`smoke.py`](../scripts/agent-tools/smoke.py) check as the Sunday lane.
 - Offline or a registry/OSV error: the rebuild warns and continues with the
   current pins. The manifest is never touched.
 - A failed rebuild, or installed versions that miss the pins (a rebuild can stop
   early and still return), restore the previous manifest. A failed smoke check
-  restores it and rebuilds again to reinstall the previous versions.
+  restores it and rebuilds again to reinstall the previous versions. INT, TERM,
+  and exit also restore the saved manifest until verify and smoke both succeed;
+  the temporary backup is cleaned up.
 - Nothing is committed or pushed. The manifest shows as modified for you to review
   and commit. If the mini's Sunday lane has pushed a different manifest, restore the
   file with `git checkout nix/agent-tools.manifest.lock.json` before pulling.

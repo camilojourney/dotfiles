@@ -6,15 +6,16 @@ including hidden files and live sockets. Nothing is deleted or overwritten.
 
 Some apps (OBS) replace a config symlink with a real file whenever they save.
 With --adopt-app-changes such a file is not a conflict: the newer of the two
-versions becomes the repository file, both are first copied (privately, they can
-hold stream keys) to $SEPARATE_CONFIG_BACKUP_DIR or ~/.local/state/config-adopt,
-and the path is linked again. Every other conflict still stops the run.
+versions becomes the repository file, both are first saved (privately, they can
+hold stream keys) under ~/.local/state/config-adopt, and the path is linked again.
+Conflicts in this app's plan stop it before adoption; other apps are checked by
+Home Manager. A concurrent replacement save is left untouched and stops relinking.
 """
-import filecmp
 import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -92,11 +93,6 @@ def _check_destination(entry, destination, target, is_config, adopt=False):
     raise ValueError(f"target conflict; both versions preserved: {destination}")
 
 
-def _backup_root():
-    default = Path.home() / ".local/state/config-adopt"
-    return Path(os.environ.get("SEPARATE_CONFIG_BACKUP_DIR", default))
-
-
 def _private_copy(source, directory):
     previous = os.umask(0o077)  # every directory created on the way is owner-only too
     try:
@@ -110,19 +106,23 @@ def _private_copy(source, directory):
 
 def _adopt(entry, destination):
     """Reconcile an app-written real file with its repository file, then relink."""
-    if filecmp.cmp(entry, destination, shallow=False):
-        destination.unlink()
-        return f"{destination}: identical, linked again"
-    stamp = time.strftime("%Y%m%d-%H%M%S")
-    backup = _backup_root() / stamp / destination.name
+    previous = os.umask(0o077)
+    try:
+        root = Path.home() / ".local/state/config-adopt"
+        root.mkdir(parents=True, exist_ok=True)
+        backup = Path(tempfile.mkdtemp(prefix=time.strftime("%Y%m%d-%H%M%S-"), dir=root))
+        app = backup / "app"
+        app.mkdir()
+        saved = destination.rename(app / destination.name)
+        saved.chmod(0o600)
+    finally:
+        os.umask(previous)
     _private_copy(entry, backup / "repo")
-    _private_copy(destination, backup / "app")
-    if destination.stat().st_mtime > entry.stat().st_mtime:
-        shutil.copyfile(destination, entry)
+    if saved.stat().st_mtime > entry.stat().st_mtime:
+        shutil.copyfile(saved, entry)
         outcome = "adopted the app's newer file into the repository"
     else:
         outcome = "kept the repo version (the app's file was not newer)"
-    destination.unlink()
     return f"{destination}: {outcome}; both versions saved in {backup}"
 
 

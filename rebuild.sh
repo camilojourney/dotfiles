@@ -9,7 +9,6 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 UPDATE_TOOLS=1
 for arg in "$@"; do
   case "$arg" in
-    --update-tools) UPDATE_TOOLS=1 ;;
     --no-update-tools) UPDATE_TOOLS=0 ;;
     *)
       printf 'rebuild.sh: unknown option "%s". Usage: rebuild.sh [--no-update-tools]\n' "$arg" >&2
@@ -46,20 +45,30 @@ fi
 
 PIN_FILE="$DIR/nix/agent-tools.manifest.lock.json"
 PIN_BACKUP=""
+PINS_PENDING=0
 UPDATE_TOOL="$DIR/scripts/agent-tools/update-now.py"
-restore_pins() {
-  cp "$PIN_BACKUP" "$PIN_FILE"
-  rm -f "$PIN_BACKUP"
+cleanup_pins() {
+  if [ -n "$PIN_BACKUP" ]; then
+    if [ "$PINS_PENDING" = 1 ]; then
+      cp "$PIN_BACKUP" "$PIN_FILE"
+    fi
+    rm -f "$PIN_BACKUP"
+    PIN_BACKUP=""
+  fi
 }
+trap cleanup_pins EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 if [ "$UPDATE_TOOLS" = 1 ]; then
   # Keep the old bytes: a failed rebuild, install check or smoke check puts them back.
   PIN_BACKUP=$(mktemp)
   cp "$PIN_FILE" "$PIN_BACKUP"
-  if ! python3 "$UPDATE_TOOL" --write; then
+  PINS_PENDING=1
+  if ! python3 "$UPDATE_TOOL"; then
     # Offline or a registry/OSV error: the pins stay as they are, which is the safe
     # state, so the rebuild itself must not be blocked by it.
-    rm -f "$PIN_BACKUP"
+    cleanup_pins
     UPDATE_TOOLS=0
     printf 'rebuild.sh: the tool update check failed; continuing with the current pins.\n' >&2
   fi
@@ -69,7 +78,7 @@ status=0
 sudo "$DARWIN_REBUILD_BIN" switch --flake "$DIR#$FLAKE_ATTR" || status=$?
 if [ "$status" -ne 0 ]; then
   if [ "$UPDATE_TOOLS" = 1 ]; then
-    restore_pins
+    cleanup_pins
     printf 'rebuild.sh: the rebuild failed; the previous tool pins were restored.\n' >&2
   fi
   exit "$status"
@@ -79,18 +88,19 @@ if [ "$UPDATE_TOOLS" = 1 ]; then
   # A rebuild can stop early (for example a config conflict) and still return, leaving
   # the old tools installed. Never keep pins that were not installed.
   if ! python3 "$UPDATE_TOOL" --verify; then
-    restore_pins
+    cleanup_pins
     printf 'rebuild.sh: the rebuild did not install the pinned tool versions (see above); the previous pins were restored.\n' >&2
     exit 1
   fi
   if ! python3 "$DIR/scripts/agent-tools/smoke.py"; then
-    restore_pins
+    cleanup_pins
     printf 'rebuild.sh: the smoke check failed after the update; restoring the previous pins and rebuilding again.\n' >&2
     sudo "$DARWIN_REBUILD_BIN" switch --flake "$DIR#$FLAKE_ATTR" ||
       printf 'rebuild.sh: the rollback rebuild also failed; run ./rebuild.sh --no-update-tools by hand.\n' >&2
     exit 1
   fi
-  rm -f "$PIN_BACKUP"
+  PINS_PENDING=0
+  cleanup_pins
   printf 'rebuild.sh: tool pins checked, installed and smoke-tested. Review: git -C %s diff nix/agent-tools.manifest.lock.json\n' "$DIR"
 fi
 

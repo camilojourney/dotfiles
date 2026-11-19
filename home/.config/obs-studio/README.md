@@ -31,8 +31,11 @@ file until `git add`, which then stages nothing.
 
 OBS replaces a linked file with a real one when it saves. The next
 `./rebuild-total.sh` takes the newer version into this directory, keeps both in
-`~/.local/state/config-adopt/`, and links the file again, so rebuilding never
-loses a change made in OBS. Review it with `git diff`, then commit.
+`~/.local/state/config-adopt/` (owner-only), and links the file again. Adoption
+starts after this app's migration plan is conflict-free, not after a run-wide
+check. If OBS saves a replacement during adoption, that save stays local and
+relinking stops; retry the rebuild to reconcile it. Both claimed versions remain
+saved. Review the repository change with `git diff`, then commit.
 
 ## Scenes
 

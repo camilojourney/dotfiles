@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Manual, on-demand update of the agent command-line tool pins.
 
-Run by hand, never scheduled: `./rebuild.sh --update-tools` calls it, or run it
-alone to preview. It selects with toolchain.select, so every weekly safeguard
+Run by hand, never scheduled: `./rebuild.sh` calls it, or run it alone to update
+the pins in place. It selects with toolchain.select, so every weekly safeguard
 applies unchanged: stable releases only, public at least seven days (a fix for a
 known vulnerability in the current pin may skip the wait), OSV-clean, registry
 sha256 digests for external downloads, no downgrades, and a registry or OSV
@@ -54,15 +54,17 @@ def edit(text, manifest, selected):
     """Return the manifest text with only the changed versions and digests replaced."""
     for lane, name, old, new in changes(manifest, selected):
         if lane == "npm":
-            pattern = rf'("name": "{re.escape(name)}", "version": ")' + re.escape(old) + '(")'
+            pattern = rf'("name"\s*:\s*"{re.escape(name)}"\s*,\s*"version"\s*:\s*")' + re.escape(old) + '(")'
             text = _replace_once(text, pattern, new, f"npm entry {name}")
             continue
-        start = text.index(f'\n    "{name}": {{', text.index('"external": {'))
-        end = text.index("\n    }", start)
+        lane_start = re.search(r'"external"\s*:\s*\{', text).end()
+        start = re.search(rf'"{re.escape(name)}"\s*:\s*\{{', text[lane_start:]).end() + lane_start - 1
+        _, length = json.JSONDecoder().raw_decode(text[start:])
+        end = start + length
         block = text[start:end]
-        block = _replace_once(block, r'("version": ")' + re.escape(old) + '(")', new, f"{name} version")
+        block = _replace_once(block, r'("version"\s*:\s*")' + re.escape(old) + '(")', new, f"{name} version")
         for platform, digest in manifest["external"][name]["sha256"].items():
-            pattern = rf'("{platform}": ")' + re.escape(digest) + '(")'
+            pattern = rf'("{re.escape(platform)}"\s*:\s*")' + re.escape(digest) + '(")'
             block = _replace_once(block, pattern, selected["external"][name]["sha256"][platform], f"{name} {platform} digest")
         text = text[:start] + block + text[end:]
     return text
@@ -133,11 +135,11 @@ def lane_selection(manifest, now, registry):
     return expected, [line for line in decisions if line.split("/", 1)[0] in LANES]
 
 
-def report(found, write):
+def report(found):
     if not found:
         print("\nagent tools: no eligible changes; every pin is current for the seven-day rule")
         return
-    print("\nagent tools: " + ("updating" if write else "would update (preview; add --write to apply)"))
+    print("\nagent tools: updating")
     for _lane, name, old, new in found:
         print(f"  {name}: {old} -> {new}")
 
@@ -153,11 +155,9 @@ def apply(path, text, manifest, expected):
 
 def main(argv=None, registry=None, now=None, probe=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--manifest", type=Path, default=PIN)
-    parser.add_argument("--write", action="store_true", help="apply the changes; without it this only previews")
     parser.add_argument("--verify", action="store_true", help="check that installed tools match the pins; changes nothing")
     args = parser.parse_args(argv)
-    text = args.manifest.read_text()
+    text = PIN.read_text()
     manifest = json.loads(text)
     validate(manifest)
     if args.verify:
@@ -165,9 +165,9 @@ def main(argv=None, registry=None, now=None, probe=None):
     expected, decisions = lane_selection(manifest, now or datetime.now(UTC), registry or Registry())
     print("\n".join(decisions))
     found = changes(manifest, expected)
-    report(found, args.write)
-    if found and args.write:
-        apply(args.manifest, text, manifest, expected)
+    report(found)
+    if found:
+        apply(PIN, text, manifest, expected)
     return 0
 
 
