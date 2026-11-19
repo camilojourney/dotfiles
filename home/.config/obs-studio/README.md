@@ -27,6 +27,13 @@ On a new Mac everything comes back except the keys: paste them again (keep them
 in your password manager). After rotating only a key, `git status` can list the
 file until `git add`, which then stages nothing.
 
+## OBS saves over the links
+
+OBS replaces a linked file with a real one when it saves. The next
+`./rebuild-total.sh` takes the newer version into this directory, keeps both in
+`~/.local/state/config-adopt/`, and links the file again, so rebuilding never
+loses a change made in OBS. Review it with `git diff`, then commit.
+
 ## Scenes
 
 | Main (16:9) | Vertical (9:16, Aitum) follows it automatically |

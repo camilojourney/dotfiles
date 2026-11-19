@@ -40,9 +40,15 @@ symlinked destination parents, cross-filesystem moves, or conflicting files stop
 activation rather than overwrite either version. If interrupted, already moved
 data stays local and remaining data stays in the checkout; resolve the reported
 conflict before retrying. Apps that atomically replace a configuration symlink
-can leave a changed local file; review and merge that change into its authored
-owner before retrying. There is no automatic rollback into a directory-wide
-link because that could hide local app state.
+can leave a changed local file. For apps that do this on every save (OBS, declared
+with `adoptAppChanges = true` in `nix/camilo-extra.nix`) activation reconciles it:
+the newer of the app's file and the repository file becomes the repository file,
+both versions are first copied to `${XDG_STATE_HOME:-~/.local/state}/config-adopt/`
+(owner-only, they can hold stream keys), and the link is restored. Other conflicts
+in the same run still stop activation, before anything is adopted. For every other
+app, review and merge the local change into its authored owner before retrying.
+There is no automatic rollback into a directory-wide link because that could hide
+local app state.
 
 A rebuild applies the declarations on each machine. A local checkout edit does
 not prove the other machine has migrated. Do not restore old whole-directory

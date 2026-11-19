@@ -14,6 +14,7 @@
       imports = [
         (import ./config-directory.nix {
           name = "obs-studio";
+          adoptAppChanges = true;
           source = "home/.config/obs-studio/basic";
           target = "Library/Application Support/obs-studio/basic";
           files = [

@@ -135,5 +135,99 @@ class ConfigStateTest(unittest.TestCase):
         self.assertEqual(list(elsewhere.iterdir()), [])
 
 
+class AdoptAppChangesTest(unittest.TestCase):
+    """Apps such as OBS replace a config symlink with a real file when they save."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix="config-adopt-", dir="/tmp")
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name).resolve()
+        self.source = self.root / "repo/obs"
+        self.target = self.root / "home/obs"
+        self.backups = self.root / "state/config-adopt"
+        (self.source / "scenes").mkdir(parents=True)
+        self.target.joinpath("scenes").mkdir(parents=True)
+        self.repo_file = self.source / "scenes/Streaming.json"
+        self.live_file = self.target / "scenes/Streaming.json"
+        self.repo_file.write_text("repo\n")
+
+    def run_adopt(self, *extra, success=True, files=("scenes/Streaming.json",)):
+        env = dict(os.environ, SEPARATE_CONFIG_BACKUP_DIR=str(self.backups))
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), *extra, str(self.source), str(self.target), *files],
+            check=False, capture_output=True, text=True, timeout=10, env=env,
+        )
+        self.assertEqual(result.returncode, 0 if success else 1, result.stdout + result.stderr)
+        return result
+
+    def app_saved(self, text, newer=True):
+        self.live_file.write_text(text)
+        base = self.repo_file.stat().st_mtime
+        os.utime(self.live_file, (base + 100, base + 100) if newer else (base - 100, base - 100))
+
+    def backed_up_texts(self):
+        return sorted(path.read_text() for path in self.backups.rglob("*") if path.is_file())
+
+    def test_without_the_flag_an_app_written_file_is_still_a_conflict(self):
+        self.app_saved("live\n")
+        self.run_adopt(success=False)
+        self.assertEqual(self.live_file.read_text(), "live\n")
+        self.assertEqual(self.repo_file.read_text(), "repo\n")
+
+    def test_newer_app_file_is_adopted_into_the_repo_and_linked_with_both_versions_kept(self):
+        self.app_saved("live\n", newer=True)
+        result = self.run_adopt("--adopt-app-changes")
+        self.assertEqual(self.repo_file.read_text(), "live\n")
+        self.assertTrue(self.live_file.is_symlink())
+        self.assertEqual(self.live_file.resolve(), self.repo_file.resolve())
+        self.assertEqual(self.backed_up_texts(), ["live\n", "repo\n"])
+        self.assertIn("adopted", result.stdout)
+        self.assertIn(str(self.backups), result.stdout)
+
+    def test_newer_repo_file_wins_and_the_app_copy_is_kept(self):
+        self.app_saved("live\n", newer=False)
+        result = self.run_adopt("--adopt-app-changes")
+        self.assertEqual(self.repo_file.read_text(), "repo\n")
+        self.assertTrue(self.live_file.is_symlink())
+        self.assertEqual(self.backed_up_texts(), ["live\n", "repo\n"])
+        self.assertIn("kept the repo version", result.stdout)
+
+    def test_identical_app_file_is_just_relinked_without_a_backup(self):
+        self.app_saved("repo\n")
+        self.run_adopt("--adopt-app-changes")
+        self.assertTrue(self.live_file.is_symlink())
+        self.assertEqual(self.repo_file.read_text(), "repo\n")
+        self.assertFalse(self.backups.exists())
+
+    def test_backups_are_private_because_they_can_hold_stream_keys(self):
+        self.app_saved("live\n")
+        self.run_adopt("--adopt-app-changes")
+        self.assertEqual(self.backups.stat().st_mode & 0o077, 0)
+        for path in self.backups.rglob("*"):
+            self.assertEqual(path.stat().st_mode & 0o077, 0, path)
+
+    def test_unlisted_runtime_conflict_still_fails_before_adopting_anything(self):
+        self.app_saved("live\n")
+        (self.source / "session.json").write_text("source\n")
+        self.target.joinpath("session.json").write_text("target\n")
+        self.run_adopt("--adopt-app-changes", success=False)
+        self.assertEqual(self.repo_file.read_text(), "repo\n")
+        self.assertEqual(self.live_file.read_text(), "live\n")
+        self.assertFalse(self.backups.exists())
+
+    def test_existing_correct_link_is_left_alone(self):
+        self.live_file.symlink_to(self.repo_file)
+        self.run_adopt("--adopt-app-changes")
+        self.assertEqual(self.repo_file.read_text(), "repo\n")
+        self.assertFalse(self.backups.exists())
+
+    def test_a_foreign_symlink_is_never_adopted(self):
+        other = self.root / "elsewhere.json"
+        other.write_text("other\n")
+        self.live_file.symlink_to(other)
+        self.run_adopt("--adopt-app-changes", success=False)
+        self.assertEqual(self.repo_file.read_text(), "repo\n")
+
+
 if __name__ == "__main__":
     unittest.main()
