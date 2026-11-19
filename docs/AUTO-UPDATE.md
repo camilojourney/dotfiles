@@ -1,4 +1,4 @@
-# Daily system updates and weekly agent pins
+# Manual system updates and agent pins
 
 **No schedule runs this.** The former `org.dotfiles.auto-rebuild` launchd daemon
 (05:00 daily) is removed from `nix/configuration.nix`; the update is run
@@ -6,11 +6,14 @@
 Agent tools do not follow `latest`. Where this page says daily, nightly or
 05:00, read it as the cadence of that manual run.
 
+The table describes `scripts/auto-rebuild.sh`; the direct rebuild helpers also
+run the [manual tool update](#manual-tool-update-on-every-rebuild).
+
 | | Laptop (`camiloslaptop`) | Mac mini (`camilo_mini`) |
 | --- | --- | --- |
 | Pulls daily | `~/github/dotfiles`, `~/github/firstmate` | same |
 | Target | last applied laptop variant | last applied mini variant |
-| Agent pins | daily pull, normally Monday | Sunday after system rebuild |
+| Agent pins | Pull passed pins when run | Sunday promotion after system rebuild |
 
 `rebuild.sh` and **`rebuild-total.sh` are in the repository root**. On the mini
 these select `camilo-remote` and `camilo-remote-total`; on the laptop they select
@@ -40,7 +43,7 @@ applications/dependencies.
 | Homebrew formulae and unpinned casks | Homebrew, daily activation |
 | App Store apps | App Store via `mas`, daily |
 | Regular Google Chrome | Google, native security-update cadence |
-| Declared agent-tool pins | Weekly promotion below, OSV security exception |
+| Declared agent-tool pins | [Manual rebuild updates](#manual-tool-update-on-every-rebuild) or [Sunday promotion](#sunday-promotion-unattended), by lane |
 | Nix packages | `flake.lock`, deliberate update |
 
 `homebrew.onActivation.upgrade = true` still upgrades unpinned casks daily,
@@ -129,19 +132,17 @@ A pin build does not establish that those packages load on the mini.
 
 `./rebuild.sh` and `./rebuild-total.sh` update the agent command-line tool pins
 as part of the rebuild, on either machine, on any day. It only happens when you
-run a rebuild: nothing is scheduled. `--no-update-tools` skips it. The selection
-is the Sunday lane's (`toolchain.select`), so every safeguard still applies:
-stable releases only, public at least seven days (a fix for a known vulnerability
-in the current pin may skip the wait), clean in OSV, registry sha256 digests for
-external downloads, no downgrades.
+run a rebuild: nothing is scheduled. `--no-update-tools` skips it. Selection uses
+`toolchain.select` with the same [age, OSV and digest safeguards](#sunday-promotion-unattended)
+as Sunday promotion.
 
 - Only the npm and external lanes are queried and updated (the agent CLIs and
   pnpm, no-mistakes, treehouse). Python, uv libraries and Pi packages stay on the
   Sunday lane; their registry or OSV failures cannot block a manual selection.
   Major Python/uv jumps can break scripts that import those libraries.
 - Order: select and edit the manifest in place
-  ([`update-now.py`](../scripts/agent-tools/update-now.py); running it alone also
-  updates in place), rebuild, check with `update-now.py --verify` that every npm and
+  ([`update-now.py`](../scripts/agent-tools/update-now.py); running it alone edits
+  pins but does not install tools), rebuild, check with `update-now.py --verify` that every npm and
   external tool is installed at its pin, then run the same
   [`smoke.py`](../scripts/agent-tools/smoke.py) check as the Sunday lane.
 - Offline or a registry/OSV error: the rebuild warns and continues with the
@@ -151,16 +152,19 @@ external downloads, no downgrades.
   restores it and rebuilds again to reinstall the previous versions. INT, TERM,
   and exit also restore the saved manifest until verify and smoke both succeed;
   the temporary backup is cleaned up.
-- Nothing is committed or pushed. The manifest shows as modified for you to review
-  and commit. If the mini's Sunday lane has pushed a different manifest, restore the
-  file with `git checkout nix/agent-tools.manifest.lock.json` before pulling.
+- Nothing is committed or pushed. Eligible changes leave the manifest modified
+  for you to review and commit. If the mini's Sunday lane has pushed a different
+  manifest, review and preserve any wanted local pin edits before restoring the
+  file with `git checkout nix/agent-tools.manifest.lock.json` and pulling.
 
 ## Sunday promotion, unattended
 
 On the mini, `scripts/auto-rebuild.sh` (run by hand on a Sunday) invokes
 [`weekly.py --scheduled`](../scripts/agent-tools/weekly.py) **as `camilo_mini`**
-after the Sunday rebuild. It runs inside that one manual run instead of a separate launch agent. The laptop does not propose pins: its
-fast-forward pull receives the mini's passed commit when run.
+after the Sunday rebuild. It runs inside that one manual run instead of a separate
+launch agent. In this promotion lane the laptop only receives the mini's passed
+commit through a fast-forward pull; `auto-rebuild.sh` does not run the direct
+helpers' manual tool update.
 No agent, reviewer, model request or captain approval runs in this path.
 
 1. Require a clean `main`, matching the daily pull's `origin/main` tracking ref,
@@ -210,8 +214,8 @@ it. Do not hand-edit the checkout during a scheduled pin transaction.
 
 ## Failure and rollback
 
-Any selection, authorization, install, smoke or push failure notifies macOS.
-After a candidate install begins, rollback restores the previous manifest and
+For Sunday promotion, any selection, authorization, install, smoke or push failure
+notifies macOS. After a candidate install begins, rollback restores the previous manifest and
 removes only the job's own pin-only local commit using compare-and-swap ref
 update, then reinstalls and smoke-checks the previous pinned set. A rollback
 failure retains `~/.local/state/agent-tools/transaction.json` for retry and

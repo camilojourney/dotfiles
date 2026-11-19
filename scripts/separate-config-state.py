@@ -2,7 +2,7 @@
 
 Usage: separate-config-state.py [--adopt-app-changes] SOURCE TARGET CONFIG [CONFIG ...]
 The Nix declaration supplies the allowlist. Unlisted entries move to TARGET,
-including hidden files and live sockets. Nothing is deleted or overwritten.
+including hidden files and live sockets, without overwriting existing state.
 
 Some apps (OBS) replace a config symlink with a real file whenever they save.
 With --adopt-app-changes such a file is not a conflict: the newer of the two

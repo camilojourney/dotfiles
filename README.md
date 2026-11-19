@@ -148,6 +148,10 @@ same script, plus that one extra module:
 ./rebuild-total.sh
 ```
 
+These rebuild helpers also update agent-tool pins. See
+[manual tool updates](docs/AUTO-UPDATE.md#manual-tool-update-on-every-rebuild)
+for scope, the opt-out and rollback.
+
 There is no scheduled rebuild. To pull `~/github/dotfiles` and
 `~/github/firstmate` and rebuild in one step, run
 [`scripts/auto-rebuild.sh`](scripts/auto-rebuild.sh) by hand as root
@@ -155,7 +159,7 @@ There is no scheduled rebuild. To pull `~/github/dotfiles` and
 `/var/log/auto-rebuild.log` and posts a notification on failure. The rebuild
 uses local commits and tracked edits even if the pull is skipped.
 See [`docs/AUTO-UPDATE.md`](docs/AUTO-UPDATE.md) for logs and the design notes.
-[Automations](docs/AUTOMATIONS.md) lists every scheduled job, including this one.
+[Automations](docs/AUTOMATIONS.md) describes the scheduled jobs and manual boundaries.
 
 ## Tool maintenance conversations
 
@@ -179,7 +183,7 @@ My rough rule of thumb:
 - use **Homebrew** for GUI apps and macOS-native tools that fit naturally there (declared in `nix/configuration.nix`, or `nix/camilo-extra.nix` for personal-only apps)
 - use **`nix/agent-tools.manifest.lock.json`** for required agent/developer CLIs installed via npm, uv tool, or pinned external release archives
 
-Agent npm globals, uv tools, Python libraries, Pi npm packages and external tools (`no-mistakes`, `treehouse`) reconcile exact top-level pins on every rebuild. The mini promotes age-qualified, OSV-checked pins on Sundays only after install/smoke success; the laptop pulls those passed pins when its update script is run. System/Homebrew updates run only when you run it by hand. See [update and rollback policy](docs/AUTO-UPDATE.md). Add exact entries to the manifest instead of ad hoc activation blocks. Run `bash scripts/agent-tools/audit.sh` to report unmanaged tools without deleting anything.
+See the [update and rollback policy](docs/AUTO-UPDATE.md) for pin reconciliation and update behavior. Add exact entries to the manifest instead of ad hoc activation blocks. Run `bash scripts/agent-tools/audit.sh` to report unmanaged tools without deleting anything.
 
 A good setup does not force every tool through one package manager. It just makes the ownership of each layer clear.
 
