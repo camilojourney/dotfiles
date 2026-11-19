@@ -20,6 +20,7 @@ bash tests/obs_strip_keys_test.sh
 bash tests/require_code_skill_test.sh
 bash tests/safe_maintenance_test.sh
 python3 tests/agent_toolchain_test.py
+python3 tests/agent_update_now_test.py
 python3 tests/config_state_test.py
 python3 tests/agent_platform_test.py
 python3 tests/agent_platform_langfuse_test.py

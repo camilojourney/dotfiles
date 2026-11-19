@@ -125,6 +125,33 @@ per
 [the reproduction runbook](AUTOMATIONS.md#reproduce-native-agents-on-another-mac).
 A pin build does not establish that those packages load on the mini.
 
+## Manual tool update, on every rebuild
+
+`./rebuild.sh` and `./rebuild-total.sh` update the agent command-line tool pins
+as part of the rebuild, on either machine, on any day. It only happens when you
+run a rebuild: nothing is scheduled. `--no-update-tools` skips it. The selection
+is the Sunday lane's (`toolchain.select`), so every safeguard still applies:
+stable releases only, public at least seven days (a fix for a known vulnerability
+in the current pin may skip the wait), clean in OSV, registry sha256 digests for
+external downloads, no downgrades.
+
+- Only the npm and external lanes move (the agent CLIs and pnpm, no-mistakes,
+  treehouse). Python and uv libraries stay on the Sunday lane, because a major
+  jump there can break scripts that import them.
+- Order: select and edit the manifest in place
+  ([`update-now.py`](../scripts/agent-tools/update-now.py); run it alone with no
+  flag to preview), rebuild, check with `update-now.py --verify` that every npm and
+  external tool is installed at its pin, then run the same
+  [`smoke.py`](../scripts/agent-tools/smoke.py) check as the Sunday lane.
+- Offline or a registry/OSV error: the rebuild warns and continues with the
+  current pins. The manifest is never touched.
+- A failed rebuild, or installed versions that miss the pins (a rebuild can stop
+  early and still return), restore the previous manifest. A failed smoke check
+  restores it and rebuilds again to reinstall the previous versions.
+- Nothing is committed or pushed. The manifest shows as modified for you to review
+  and commit. If the mini's Sunday lane has pushed a different manifest, restore the
+  file with `git checkout nix/agent-tools.manifest.lock.json` before pulling.
+
 ## Sunday promotion, unattended
 
 On the mini, `scripts/auto-rebuild.sh` (run by hand on a Sunday) invokes
