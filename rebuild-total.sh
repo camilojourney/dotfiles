@@ -6,4 +6,4 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # (Camo, OBS, WhatsApp, Dato, etc.) - typically only ever needed on the
 # laptop. Everyday coding work should use plain ./rebuild.sh instead.
 export REBUILD_SUFFIX="-total"
-exec "$DIR/rebuild.sh"
+exec "$DIR/rebuild.sh" "$@"
