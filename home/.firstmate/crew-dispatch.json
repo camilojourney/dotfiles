@@ -3,16 +3,16 @@
     {
       "when": "Research needing current external facts: news, releases, product state or up-to-date documentation.",
       "use": [
-        { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "medium", "provider": "agy" },
-        { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "medium", "provider": "codex" },
+        { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "medium", "provider": "agy", "quota_scope": "gemini" },
+        { "harness": "pi", "model": "openai-codex/gpt-6.2-sol", "effort": "medium", "provider": "codex" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "medium", "provider": "grok" },
-        { "harness": "pi", "model": "antigravity/claude-sonnet-5-5", "effort": "medium", "provider": "agy" }
+        { "harness": "pi", "model": "antigravity/claude-sonnet-5-5", "effort": "medium", "provider": "agy", "quota_scope": "claude_gpt" }
       ],
-      "why": "Quick lookups need live search, not frontier reasoning: Flash, Sol, Grok and Antigravity Sonnet each cover a separate pool, so quota decides among them."
+      "why": "Quick lookups need live search, not frontier reasoning: Flash, Sol 6.2, Grok and Antigravity Sonnet each cover a separate pool, so quota decides among them."
     },
     {
       "when": "Generate images or visual assets: icons, illustrations, logos or mockup art.",
-      "use": { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "medium", "provider": "agy" },
+      "use": { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "medium", "provider": "agy", "quota_scope": "gemini" },
       "why": "Pi exposes image generation; Flash keeps asset calls fast without requiring frontier reasoning."
     },
     {
@@ -27,7 +27,7 @@
       "when": "Recon, narrow file lookup or trivial mechanical edits: renames, formatting or typos. Not current-facts research or whole-codebase mapping.",
       "use": [
         { "harness": "pi", "model": "claude-bridge/claude-haiku-5-5", "effort": "medium", "provider": "claude" },
-        { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "low", "provider": "agy" },
+        { "harness": "pi", "model": "antigravity/gemini-3.8-flash", "effort": "low", "provider": "agy", "quota_scope": "gemini" },
         { "harness": "pi", "model": "openai-codex/gpt-6.1-terra", "effort": "low", "provider": "codex" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "low", "provider": "grok" }
       ],
@@ -37,19 +37,21 @@
       "when": "Ordinary implementation, bounded bug fixes or focused tests with a clear path. Not risky multi-file refactors or unresolved root causes.",
       "use": [
         { "harness": "pi", "model": "claude-bridge/claude-sonnet-5-5", "effort": "medium", "provider": "claude" },
-        { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "medium", "provider": "codex" },
-        { "harness": "pi", "model": "xai/grok-4.7", "effort": "medium", "provider": "grok" }
+        { "harness": "pi", "model": "openai-codex/gpt-6.2-sol", "effort": "medium", "provider": "codex" },
+        { "harness": "pi", "model": "xai/grok-4.7", "effort": "medium", "provider": "grok" },
+        { "harness": "pi", "model": "antigravity/gemini-4-neon", "effort": "high", "provider": "agy", "quota_scope": "gemini" }
       ],
-      "why": "Sonnet handles routine coding; Sol medium and Grok cover separate pools. One candidate per quota scope, because candidates sharing a scope tie in quota ranking."
+      "why": "Sonnet, Sol 6.2 medium, Neon high and Grok cover separate pools for bounded implementation. Neon handles execution, not independent review or unresolved reasoning."
     },
     {
       "when": "Large multi-file implementation or risky refactoring with a known goal. Not unresolved root causes, architecture decisions or previously failed approaches.",
       "use": [
-        { "harness": "pi", "model": "claude-bridge/claude-fable-5-1", "effort": "high", "provider": "claude" },
-        { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "xhigh", "provider": "codex" },
+        { "harness": "pi", "model": "claude-bridge/claude-fable-5-2", "effort": "high", "provider": "claude" },
+        { "harness": "pi", "model": "openai-codex/gpt-6.2-astra", "effort": "xhigh", "provider": "codex" },
+        { "harness": "pi", "model": "antigravity/gemini-4-neon", "effort": "high", "provider": "agy", "quota_scope": "gemini" },
         { "harness": "pi", "model": "xai/grok-4.7", "effort": "xhigh", "provider": "grok" }
       ],
-      "why": "Fable high is the fastest Claude and Sol xhigh near-frontier, each from its own pool, so quota decides; Grok xhigh is weaker spare capacity."
+      "why": "Fable high handles long implementation; Astra xhigh and Neon high cover Codex and Gemini pools. Grok xhigh trades quality for spare capacity, so quota decides."
     },
     {
       "when": "Hardest work: unresolved root causes, architecture decisions, ambiguous design or work that already failed with an everyday implementation approach.",
@@ -63,10 +65,10 @@
       "when": "Read-only mapping of an entire codebase: feature maps, capability inventories or architecture surveys. Produce a report; change no files.",
       "use": [
         { "harness": "pi", "model": "claude-bridge/claude-sonnet-5-5", "effort": "medium", "provider": "claude" },
-        { "harness": "pi", "model": "antigravity/claude-sonnet-5-5", "effort": "medium", "provider": "agy" },
-        { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "medium", "provider": "codex" }
+        { "harness": "pi", "model": "antigravity/claude-sonnet-5-5", "effort": "medium", "provider": "agy", "quota_scope": "claude_gpt" },
+        { "harness": "pi", "model": "openai-codex/gpt-6.2-sol", "effort": "medium", "provider": "codex" }
       ],
-      "why": "Sonnet and Sol read across many files; both Claude routes expose their respective pools when available."
+      "why": "Sonnet and Sol 6.2 read across many files; both Claude routes expose their respective pools when available."
     },
     {
       "when": "Evaluation judging: score finished outputs or transcripts against a fixed rubric. Not code review or implementation.",
@@ -79,7 +81,8 @@
   ],
   "default": [
     { "harness": "pi", "model": "claude-bridge/claude-sonnet-5-5", "effort": "medium", "provider": "claude" },
-    { "harness": "pi", "model": "openai-codex/gpt-6.1-sol", "effort": "medium", "provider": "codex" },
-    { "harness": "pi", "model": "xai/grok-4.7", "effort": "medium", "provider": "grok" }
+    { "harness": "pi", "model": "openai-codex/gpt-6.2-sol", "effort": "medium", "provider": "codex" },
+    { "harness": "pi", "model": "xai/grok-4.7", "effort": "medium", "provider": "grok" },
+    { "harness": "pi", "model": "antigravity/gemini-4-neon", "effort": "high", "provider": "agy", "quota_scope": "gemini" }
   ]
 }

@@ -102,6 +102,7 @@ class RegistryTest(unittest.TestCase):
 
     def test_vulnerable_newest_falls_back_and_mlx_stays_fixed(self):
         manifest = json.loads((ROOT / "nix/agent-tools.manifest.lock.json").read_text())
+        original_npm_version = manifest["npm"][0]["version"]
 
         class PublicRegistry:
             def vulnerabilities(self, ecosystem, name, version):
@@ -114,7 +115,7 @@ class RegistryTest(unittest.TestCase):
         self.assertEqual(selected["npm"][0]["version"], "98.0.0")
         self.assertEqual(selected["uv"][0]["version"], "0.31.3")
         self.assertTrue(any("flagged by OSV" in reason for reason in reasons))
-        self.assertEqual(manifest["npm"][0]["version"], "1.4.0")
+        self.assertEqual(manifest["npm"][0]["version"], original_npm_version)
 
 
 class WeeklyTransactionTest(unittest.TestCase):

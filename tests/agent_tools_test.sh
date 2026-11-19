@@ -217,13 +217,13 @@ test_fresh_install() {
   fi
   out=$(cat "$log/stdout.log" "$log/stderr.log" "$log/npm.log" "$log/uv.log" "$log/hooks.log")
 
-  assert_contains "$out" "npm: reconciling @earendil-works/pi-coding-agent@1.4.0" "fresh install pins pi"
+  assert_contains "$out" "npm: reconciling @earendil-works/pi-coding-agent@1.5.2" "fresh install pins pi"
   assert_contains "$out" "npm: reconciling tasks-axi@0.2.6" "fresh install pins tasks-axi"
   assert_not_contains "$out" "no-mistakes update" "no-mistakes never self-updates"
   assert_not_contains "$out" "treehouse update" "Treehouse never self-updates"
   assert_not_contains "$out" "@latest" "ordinary installs never use latest"
-  assert_contains "$out" "pi install npm:pi-web-access@0.46.0 --no-approve PI_TELEMETRY=0" "Pi pins install explicitly without outbound telemetry"
-  assert_contains "$out" "pi install npm:pi-claude-bridge@0.9.3 --no-approve" "other Pi npm pins install exactly"
+  assert_contains "$out" "pi install npm:pi-web-access@0.47.0 --no-approve PI_TELEMETRY=0" "Pi pins install explicitly without outbound telemetry"
+  assert_contains "$out" "pi install npm:pi-claude-bridge@0.12.0 --no-approve" "other Pi npm pins install exactly"
   assert_not_contains "$out" "pi update" "no broad updater can discover unpinned project packages"
   assert_contains "$out" "uv: reconciling py-spy==0.4.2" "uv tools use exact pins"
   assert_contains "$out" "uv: reconciling mlx-lm==0.31.3" "fresh install installs mlx-lm on every machine"
@@ -297,7 +297,7 @@ test_manifest_json_valid() {
     and (.profiles | not)
     and ([.npm[], .uv[], .python[], .external[]] | all(.version | test("^[0-9]+(\\.[0-9]+)+$")))
     and ([.external[]] | all(has("selfUpdateCommand") | not))
-    and (.piPackages["pi-web-access"] == "0.46.0")
+    and (.piPackages["pi-web-access"] == "0.47.0")
   ' "$REPO_ROOT/nix/agent-tools.manifest.lock.json" >/dev/null
   pass "manifest.lock.json has one flat exact inventory, including Pi packages"
 }

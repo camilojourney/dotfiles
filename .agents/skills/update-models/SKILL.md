@@ -50,6 +50,26 @@ Keep the family alias (e.g. `opus`) in `home/.claude/settings.json`: it follows 
 
 All are symlinked by `nix/home.nix`; a new model-bearing file belongs there too. Find stragglers with `grep -rnE 'gpt-|grok-|gemini-|opus|sonnet|haiku' home/ tests/`.
 
+## 0. Check and safely update each route's actual source
+
+Before refreshing catalogs, read [the provider log](references/provider-log.md) for each provider's last checked route/pin, active workarounds, and cleanup conditions. Check each route against the software that actually supplies it:
+
+| Pi route | Real source & pin owner | What does NOT update it |
+|---|---|---|
+| `openai-codex/`, `xai/`, `meta/`, and the `anthropic` catalog that `claude-bridge/` lists | `@earendil-works/pi-coding-agent` in `nix/agent-tools.manifest.lock.json`, plus `pi update --models` | `pi update --models` refreshes catalog data only, not Pi itself |
+| `claude-bridge/` | `piPackages["pi-claude-bridge"]` in `nix/agent-tools.manifest.lock.json` (bundles its own Claude Code SDK/binary; shares login only with Homebrew `claude`) | Homebrew `claude` |
+| `antigravity/` | Immutable 40-char commit pin in `home/.pi/agent/settings.json` (`git:github.com/Rahularya01/pi-antigravity@...`) | Homebrew `agy` (reference catalog only) |
+| `pi-web-access` | `piPackages["pi-web-access"]` in `nix/agent-tools.manifest.lock.json` | - |
+
+Keep one route per vendor in the picker: Pi's built-in `openai` and `anthropic` providers stay signed out. If `pi --offline --list-models` lists them, run `pi auth logout openai` / `pi auth logout anthropic`.
+
+Apply these safety gates before adopting any package or extension update:
+
+1. **Age and advisories:** run read-only `python3 scripts/agent-tools/toolchain.py select` for npm packages (requires >= 7 days public age and OSV clear). For git-pinned extensions (`pi-antigravity`), manually verify >= 7 days since tag/commit and check open issues and account-risk reports.
+2. **Code review:** read release notes and diffs for extensions handling credentials (`pi-claude-bridge`, `pi-antigravity`) covering auth/tokens, subprocesses, network destinations, telemetry, and new dependencies.
+3. **Isolated probe:** test candidate pins in a throwaway `PI_CODING_AGENT_DIR` with synthetic fixtures and `PI_TELEMETRY=0` on exact routes (checking JSON `tool_execution_end` and `stopReason`, not shell exit 0 alone) before changing live pins.
+4. **Approval and cleanup:** never run `weekly.py` on a dirty worktree or push pin changes without approval (pushes reach both machines on next rebuild). After an approved adoption, update `references/provider-log.md` with the date and delete any retired workaround whose exit condition now passes.
+
 ## 1. Inventory: what can each harness run right now?
 
 For a fleet-wide review, run every catalog. For a scoped model/provider refresh, inventory the affected provider and configured route without changing unrelated selections. The vendor's own catalog is the authority; never infer a model name from a version pattern.
@@ -143,7 +163,7 @@ Tool-test every model you add or move through the exact configured extension sou
 
 Check the tool's exit status; `DONE` alone is not a pass.
 
-Run bounded probes from a fresh throwaway directory containing only invented synthetic fixtures. Never use project files, private files, historical session replay or other private input. For this synthetic-only probe, the existing local Pi tracer may capture the fixed prompt, tool content and ordinary runtime metadata. Read its destination from `PI_OTEL_EXPORTER_OTLP_ENDPOINT`; the laptop used `http://localhost:3000/api/public/otel` on 2026-10-16. Do not label this capture metadata-only or expose credentials and headers. Keep private-data protections and exporter settings unchanged for other work. A passing probe runs the tool, prints `DONE` and exits within seconds. Its output confirms the actual provider, model and effort. Read back that exact run's trace from the existing local tracing destination. Match `attributes.pi.session.id` and `attributes.pi.tool.call_id`, not an unrelated canary. If trace readback fails, report the concrete backend failure under Gaps without blocking independent dispatcher/config validation. A plain "reply OK" is not enough: some models answer that and still hang on the first tool call. For special-purpose rules also exercise the capability (a checkable `web_search`, a `generate_image`) when in scope. Without `</dev/null`, `pi -p` waits on stdin forever. If Pi replies but never exits, an extension is holding it open: bisect with `pi --no-extensions -e <path> ...`.
+Run bounded probes from a fresh throwaway directory containing only invented synthetic fixtures. Never use project files, private files, historical session replay or other private input. Global Pi/Claude session export is retired; Langfuse is for Phrona's explicit native tracing only. Do not enable an exporter or provision tracing credentials for this probe. A passing probe runs the tool, prints `DONE` and exits within seconds. Its output confirms the actual provider, model and effort. Retain only synthetic local session/tool evidence and report that agent trace readback is intentionally unavailable, not a backend failure. A plain "reply OK" is not enough: some models answer that and still hang on the first tool call. For special-purpose rules also exercise the capability (a checkable `web_search`, a `generate_image`) when in scope. Without `</dev/null`, `pi -p` waits on stdin forever. If Pi replies but never exits, an extension is holding it open: bisect with `pi --no-extensions -e <path> ...`.
 
 ## 5. Edit, validate, and confirm Jev can pick it
 

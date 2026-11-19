@@ -24,6 +24,22 @@ This does not prove every Firstmate workflow or external web provider works.
 Firstmate's supervision branch separately controls its resource loading; global
 extension settings do not enable or select its supervision model.
 
+## Antigravity `RESOURCE_EXHAUSTED`
+
+[pi-antigravity #148](https://github.com/Rahularya01/pi-antigravity/issues/148)
+tracks requests that fail with Pi's stock prompt but work with a custom one.
+The [local workaround](../home/.pi/agent/extensions/antigravity-system-prompt.ts)
+uses a short custom prompt only for Antigravity, leaving explicit prompts,
+project instructions, skills and tool permissions in place. Pi omits its stock
+prompt's tool guidance and Pi documentation sections in custom-prompt mode.
+No package pin, account or routing change is needed.
+
+Start a new Pi session (or run `/reload` in an idle session) to load it. If you
+need a one-off launch without the local workaround, use
+`pi --model antigravity/gemini-3.8-flash --thinking high --system-prompt 'You are a helpful assistant. Use available tools when asked.'`.
+Remove the local extension once the vetted upstream release passes a Flash High
+and Neon High tool call with the stock prompt.
+
 ## Background supervision settings
 
 Main's background supervisor uses Codex Luna with medium reasoning. The authored

@@ -6,9 +6,9 @@
 
 | Models | Compacts at | Keeps verbatim |
 |---|---|---|
-| 9 Claude models through `claude-bridge` (1M) | 400,000 | 40,000 |
-| 15 Gemini and Claude models through `antigravity` (1M) | 400,000 | 40,000 |
-| `openai-codex/gpt-6.1-sol` and `gpt-6.1-terra` (500K) | 275,000 | Pi default 20,000 |
+| 10 Claude models through `claude-bridge` (1M) | 400,000 | 40,000 |
+| 17 Gemini and Claude models through `antigravity` (1M) | 400,000 | 40,000 |
+| `openai-codex/gpt-6.1-sol`, `gpt-6.2-sol`, and `gpt-6.1-terra` (500K) | 275,000 | Pi default 20,000 |
 | `cursor/*`, `antigravity/gpt-oss-120b`, everything else | Pi defaults | Pi default 20,000 |
 
 **Activating a change.** Pi reads these at startup or `/reload` only. A session
@@ -66,14 +66,18 @@ that remains declared is our local OpenAI fork described under Maintenance.
 
 | Model/provider | Configured window | `reserveTokens` | Pi threshold | `keepRecentTokens` | Compaction mechanism |
 |---|---|---|---|---|---|
-| `openai-codex/gpt-6.1-sol`, `openai-codex/gpt-6.1-terra` | 500K | 225000 | 275K | Default 20000 | Existing OpenAI server-side compaction extension, with fallback |
+| `openai-codex/gpt-6.1-sol`, `gpt-6.2-sol`, `gpt-6.1-terra` | 500K | 225000 | 275K | Default 20000 | Existing OpenAI server-side compaction extension, with fallback |
 | Listed 1M `claude-bridge` models | 1M | 600000 | 400K | 40000 | Pi text-summary compaction using the active model |
 | Listed 1M `antigravity` models | 1.0M | 600000 | 400K | 40000 | Pi text-summary compaction using the active model |
 | Grok | Not registered as a Pi provider | n/a | n/a | n/a | Its own CLI, outside Pi's compaction entirely |
 | Other models | Check current catalog | Default 16384 | Window minus 16384 | Default 20000 | Depends on provider and installed extensions |
 
-The nine Claude overrides cover Fable 5 and 5.1, Haiku 5.5, Opus 4.7, 4.8, 5
-and 5.5, and Sonnet 5 and 5.5. They do not apply automatically to future models.
+The ten Claude overrides cover Fable 5, 5.1 and 5.2, Haiku 5.5, Opus 4.7, 4.8,
+5 and 5.5, and Sonnet 5 and 5.5. They do not apply automatically to future models.
+Fable 5.2 requires bridge 0.12.0 for its measured `[1m]` route; bridge 0.9.3
+registers it at 200K and must not use the 600000 reserve. Hydrogen and Neon inherit the
+existing 1M Antigravity policy, and GPT-6.2 Sol inherits the 500K Codex policy (GPT-6.2 Astra is 272K and keeps the Pi default reserve). Neither new model has a measured compaction
+baseline yet; see the [routing refresh](decisions/model-routing/0001-2026-11-13-refresh.md).
 At the default reserve, a 272K model triggers near 256K and a 200K model near
 184K. Extension behavior and failures can affect the actual compaction path.
 

@@ -8,7 +8,7 @@
     "pi": "Effective settings overlay exact npm package pins without modifying the authored settings.json; Git packages require immutable commits and local checkouts stay local. No model calls or agent reviewer in the update path."
   },
   "npm": [
-    { "name": "@earendil-works/pi-coding-agent", "version": "1.4.0" },
+    { "name": "@earendil-works/pi-coding-agent", "version": "1.5.2" },
     { "name": "acpx", "version": "0.21.1" },
     { "name": "backpass", "version": "0.1.43" },
     { "name": "chrome-devtools-axi", "version": "0.1.46" },
@@ -31,8 +31,8 @@
     { "name": "pypdf", "version": "6.21.4", "usedBy": "pdf skill scripts" }
   ],
   "piPackages": {
-    "pi-web-access": "0.46.0",
-    "pi-claude-bridge": "0.9.3"
+    "pi-web-access": "0.47.0",
+    "pi-claude-bridge": "0.12.0"
   },
   "external": {
     "no-mistakes": {

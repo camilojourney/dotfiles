@@ -22,13 +22,17 @@ jq -e --arg antigravity_package "$ANTIGRAVITY_PACKAGE" --arg compaction_package 
   and ($packages | map(select(test("pi-antigravity"))) == [$antigravity_package])
   and ($packages | map(select(test("pi-openai-server-compaction"))) == [$compaction_package])
   and ($packages | map(select(test("^npm:pi-web-access(@|$)"))) == ["npm:pi-web-access"])
+  and ($packages | map(select(test("^npm:pi-claude-bridge(@|$)"))) == ["npm:pi-claude-bridge@0.12.0"])
+  and ([.compaction.modelOverrides["claude-bridge/claude-fable-5-2"], .compaction.modelOverrides["antigravity/gemini-4-neon"]]
+    | all(.reserveTokens == 600000 and .keepRecentTokens == 40000))
+  and (.compaction.modelOverrides["openai-codex/gpt-6.2-sol"].reserveTokens == 225000)
   and ($packages | all(contains("pi-extension-codex-fast-mode") | not))
   and (.defaultProjectTrust == "always")
   and (.defaultTools == ["+codemode", "+tool_search"])
   and (.codemode.mode == "on")
-  and (.defaultProvider == "openai-codex")
-  and (.defaultModel == "gpt-6.1-sol")
-  and (.defaultThinkingLevel == "high")
+  and (.defaultProvider == "claude-bridge")
+  and (.defaultModel == "claude-sonnet-5-5")
+  and (.defaultThinkingLevel == "medium")
   and (.skills == ["~/github/dotfiles/.agents/skills/storage-audit"])
   and (has("llamaServerUrl") | not)
 ' "$SETTINGS" >/dev/null
@@ -71,15 +75,17 @@ jq -e '
 # Opus in review and hardest, Fable in large, Sonnet for routine coding and
 # mapping, Haiku for recon and judging; Gemini Flash covers quick research,
 # images and recon. Secondmate choices stay separate.
-# No rule uses Gemini Argon: the captain has no Argon quota (2026-10-29).
+# Neon high covers ordinary implementation, large, and default; GPT-6.2 Sol/Astra
+# cover execution tiers while review/hardest keep Sol 6.1 xhigh pending review benchmarks.
+# Argon stays excluded until its separate weekly quota window is resolved.
 jq -e '
   def profiles($v): if ($v | type) == "array" then $v else [$v] end;
   def sonnet: .model == "claude-bridge/claude-sonnet-5-5" and .provider == "claude"
-    or .model == "antigravity/claude-sonnet-5-5" and .provider == "agy";
+    or .model == "antigravity/claude-sonnet-5-5" and .provider == "agy" and .quota_scope == "claude_gpt";
   def haiku: .model == "claude-bridge/claude-haiku-5-5" and .provider == "claude";
   def opus: .model == "claude-bridge/claude-opus-5-5" and .provider == "claude"
     or .model == "antigravity/claude-opus-5-5" and .provider == "agy";
-  def fable: .model == "claude-bridge/claude-fable-5-1" and .provider == "claude";
+  def fable: .model == "claude-bridge/claude-fable-5-2" and .provider == "claude";
   def keys_using(f): [.rules | to_entries[] | select(.value.use | profiles(.) | any(f)) | .key];
   ([.rules[].use, .default] | map(profiles(.)) | add) as $all
   | (has("preferred_provider") | not)
@@ -89,24 +95,32 @@ jq -e '
   and (keys_using(haiku) == [3, 8])
   and (keys_using(opus) == [2, 6])
   and (keys_using(fable) == [5])
+  and (.rules[5].use | profiles(.) | any(fable and .effort == "high"))
+  and (.rules[5].use | profiles(.) | any(.model == "openai-codex/gpt-6.2-astra" and .effort == "xhigh" and .provider == "codex"))
+  and (keys_using(.model == "antigravity/gemini-4-neon") == [4, 5])
+  and ([.rules[4].use, .rules[5].use, .default] | map(profiles(.)) | all(any(.model == "antigravity/gemini-4-neon" and .effort == "high" and .provider == "agy" and .quota_scope == "gemini")))
+  and ($all | all(.model != "claude-bridge/claude-fable-5-1"))
   # Evaluation judging is Haiku first again after the local Qwen trial (captain, 2026-10-25).
   and (.rules[8].use[0].model == "claude-bridge/claude-haiku-5-5")
-  and ([.rules[7].use] | map(profiles(.)) | all(any(sonnet and .provider == "claude" and .effort == "medium") and any(sonnet and .provider == "agy" and .effort == "medium")))
+  and ([.rules[7].use] | map(profiles(.)) | all(any(sonnet and .provider == "claude" and .effort == "medium") and any(sonnet and .provider == "agy" and .effort == "medium" and .quota_scope == "claude_gpt")))
   # Quick research keeps Flash and no Claude-bridge candidate.
-  and ([.rules[0].use] | map(profiles(.)) | all(any(sonnet and .provider == "agy" and .effort == "medium") and (any(.provider == "claude") | not)))
+  and ([.rules[0].use] | map(profiles(.)) | all(any(sonnet and .provider == "agy" and .effort == "medium" and .quota_scope == "claude_gpt") and (any(.provider == "claude") | not)))
   and (.rules[7].when | test("^Read-only mapping"))
   and (.rules[8].when | test("^Evaluation judging"))
-  and ([.rules[7].use] | map(profiles(.)) | all(any(.model == "openai-codex/gpt-6.1-sol" and .effort == "medium" and .provider == "codex")))
+  and ([.rules[0].use, .rules[7].use] | map(profiles(.)) | all(any(.model == "openai-codex/gpt-6.2-sol" and .effort == "medium" and .provider == "codex")))
   and ([.rules[2].use, .rules[6].use] | map(profiles(.)) | all(any(.model == "openai-codex/gpt-6.1-sol" and .effort == "xhigh" and .provider == "codex")))
-  and ([.rules[0].use, .rules[1].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-3.8-flash" and .effort == "medium" and .provider == "agy")))
-  and ([.rules[3].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-3.8-flash" and .effort == "low" and .provider == "agy")))
+  and ([.rules[0].use, .rules[1].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-3.8-flash" and .effort == "medium" and .provider == "agy" and .quota_scope == "gemini")))
+  and ([.rules[3].use] | map(profiles(.)) | all(any(.model == "antigravity/gemini-3.8-flash" and .effort == "low" and .provider == "agy" and .quota_scope == "gemini")))
   and (keys_using(.model == "antigravity/gemini-4-argon") == [])
-  and ([.rules[4].use, .default] | map(profiles(.)) | all((first | sonnet and .provider == "claude" and .effort == "medium") and any(.model == "openai-codex/gpt-6.1-sol" and .effort == "medium" and .provider == "codex")))
+  and ([.rules[4].use, .default] | map(profiles(.)) | all((first | sonnet and .provider == "claude" and .effort == "medium") and any(.model == "openai-codex/gpt-6.2-sol" and .effort == "medium" and .provider == "codex")))
   and (.rules[4].when | test("^Ordinary implementation"))
   # Luna stays only as the judging fallback (captain, 2026-10-25); Terra low replaced it in recon.
   and (keys_using(.model == "openai-codex/gpt-6-luna") == [8])
   and ([.rules[3].use] | map(profiles(.)) | all(any(.model == "openai-codex/gpt-6.1-terra" and .effort == "low" and .provider == "codex")))
 ' "$DISPATCH" >/dev/null
+
+# The effective settings overlay takes its npm versions from this manifest.
+jq -e '.piPackages["pi-claude-bridge"] == "0.12.0"' "$REPO_ROOT/nix/agent-tools.manifest.lock.json" >/dev/null
 
 # Each selection has one authored owner, linked into Firstmate by Home Manager.
 # Second mates run Codex Sol (captain, 2026-10-23, replacing Opus); pythia-v2-lab is pinned to

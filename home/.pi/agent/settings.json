@@ -26,11 +26,18 @@
       "openai-codex/gpt-6.1-terra": {
         "reserveTokens": 225000
       },
+      "openai-codex/gpt-6.2-sol": {
+        "reserveTokens": 225000
+      },
       "claude-bridge/claude-fable-5": {
         "reserveTokens": 600000,
         "keepRecentTokens": 40000
       },
       "claude-bridge/claude-fable-5-1": {
+        "reserveTokens": 600000,
+        "keepRecentTokens": 40000
+      },
+      "claude-bridge/claude-fable-5-2": {
         "reserveTokens": 600000,
         "keepRecentTokens": 40000
       },
@@ -118,6 +125,14 @@
         "reserveTokens": 600000,
         "keepRecentTokens": 40000
       },
+      "antigravity/gemini-4-hydrogen": {
+        "reserveTokens": 600000,
+        "keepRecentTokens": 40000
+      },
+      "antigravity/gemini-4-neon": {
+        "reserveTokens": 600000,
+        "keepRecentTokens": 40000
+      },
       "antigravity/gemini-pro-agent": {
         "reserveTokens": 600000,
         "keepRecentTokens": 40000
@@ -129,7 +144,7 @@
   ],
   "packages": [
     "npm:pi-web-access",
-    "npm:pi-claude-bridge@0.9.3",
+    "npm:pi-claude-bridge@0.12.0",
     "git:github.com/Rahularya01/pi-antigravity@f950c08e7a5c1069a0339af88252347a5ecb0f8c",
     "../../github/pi-openai-server-compaction"
   ],
@@ -141,9 +156,9 @@
     "xhigh": 8192
   },
   "lastChangelogVersion": "1.4.0",
-  "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-6.1-sol",
-  "defaultThinkingLevel": "high",
+  "defaultProvider": "claude-bridge",
+  "defaultModel": "claude-sonnet-5-5",
+  "defaultThinkingLevel": "medium",
   "defaultProjectTrust": "always",
   "tuiMode": "regular",
   "outputPad": 1,
