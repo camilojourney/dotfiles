@@ -1,13 +1,7 @@
 {
+  "cleanupPeriodDays": 90,
   "env": {
-    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
-    "CLAUDE_CODE_ENHANCED_TELEMETRY_BETA": "1",
-    "OTEL_TRACES_EXPORTER": "otlp",
-    "OTEL_METRICS_EXPORTER": "none",
-    "OTEL_LOGS_EXPORTER": "none",
-    "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL": "http/protobuf",
-    "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "http://localhost:3000/api/public/otel/v1/traces",
-    "OTEL_LOG_TOOL_DETAILS": "1"
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "0"
   },
   "permissions": {
     "deny": [
@@ -114,7 +108,6 @@
   "enabledPlugins": {
     "figma@synced": false
   },
-  "otelHeadersHelper": "~/github/dotfiles/scripts/agent-tools/langfuse-otel-headers.sh",
   "autoCompactWindow": 500000,
   "skipDangerousModePermissionPrompt": true,
   "theme": "dark-ansi",

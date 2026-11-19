@@ -1,12 +1,11 @@
-#!/usr/bin/env python3
 """Exercise evaluated host zsh environments with synthetic headless tokens only."""
 import json
 import os
-from pathlib import Path
 import shlex
 import subprocess
 import tempfile
 import unittest
+from pathlib import Path
 
 from langfuse_otel_headers_test import ROOT, evaluated_zsh_environment
 
@@ -23,16 +22,12 @@ class ClaudeHeadlessAuthTest(unittest.TestCase):
             home = Path(name)
             secrets = home / ".config/secrets"
             secrets.mkdir(parents=True, mode=0o700)
-            (secrets / "langfuse.env").write_text(
-                "LANGFUSE_INIT_PROJECT_PUBLIC_KEY=fixture-public\n"
-                "LANGFUSE_INIT_PROJECT_SECRET_KEY=fixture-private\n")
             token_file = secrets / "claude-code-oauth.env"
             if present:
                 token_file.write_text("export CLAUDE_CODE_OAUTH_TOKEN=fixture-headless-token\n")
                 token_file.chmod(0o600)
             (home / ".zshenv").write_text(self.blocks[host])
-            env = {"PATH": os.environ["PATH"], "HOME": name, "ZDOTDIR": name,
-                   "LANGFUSE_SECRETS": str(secrets / "langfuse.env")}
+            env = {"PATH": os.environ["PATH"], "HOME": name, "ZDOTDIR": name}
             if inherited is not None:
                 env["CLAUDE_CODE_OAUTH_TOKEN"] = inherited
             child = (
@@ -40,7 +35,7 @@ class ClaudeHeadlessAuthTest(unittest.TestCase):
                 "print(json.dumps({'token':os.environ.get('CLAUDE_CODE_OAUTH_TOKEN')}))"
             )
             result = subprocess.run(["zsh", "-d", flags, "python3 -c " + shlex.quote(child)],
-                                    env=env, capture_output=True, text=True, timeout=30)
+                                    check=False, env=env, capture_output=True, text=True, timeout=30)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stderr, "")
             self.assertEqual(token_file.exists(), present)
@@ -77,7 +72,7 @@ class ClaudeHeadlessAuthTest(unittest.TestCase):
                     destination.chmod(0o644)
                 env = {"PATH": os.environ["PATH"], "HOME": name, "ZDOTDIR": name}
                 token = "fixture-'$`\\\\token"
-                saved = subprocess.run(["zsh", "-d", "-c", argv[3]], input=token + "\n",
+                saved = subprocess.run(["zsh", "-d", "-c", argv[3]], check=False, input=token + "\n",
                                        env=env, capture_output=True, text=True, timeout=10)
                 self.assertEqual(saved.returncode, 0, saved.stderr)
                 self.assertEqual(saved.stdout, "")
@@ -86,9 +81,9 @@ class ClaudeHeadlessAuthTest(unittest.TestCase):
                 self.assertEqual(len(destination.read_text().splitlines()), 1)
                 checked = subprocess.run([
                     "zsh", "-d", "-c",
-                    '. "$HOME/.config/secrets/claude-code-oauth.env"; '
-                    'test "$CLAUDE_CODE_OAUTH_TOKEN" = "$1"', "fixture", token,
-                ], env=env, capture_output=True, text=True, timeout=10)
+                    ('. "$HOME/.config/secrets/claude-code-oauth.env"; '
+                     'test "$CLAUDE_CODE_OAUTH_TOKEN" = "$1"'), "fixture", token,
+                ], check=False, env=env, capture_output=True, text=True, timeout=10)
                 self.assertEqual(checked.returncode, 0, checked.stderr)
                 self.assertEqual(checked.stdout, "")
                 self.assertEqual(checked.stderr, "")

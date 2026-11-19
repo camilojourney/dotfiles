@@ -1,55 +1,76 @@
-# Native tracing authentication
+# Native tracing boundaries
 
 ## Scope
 
 Kind: technical
 Capability: native-tracing
 
-Owns: Native shell authentication setup and the local Langfuse header helper.
-The separate fresh Langfuse trial remains owned by `agent-platform.md`.
+Owns: Retirement of global Pi and Claude Code Langfuse export and the scheduled
+Fleet skill-usage collector in dotfiles. Authorized by the 2026-11-18 Fleet
+foundation request, items 3 (corrected) and 5.
+The separate Langfuse service remains owned by `agent-platform.md`.
+Phrona owns its explicit tracing endpoint, native keys and received-trace checks.
 
 ## Requirements
 
-### Private header file
+### No agent-session export
 
-`req~native-tracing.private-header-file~1`
+`req~native-tracing.no-agent-export~1`
 
-WHEN invoked with `--file`, the helper SHALL atomically refresh an owner-only header file from both existing local Langfuse keys and print only its path.
-IF keys are unavailable or incomplete, THEN the helper SHALL fail without printing a path.
+The authored global Pi settings SHALL NOT load the telemetry exporter package.
+Claude Code telemetry SHALL be explicitly disabled, without OTLP export settings
+or an `otelHeadersHelper` invocation. Unrelated settings SHALL remain intact.
+The shared Langfuse service and Phrona's explicit tracing configuration and keys
+SHALL remain available; retiring global agent export SHALL NOT disable them.
 
 Needs: impl, utest
 
-### Shell authentication
+Implementation owners: `home/.pi/agent/settings.json`,
+`home/.claude/settings.json`. JSON has no inline traceability comments.
+Tests: `tests/langfuse_otel_export_test.py`, `tests/pi_settings_test.sh`.
+These check authored entry points, not live delivery or absence of backend traffic.
 
-`req~native-tracing.shell-authentication~1`
+### Shell isolation
 
-WHEN a managed shell starts, it SHALL remove inherited inline OTLP headers and header-file locations, exporting only `PI_OTEL_EXPORTER_OTLP_HEADERS_FILE` after a successful refresh.
-The generated file SHALL authenticate Pi's OTLP HTTP exports without credentials in the shell environment.
+`req~native-tracing.shell-isolation~1`
 
-Needs: impl, utest, itest
+WHEN a fresh managed shell starts without inherited exporter settings, it SHALL
+NOT provision Pi OTLP environment variables, generate agent header files or
+register prompt-time agent trace tagging.
+The Mini's optional Claude OAuth loader SHALL remain intact.
+Explicit native Langfuse configuration supplied to Phrona SHALL NOT be removed.
 
-## Helper interface
+Needs: impl, utest
 
-`scripts/agent-tools/langfuse-otel-headers.sh` reads `LANGFUSE_SECRETS`, defaulting
-to `~/.config/secrets/langfuse.env`. The Mini's managed shell defaults
-`LANGFUSE_SECRETS` to its existing stack project `.env` at
-`/Volumes/AgentPlatform/agent-platform/langfuse/project/.env`, preserving an
-explicit local override. The helper accepts either a complete
-`LANGFUSE_INIT_PROJECT_PUBLIC_KEY` / `LANGFUSE_INIT_PROJECT_SECRET_KEY` pair or,
-when both initialization values are absent, the complete runtime
-`LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` pair. It never mixes the two pairs
-or sources the input as shell code.
-With no flag it retains Claude Code's JSON `otelHeadersHelper` response; `--env`
-retains percent-encoded OTLP header output. Missing secrets yield `{}` or empty
-output respectively for these legacy modes.
+Implementation owner: `nix/home.nix`.
+Tests: `tests/langfuse_otel_headers_test.py`,
+`tests/claude_headless_auth_test.py`.
 
-`--file` writes `pi-otel/headers` beside the secrets file. The directory is owned
-by the current user with mode 0700, and each replacement file has mode 0600.
-Symlink directories and destinations are refused. A same-directory temporary
-file is renamed only after writing succeeds. Failure leaves any previous file
-untouched, but shell startup does not export it. Header contents are a startup
-snapshot: rotation requires a new shell and new exporter process.
+### On-demand skill usage
 
-The authored `home/.pi/agent/settings.json` package selection must resolve to a
-private-file-capable installation. The loopback export regression reads that
-selection and tests its installed bytes, not an independent source checkout.
+`req~native-tracing.on-demand-usage~1`
+
+No nix-darwin target SHALL declare `org.dotfiles.fleet-skill-usage` or replace it
+with another scheduled usage/outcome exporter. Skill usage SHALL be on-demand
+local records, owned by Fleet, not agent-session export to Langfuse.
+The existing `home.activation.linkSkills` installer SHALL remain intact.
+
+Needs: impl, utest
+
+Implementation owners: `nix/configuration.nix`, `nix/home.nix`.
+Tests: `tests/fleet_telemetry_test.py`.
+
+## Retirement and reversal
+
+The former private-header helper and exporter fixture are retained, inactive,
+under `archive/agent-langfuse-export/`. The previous private-header-file and
+shell-authentication requirements are retired, not current export requirements.
+Do not delete stored traces, local skill records, logs, keys or installed
+exporter source as part of this change.
+
+Existing shells and agents retain inherited settings and already-loaded code.
+After an operator-controlled rebuild and safe restart, verify the retired job is
+absent, new Pi and Claude Code sessions produce no new Langfuse exports, and a
+Phrona study still records received traces. Static tests are not live proof.
+Re-enabling global agent export requires separate approval and coordinated
+restoration of settings, shell wiring and the archived helper.

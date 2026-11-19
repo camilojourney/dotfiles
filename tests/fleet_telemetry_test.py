@@ -1,43 +1,39 @@
-#!/usr/bin/env python3
-"""Execute each host's evaluated scheduled collector against isolated fake inputs."""
+"""Offline evaluation proves retirement without unloading jobs or activating Nix."""
 import json
-import os
-from pathlib import Path
 import subprocess
-import tempfile
 import unittest
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class FleetTelemetryTest(unittest.TestCase):
-    def test_both_collectors_run_and_failures_remain_visible(self):
-        for host in ("camilo", "camilo-remote"):
-            arguments = json.loads(subprocess.check_output([
-                "nix", "eval", "--offline", "--json",
-                f"{ROOT}#darwinConfigurations.{host}.config.launchd.user.agents.fleet-skill-usage.serviceConfig.ProgramArguments",
-            ], text=True, stderr=subprocess.PIPE))
-            for codes in ((0, 0), (1, 0), (0, 1), (1, 1)):
-                with self.subTest(host=host, exits=codes), tempfile.TemporaryDirectory() as name:
-                    home = Path(name)
-                    scripts = (
-                        home / "github/fleet-system/system/skills/meta/skill-creator-fleet/scripts/skill_usage.py",
-                        home / "github/firstmate/bin/fm-trace-evidence.py",
-                    )
-                    for index, script in enumerate(scripts):
-                        script.parent.mkdir(parents=True)
-                        script.write_text(
-                            "import json,os,pathlib,sys\n"
-                            f"p=pathlib.Path(os.environ['HOME'])/'called-{index}.json'\n"
-                            "p.write_text(json.dumps(sys.argv[1:]))\n"
-                            f"sys.exit({codes[index]})\n"
-                        )
-                    env = {key: value for key, value in os.environ.items() if not key.startswith("PI_OTEL_")}
-                    env.update(HOME=str(home), ZDOTDIR=str(home))
-                    result = subprocess.run(arguments, env=env, capture_output=True, text=True, timeout=30)
-                    self.assertEqual(result.returncode, int(any(codes)), result.stderr)
-                    self.assertEqual(json.loads((home / "called-0.json").read_text()), ["update"])
-                    self.assertEqual(json.loads((home / "called-1.json").read_text()), ["--flush"])
+    # [utest->req~native-tracing.on-demand-usage~1]
+    def test_no_scheduled_skill_usage_or_outcome_export_on_any_target(self):
+        for host in ("camilo", "camilo-remote", "camilo-total", "camilo-remote-total"):
+            with self.subTest(host=host):
+                labels = json.loads(subprocess.check_output([
+                    "nix", "eval", "--offline", "--json",
+                    f"{ROOT}#darwinConfigurations.{host}.config.launchd.user.agents",
+                    "--apply", 'agents: builtins.mapAttrs (_: agent: agent.serviceConfig.Label or "") agents',
+                ], text=True, stderr=subprocess.PIPE, timeout=60))
+                self.assertNotIn("fleet-skill-usage", labels)
+                self.assertNotIn("org.dotfiles.fleet-skill-usage", labels.values())
+
+    def test_rebuild_keeps_fleet_skill_installer_on_both_hosts(self):
+        for host, user in (("camilo", "camiloslaptop"), ("camilo-remote", "camilo_mini")):
+            with self.subTest(host=host):
+                activation = json.loads(subprocess.check_output([
+                    "nix", "eval", "--offline", "--json",
+                    f"{ROOT}#darwinConfigurations.{host}.config.home-manager.users.{user}.home.activation.linkSkills",
+                ], text=True, stderr=subprocess.PIPE, timeout=60))
+                self.assertIn("linkGeneration", activation["after"])
+                self.assertIn(
+                    f"/Users/{user}/github/fleet-system/system/skills/link-skills.sh",
+                    activation["data"],
+                )
+                self.assertIn('if [ -f "$linkSkills" ]', activation["data"])
+                self.assertIn('/bin/bash "$linkSkills"', activation["data"])
 
 
 if __name__ == "__main__":

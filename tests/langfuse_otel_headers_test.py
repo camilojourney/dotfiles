@@ -1,16 +1,15 @@
-#!/usr/bin/env python3
-"""Synthetic-only shell authentication regression tests."""
-import base64
-from functools import cache
+"""Managed shells must not provision agent-export credentials."""
 import json
 import os
-from pathlib import Path
+import shlex
 import subprocess
 import tempfile
 import unittest
+from functools import cache
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-HELPER = ROOT / "scripts/agent-tools/langfuse-otel-headers.sh"
+HOSTS = (("camilo", "camiloslaptop"), ("camilo-remote", "camilo_mini"))
 
 
 @cache
@@ -23,153 +22,67 @@ def evaluated_zsh_environment(host, user):
         f"/Users/{user}/github/dotfiles", str(ROOT))
 
 
-class HeaderTest(unittest.TestCase):
-    def setUp(self):
-        self.temp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.temp.cleanup)
-        self.home = Path(self.temp.name)
-        self.secrets = self.home / ".config/secrets/langfuse.env"
-        self.secrets.parent.mkdir(parents=True)
-        self.env = {"PATH": os.environ["PATH"], "HOME": str(self.home)}
-        self.rotate()
+class NoAgentHeadersTest(unittest.TestCase):
+    # [utest->req~native-tracing.shell-isolation~1]
+    def test_fresh_shells_do_not_provision_agent_export_environment_or_files(self):
+        for host, user in HOSTS:
+            block = evaluated_zsh_environment(host, user)
+            for flags in ("-c", "-lc", "-ic", "-lic"):
+                with self.subTest(host=host, flags=flags), tempfile.TemporaryDirectory() as name:
+                    home = Path(name)
+                    secrets = home / ".config/secrets"
+                    secrets.mkdir(parents=True)
+                    for destination in (secrets / "langfuse.env", home / "stack/project/.env"):
+                        destination.parent.mkdir(parents=True, exist_ok=True)
+                        destination.write_text(
+                            "LANGFUSE_PUBLIC_KEY=fixture-public\n"
+                            "LANGFUSE_SECRET_KEY=fixture-private\n")
+                    isolated = block.replace(
+                        "/Volumes/AgentPlatform/agent-platform/langfuse/project/.env",
+                        str(home / "stack/project/.env"))
+                    (home / ".zshenv").write_text(isolated)
+                    before = sorted(str(p.relative_to(home)) for p in home.rglob("*"))
+                    child = (
+                        "import json,os; print(json.dumps(sorted(k for k in os.environ "
+                        "if k.startswith(('PI_OTEL_', 'OTEL_')) or k == 'LANGFUSE_SECRETS')))"
+                    )
+                    result = subprocess.run(
+                        ["zsh", "-d", flags, "python3 -c " + shlex.quote(child)],
+                        check=False, env={"PATH": os.environ["PATH"], "HOME": name, "ZDOTDIR": name},
+                        capture_output=True, text=True, timeout=30)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(result.stderr, "")
+                    self.assertEqual(json.loads(result.stdout), [])
+                    self.assertEqual(
+                        sorted(str(p.relative_to(home)) for p in home.rglob("*")), before)
 
-    def rotate(self, suffix=""):
-        self.secrets.write_text(
-            f"LANGFUSE_INIT_PROJECT_PUBLIC_KEY=fixture-public{suffix}\n"
-            f"LANGFUSE_INIT_PROJECT_SECRET_KEY=fixture-private{suffix}\n"
-        )
+    # [utest->req~native-tracing.shell-isolation~1]
+    def test_no_prompt_time_agent_trace_tagging(self):
+        for host, user in HOSTS:
+            with self.subTest(host=host):
+                init = subprocess.check_output([
+                    "nix", "eval", "--offline", "--raw",
+                    f"{ROOT}#darwinConfigurations.{host}.config.home-manager.users.{user}.programs.zsh.initContent",
+                ], text=True, stderr=subprocess.PIPE, timeout=60)
+                self.assertNotIn("_fleet_trace_tag", init)
+                self.assertNotIn("OTEL_RESOURCE_ATTRIBUTES", init)
 
-    def helper(self, *args):
-        return subprocess.run([str(HELPER), *args], env=self.env,
-                              capture_output=True, text=True, timeout=10)
-
-    def shell(self, command):
-        # Evaluate Nix instead of parsing its string syntax: envExtra can compose blocks.
-        block = evaluated_zsh_environment("camilo", "camiloslaptop")
-        return subprocess.run(["zsh", "-c", block + "\n" + command],
-                              env=self.env, capture_output=True, text=True, timeout=30)
-
-    # [utest->req~native-tracing.private-header-file~1]
-    def test_private_atomic_rotation(self):
-        first = self.helper("--file")
-        self.assertEqual(first.returncode, 0)
-        path = Path(first.stdout.strip())
-        self.assertEqual(path.stat().st_mode & 0o777, 0o600)
-        self.assertEqual(path.parent.stat().st_mode & 0o777, 0o700)
-        self.assertEqual(path.stat().st_uid, os.getuid())
-        with path.open() as old:
-            self.rotate("-rotated")
-            second = self.helper("--file")
-            self.assertEqual(second.returncode, 0)
-            self.assertEqual(second.stdout, first.stdout)
-            self.assertNotEqual(old.read(), path.read_text())
-        expected = base64.b64encode(b"fixture-public-rotated:fixture-private-rotated").decode()
-        self.assertTrue(path.read_text() == f"Authorization=Basic%20{expected},x-langfuse-ingestion-version=4\n")
-        self.assertEqual(sorted(p.name for p in path.parent.iterdir()), ["headers"])
-
-    # [utest->req~native-tracing.private-header-file~1]
-    def test_runtime_project_keys_use_same_private_header_contract(self):
-        self.secrets.write_text("LANGFUSE_PUBLIC_KEY=fixture-public\nLANGFUSE_SECRET_KEY=fixture-private\n")
-        result = self.helper("--file")
-        self.assertEqual(result.returncode, 0)
-        path = Path(result.stdout.strip())
-        self.assertEqual(path.stat().st_mode & 0o777, 0o600)
-        expected = base64.b64encode(b"fixture-public:fixture-private").decode()
-        self.assertTrue(path.read_text() == f"Authorization=Basic%20{expected},x-langfuse-ingestion-version=4\n")
-        self.secrets.write_text("LANGFUSE_INIT_PROJECT_PUBLIC_KEY=fixture-incomplete\n"
-                                "LANGFUSE_PUBLIC_KEY=fixture-public\nLANGFUSE_SECRET_KEY=fixture-private\n")
-        self.assertNotEqual(self.helper("--file").returncode, 0)
-
-    # [utest->req~native-tracing.shell-authentication~1]
-    def test_mini_default_reads_existing_stack_project_keys(self):
-        project = self.home / "stack/project/.env"
-        project.parent.mkdir(parents=True)
-        project.write_text("LANGFUSE_PUBLIC_KEY=fixture-mini-public\nLANGFUSE_SECRET_KEY=fixture-mini-private\n")
-        block = evaluated_zsh_environment("camilo-remote", "camilo_mini").replace(
-            "/Volumes/AgentPlatform/agent-platform/langfuse/project/.env", str(project))
-        expected_path = project.parent / "pi-otel/headers"
-        result = subprocess.run(["zsh", "-c", block + '\ntest "$PI_OTEL_EXPORTER_OTLP_HEADERS_FILE" = "$1"',
-                                 "fixture", str(expected_path)],
-                                env=self.env, capture_output=True, text=True, timeout=30)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout, "")
-        self.assertEqual(expected_path.stat().st_mode & 0o777, 0o600)
-        expected = base64.b64encode(b"fixture-mini-public:fixture-mini-private").decode()
-        self.assertTrue(expected_path.read_text() == f"Authorization=Basic%20{expected},x-langfuse-ingestion-version=4\n")
-
-    def test_legacy_json_and_env(self):
-        expected = base64.b64encode(b"fixture-public:fixture-private").decode()
-        self.assertTrue(json.loads(self.helper().stdout) == {
-            "Authorization": f"Basic {expected}", "x-langfuse-ingestion-version": "4"})
-        self.assertTrue(self.helper("--env").stdout ==
-                        f"Authorization=Basic%20{expected},x-langfuse-ingestion-version=4\n")
-        self.secrets.unlink()
-        self.assertEqual(self.helper().stdout, "{}\n")
-        self.assertEqual(self.helper("--env").stdout, "")
-
-    # [utest->req~native-tracing.shell-authentication~1]
-    def test_shell_removes_inline_and_exports_only_path(self):
-        self.env.update(PI_OTEL_EXPORTER_OTLP_HEADERS="fixture-inline",
-                        OTEL_EXPORTER_OTLP_HEADERS="fixture-inline-standard",
-                        PI_OTEL_EXPORTER_OTLP_HEADERS_FILE="/fixture/stale",
-                        OTEL_EXPORTER_OTLP_HEADERS_FILE="/fixture/stale-standard")
-        result = self.shell("""python3 - <<'PY'
-import os, pathlib
-assert 'PI_OTEL_EXPORTER_OTLP_HEADERS' not in os.environ
-assert 'OTEL_EXPORTER_OTLP_HEADERS' not in os.environ
-assert 'OTEL_EXPORTER_OTLP_HEADERS_FILE' not in os.environ
-assert pathlib.Path(os.environ['PI_OTEL_EXPORTER_OTLP_HEADERS_FILE']).is_file()
-assert not any('Basic' in v or 'fixture-' in v for v in os.environ.values())
-PY""")
-        self.assertEqual(result.returncode, 0)
-        self.assertEqual(result.stdout, "")
-
-    # [utest->req~native-tracing.private-header-file~1]
-    # [utest->req~native-tracing.shell-authentication~1]
-    def test_failed_refresh_does_not_export_stale_file(self):
-        self.assertEqual(self.helper("--file").returncode, 0)
-        for contents in ("", "LANGFUSE_INIT_PROJECT_PUBLIC_KEY=fixture-only\n", None):
-            if contents is None:
-                self.secrets.unlink()
-            else:
-                self.secrets.write_text(contents)
-            failed = self.helper("--file")
-            self.assertNotEqual(failed.returncode, 0)
-            self.assertEqual(failed.stdout, "")
-            self.env["PI_OTEL_EXPORTER_OTLP_HEADERS_FILE"] = "/fixture/stale"
-            result = self.shell("test -z \"${PI_OTEL_EXPORTER_OTLP_HEADERS_FILE+x}\"")
-            self.assertEqual(result.returncode, 0)
-
-    def test_failed_publish_retains_previous_file_and_cleans_temporary(self):
-        path = Path(self.helper("--file").stdout.strip())
-        original = path.read_text()
-        self.rotate("-rotated")
-        bin_dir = self.home / "bin"
-        bin_dir.mkdir()
-        failing_mv = bin_dir / "mv"
-        failing_mv.write_text("#!/bin/sh\nexit 1\n")
-        failing_mv.chmod(0o700)
-        self.env["PATH"] = str(bin_dir) + os.pathsep + self.env["PATH"]
-        failed = self.helper("--file")
-        self.assertNotEqual(failed.returncode, 0)
-        self.assertEqual(failed.stdout, "")
-        self.assertTrue(path.read_text() == original)
-        self.assertEqual(list(path.parent.iterdir()), [path])
-        self.env["PATH"] = os.environ["PATH"]
-        self.assertEqual(self.helper("--file").returncode, 0)
-        self.assertTrue(path.read_text() != original)
-
-    def test_refuses_symlink_directory_and_destination(self):
-        directory = self.secrets.parent / "pi-otel"
-        directory.symlink_to(self.home, target_is_directory=True)
-        self.assertNotEqual(self.helper("--file").returncode, 0)
-        directory.unlink()
-        directory.mkdir(mode=0o700)
-        target = self.home / "untouched"
-        target.write_text("fixture")
-        (directory / "headers").symlink_to(target)
-        self.assertNotEqual(self.helper("--file").returncode, 0)
-        self.assertEqual(target.read_text(), "fixture")
+    def test_explicit_native_langfuse_environment_is_not_removed(self):
+        for host, user in HOSTS:
+            with self.subTest(host=host), tempfile.TemporaryDirectory() as name:
+                native = {"LANGFUSE_PUBLIC_KEY": "fixture-public",
+                          "LANGFUSE_SECRET_KEY": "fixture-private",
+                          "LANGFUSE_SECRETS": str(Path(name) / "explicit.env")}
+                child = "import os; " + "; ".join(
+                    f"assert os.environ.get({key!r}) == {value!r}" for key, value in native.items())
+                result = subprocess.run(
+                    ["zsh", "-d", "-c", evaluated_zsh_environment(host, user) +
+                     "\npython3 -c " + shlex.quote(child)],
+                    check=False, env={"PATH": os.environ["PATH"], "HOME": name, "ZDOTDIR": name, **native},
+                    capture_output=True, text=True, timeout=30)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, "")
+                self.assertEqual(result.stderr, "")
 
 
 if __name__ == "__main__":

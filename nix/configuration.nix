@@ -17,34 +17,6 @@ in
   # floor regardless of this setting.
   power.sleep.computer = "never";
 
-  # One existing 15-minute collector: enrich quiet Pi attempts with Fleet skill
-  # usage and flush Firstmate's durable outcome snapshots. The normal login
-  # environment supplies the existing native OTLP destination/authentication.
-  # Independent guards allow either checkout, and either failure remains visible.
-  # docs/AUTOMATIONS.md owns setup, limits and verification.
-  launchd.user.agents.fleet-skill-usage.serviceConfig = {
-    Label = "org.dotfiles.fleet-skill-usage";
-    ProgramArguments = [
-      "/bin/zsh"
-      "-lic"
-      ''
-        failed=0
-        script="$HOME/github/fleet-system/system/skills/meta/skill-creator-fleet/scripts/skill_usage.py"
-        if [ -f "$script" ]; then
-          /opt/homebrew/bin/python3 "$script" update || failed=1
-        fi
-        script="$HOME/github/firstmate/bin/fm-trace-evidence.py"
-        if [ -f "$script" ]; then
-          /opt/homebrew/bin/python3 "$script" --flush || failed=1
-        fi
-        exit "$failed"
-      ''
-    ];
-    StartInterval = 900;
-    StandardOutPath = "${homeDirectory}/Library/Logs/fleet-skill-usage.log";
-    StandardErrorPath = "${homeDirectory}/Library/Logs/fleet-skill-usage.log";
-  };
-
   homebrew = {
     enable = true;
     enableZshIntegration = true; # puts /opt/homebrew/bin on PATH for Homebrew CLIs.

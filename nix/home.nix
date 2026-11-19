@@ -170,42 +170,10 @@ in
     };
     initContent = ''
       bindkey '^f' autosuggest-accept
-
-      # Tag agent traces with the Fleet commit (plus -dirty for local edits):
-      # every linked skill is read from that checkout, so it pins their
-      # versions. Refreshed at each prompt; other tags in the variable stay.
-      _fleet_trace_tag() {
-        local sha
-        sha=$(git -C ${homeDirectory}/github/fleet-system describe --always --dirty --abbrev=7 2>/dev/null) || return 0
-        local -a tags=(''${(s:,:)OTEL_RESOURCE_ATTRIBUTES})
-        tags=("fleet.sha=$sha" ''${tags:#fleet.sha=*})
-        export OTEL_RESOURCE_ATTRIBUTES=''${(j:,:)tags}
-      }
-      precmd_functions+=(_fleet_trace_tag)
     '';
-    # Pi traces go to the local Langfuse (scripts/agent-tools/langfuse-up.sh).
-    # Set in envExtra, not sessionVariables: agent panes start login shells that
-    # skip the session-vars file, so Pi fell back to localhost:4318 and sent
-    # nothing. The PI_ prefix keeps these from reaching other OTel programs.
-    # Tags arrive per run in the standard OTEL_RESOURCE_ATTRIBUTES
-    # (fleet-system system/skills/TRACING.md).
+    # Agent-session exporters are retired. Phrona configures tracing explicitly.
+    # [impl->req~native-tracing.shell-isolation~1]
     envExtra = lib.optionalString (hostProfile == "camilo-remote") ''
-      # Use this host's existing stack keys; no credential copying or inline auth.
-      export LANGFUSE_SECRETS="''${LANGFUSE_SECRETS:-/Volumes/AgentPlatform/agent-platform/langfuse/project/.env}"
-    '' + ''
-      export PI_OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:3000/api/public/otel"
-      export PI_OTEL_METRICS_EXPORTER="none"
-      export PI_OTEL_SERVICE_NAME="pi"
-      # [impl->req~native-tracing.shell-authentication~1]
-      # Inline headers override files. Clear credentials inherited from old shells
-      # before launching any children, including the private-file helper.
-      unset PI_OTEL_EXPORTER_OTLP_HEADERS OTEL_EXPORTER_OTLP_HEADERS
-      unset PI_OTEL_EXPORTER_OTLP_HEADERS_FILE OTEL_EXPORTER_OTLP_HEADERS_FILE
-      if _pi_otel_headers_file="$(${dotfilesDir}/scripts/agent-tools/langfuse-otel-headers.sh --file)"; then
-        export PI_OTEL_EXPORTER_OTLP_HEADERS_FILE="$_pi_otel_headers_file"
-      fi
-      unset _pi_otel_headers_file
-    '' + lib.optionalString (hostProfile == "camilo-remote") ''
       # SSH-started agents cannot unlock the login keychain. The captain alone
       # provisions this private file (0600); .zshenv reaches noninteractive and
       # interactive children without copying credentials into managed config.

@@ -15,6 +15,7 @@ python3 tests/agent_platform_test.py
 python3 tests/agent_platform_langfuse_test.py
 python3 tests/fleet_telemetry_test.py
 python3 tests/langfuse_otel_headers_test.py
+python3 tests/langfuse_otel_export_test.py
 python3 tests/claude_headless_auth_test.py
 ```
 
@@ -72,26 +73,36 @@ children, a missing file stays absent and preserves an explicitly inherited toke
 and the laptop never loads this Mini-only file. It never reads real credentials
 or starts Claude, Pi or an agent session. See [headless Claude auth](../docs/AUTOMATIONS.md#headless-claude-on-the-mini).
 
-`langfuse_otel_headers_test.py` uses only synthetic keys and isolated homes to
-check shell credential removal, private atomic updates, rotation, failure paths,
-symlink refusal and legacy Claude/`--env` responses. It also checks runtime project
-key names, rejects mixed incomplete pairs and executes the Mini's evaluated
-existing-stack secret-path selection against a relocated synthetic project.
-After preparing the stable
-local Pi extension installation selected in authored settings, also run:
+`langfuse_otel_headers_test.py` evaluates both hosts' managed shell setup with
+offline Nix, then runs isolated noninteractive, login and interactive shells.
+Synthetic secrets prove startup provisions no agent-export variables or header
+files. It also checks prompt-time trace tagging is absent and explicit native
+Langfuse configuration is left intact.
+
+`langfuse_otel_export_test.py` checks the authored Pi package entry points
+and manifest, explicit Claude telemetry disablement and absence of OTLP
+settings or a header helper. It verifies export-only helpers moved to the
+inactive archive and shared Langfuse service files remain. No installed exporter,
+real credentials, models, network or running agents are used. These are
+retirement regressions, not live no-traffic or Phrona-delivery proof.
+
+`fleet_telemetry_test.py` evaluates all four targets with offline Nix and proves
+the scheduled skill-usage job is absent. It also verifies both hosts keep the
+existing Fleet skill installer and its activation ordering. It never unloads
+jobs, activates a rebuild or changes a service.
+
+For a non-activating full configuration evaluation, run from the repository root:
 
 ```bash
-python3 tests/langfuse_otel_export_test.py
+for target in camilo camilo-remote camilo-total camilo-remote-total; do
+  nix eval --offline --raw ".#darwinConfigurations.$target.system.drvPath"
+done
 ```
 
-This reads the final authored package path, executes the managed zsh setup and
-that installation's actual configuration and OTLP exporter against a temporary
-loopback HTTP receiver. A missing installation or selection without private-file
-support fails the test. It does not start a
-model, use real credentials, or activate the extension in running agents.
-
-`fleet_telemetry_test.py` evaluates both hosts' scheduled collector arguments with offline Nix, then executes them against isolated fake collectors.
-It checks both collectors run even when either fails, without credentials, network calls or service changes.
+This evaluates the system derivations without building, switching or running
+activation scripts. Live acceptance belongs to Main after a rebuild: no loaded
+usage job, no new Pi/Claude exports, and received Phrona traces. See
+[automations](../docs/AUTOMATIONS.md#after-rebuild-acceptance).
 
 `mac_setup_test.sh` is a regression test for `setup/mac.sh`.
 `rebuild_test.sh` checks the one shared `rebuild.sh` helper's account-based
