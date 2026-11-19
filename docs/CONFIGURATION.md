@@ -42,15 +42,19 @@ data stays local and remaining data stays in the checkout; resolve the reported
 conflict before retrying. Apps that atomically replace a configuration symlink
 can leave a changed local file. For apps that do this on every save (OBS, declared
 with `adoptAppChanges = true` in `nix/camilo-extra.nix`) activation reconciles it:
-adoption starts only after the OBS migration plan is conflict-free. The app file
-is atomically moved into a private backup and the repository version is saved
-there before either is adopted. The newer version becomes the repository file,
-retaining its original modification time so retries compare the real save order,
-and the link is restored. Backups live under `~/.local/state/config-adopt/`
-(owner-only, they can hold stream keys), including when the files are identical.
-A replacement OBS saves during adoption is never overwritten: it stops relinking
-and remains local for the next run. Both reconciled versions remain saved, so
-adoption is lossless. Other apps' conflicts are Home Manager's responsibility
+adoption starts only after the OBS migration plan is conflict-free. Both versions
+are copied into private snapshots before the live app file is touched. The app
+file is then atomically claimed and retained separately, preserving any save OBS
+made during the snapshots. The newer claimed version is prepared in a temporary
+file beside the repository file and published atomically, retaining its original
+modification time so retries compare the real save order. The link is then restored.
+Backups live under `~/.local/state/config-adopt/` (owner-only, they can hold stream
+keys), including when the files are identical. A snapshot failure leaves the app
+file untouched. Handled errors after claiming restore that file only if its path
+is still absent; a concurrent replacement is never overwritten and both paths
+are reported. The repository file remains complete, temporary files are cleaned
+up, and a retry reconciles the live version. All observed versions remain saved,
+so adoption is lossless. Other apps' conflicts are Home Manager's responsibility
 and may stop activation after OBS adoption. For every other app, review and merge
 the local change into its authored owner before retrying.
 There is no automatic rollback into a directory-wide link because that could hide
