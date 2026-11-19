@@ -12,12 +12,22 @@ node --test tests/pi_antigravity_prompt_test.mjs
 bash tests/model_routing_test.sh
 bash tests/storage_report_test.sh
 bash tests/claude_settings_test.sh
+bash tests/auto_rebuild_test.sh
+bash tests/check_upstream_configs_test.sh
+bash tests/chrome_update_test.sh
+bash tests/mas_cleanup_test.sh
+bash tests/obs_strip_keys_test.sh
+bash tests/require_code_skill_test.sh
+bash tests/safe_maintenance_test.sh
+python3 tests/agent_toolchain_test.py
+python3 tests/config_state_test.py
 python3 tests/agent_platform_test.py
 python3 tests/agent_platform_langfuse_test.py
 python3 tests/fleet_telemetry_test.py
 python3 tests/langfuse_otel_headers_test.py
 python3 tests/langfuse_otel_export_test.py
 python3 tests/claude_headless_auth_test.py
+nvim --headless -u NONE -l tests/nvim_navigation_test.lua
 ```
 
 `agent_platform_test.py` exercises the encrypted, unlocked, ownership-enabled
