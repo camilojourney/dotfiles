@@ -9,13 +9,13 @@
   },
   "npm": [
     { "name": "@earendil-works/pi-coding-agent", "version": "1.5.2" },
-    { "name": "acpx", "version": "0.21.1" },
-    { "name": "backpass", "version": "0.1.43" },
+    { "name": "acpx", "version": "0.22.0" },
+    { "name": "backpass", "version": "0.1.44" },
     { "name": "chrome-devtools-axi", "version": "0.1.46" },
-    { "name": "gh-axi", "version": "0.1.46" },
-    { "name": "gnhf", "version": "0.1.51" },
+    { "name": "gh-axi", "version": "0.1.51" },
+    { "name": "gnhf", "version": "0.1.52" },
     { "name": "lavish-axi", "version": "0.1.96" },
-    { "name": "pnpm", "version": "12.16.1" },
+    { "name": "pnpm", "version": "12.20.0" },
     { "name": "quota-axi", "version": "0.1.69" },
     { "name": "tasks-axi", "version": "0.2.6" }
   ],
@@ -36,14 +36,14 @@
   },
   "external": {
     "no-mistakes": {
-      "version": "1.84.0",
+      "version": "1.106.1",
       "repo": "kunchenguid/no-mistakes",
       "installSubdir": ".no-mistakes/bin",
       "binary": "no-mistakes",
       "archivePattern": "no-mistakes-v{version}-{os}-{arch}.tar.gz",
       "sha256": {
-        "darwin-arm64": "2e5f838303ab727edccd1a60a4834068024606c68ae7d97fdc0fdeecd7bd4d90",
-        "darwin-amd64": "88b1a481924488f55456b3f96070f739b109e19555232e4f8be0a7ebae7c08ac"
+        "darwin-arm64": "3105ae3ffd9f5f6dc27674302dcd126a89ba9c23d43ecb8be5e266ac52f1472c",
+        "darwin-amd64": "a1df9a1e456e265c989ddb17968317f3d21bf80b23b9828cbd426777f279bfb1"
       }
     },
     "treehouse": {
