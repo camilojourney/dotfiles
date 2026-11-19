@@ -4,7 +4,7 @@
 # nix/configuration.nix. Steps:
 #   1. fast-forward ~/github/dotfiles and ~/github/firstmate (each skips,
 #      never forces, when it cannot fast-forward cleanly)
-#   2. the same rebuild as ./rebuild-total.sh (laptop) or ./rebuild.sh (remote)
+#   2. direct darwin-rebuild activation (not the helpers' manual tool-update path)
 # Usage: auto-rebuild.sh <macOS user> <flake attr>
 # Output goes to /var/log/auto-rebuild.log; any failure, including a single
 # Homebrew package that could not be installed or upgraded, posts a macOS
@@ -56,7 +56,7 @@ fi
 update_repo dotfiles "$DOTFILES"
 update_repo firstmate "$FIRSTMATE"
 
-# Run everything below exactly as ./rebuild.sh does under sudo. Nix refuses
+# Supply caller identity for direct darwin-rebuild activation. Nix refuses
 # to read a git repo owned by another user unless SUDO_UID names that user
 # ("repository path ... is not owned by current user"), and mas running as
 # root needs SUDO_UID to know whose App Store account to use.

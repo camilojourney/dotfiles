@@ -10,8 +10,8 @@ error aborts without touching the manifest.
 
 Only the npm and external lanes move. Python and uv libraries stay on the weekly
 lane because a major-version jump there can break scripts that import them.
-The manifest is hand-formatted, so only version and digest values are edited in
-place. Nothing is committed or pushed.
+Only version and digest values are edited in place, preserving unrelated manifest
+bytes in either hand-formatted or weekly serialization. Nothing is committed or pushed.
 """
 import argparse
 import json

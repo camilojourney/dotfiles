@@ -45,9 +45,11 @@ with `adoptAppChanges = true` in `nix/camilo-extra.nix`) activation reconciles i
 adoption starts only after the OBS migration plan is conflict-free. Both versions
 are copied into private snapshots before the live app file is touched. The app
 file is then atomically claimed and retained separately, preserving any save OBS
-made during the snapshots. The newer claimed version is prepared in a temporary
-file beside the repository file and published atomically, retaining its original
-modification time so retries compare the real save order. The link is then restored.
+made during the snapshots. If the claimed file's modification time is strictly
+newer, it is prepared in a temporary file beside the repository file and published
+atomically, retaining its original modification time so retries compare the real
+save order. Otherwise the repository version wins, including ties. The link is
+then restored.
 Backups live under `~/.local/state/config-adopt/` (owner-only, they can hold stream
 keys), including when the files are identical. A snapshot failure leaves the app
 file untouched. Handled errors after claiming restore that file only if its path
