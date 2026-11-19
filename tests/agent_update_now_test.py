@@ -9,6 +9,8 @@ import unittest
 from contextlib import redirect_stdout
 from datetime import UTC, datetime
 from io import StringIO
+from string import Template
+from unittest.mock import patch
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "nix/agent-tools.manifest.lock.json"
@@ -27,6 +29,8 @@ def load(name, path):
 import sys
 
 sys.path.insert(0, str(ROOT / "scripts/agent-tools"))
+from toolchain import atomic_json
+
 update = load("update_now", ROOT / "scripts/agent-tools/update-now.py")
 
 
@@ -55,21 +59,18 @@ class UpdateNowTest(unittest.TestCase):
         self.path = self.dir / "manifest.json"
         shutil.copy(MANIFEST, self.path)
         self.before = self.path.read_text()
+        manifest_patch = patch.object(update, "PIN", self.path)
+        manifest_patch.start()
+        self.addCleanup(manifest_patch.stop)
 
-    def run_update(self, registry, *flags):
+    def run_update(self, registry):
         out = StringIO()
         with redirect_stdout(out):
-            code = update.main(["--manifest", str(self.path), *flags], registry=registry, now=NOW)
+            code = update.main([], registry=registry, now=NOW)
         return code, out.getvalue()
 
-    def test_preview_changes_nothing(self):
-        code, out = self.run_update(Registry())
-        self.assertEqual(code, 0)
-        self.assertEqual(self.path.read_text(), self.before)
-        self.assertIn(NEWER, out)
-
     def test_only_npm_and_external_lanes_move(self):
-        self.run_update(Registry(), "--write")
+        self.run_update(Registry())
         old, new = json.loads(self.before), json.loads(self.path.read_text())
         for entry in new["npm"]:
             self.assertEqual(entry["version"], NEWER)
@@ -80,28 +81,52 @@ class UpdateNowTest(unittest.TestCase):
             self.assertEqual(new[lane], old[lane], lane)
 
     def test_release_younger_than_seven_days_is_not_taken(self):
-        self.run_update(Registry(published="2026-11-13T00:00:01Z"), "--write")
+        self.run_update(Registry(published="2026-11-13T00:00:01Z"))
         self.assertEqual(self.path.read_text(), self.before)
 
     def test_release_flagged_by_osv_is_not_taken(self):
-        self.run_update(Registry(flagged={NEWER}), "--write")
+        self.run_update(Registry(flagged={NEWER}))
         self.assertEqual(self.path.read_text(), self.before)
 
     def test_registry_failure_exits_nonzero_and_leaves_file_identical(self):
         with self.assertRaises(TimeoutError):
-            self.run_update(Offline(), "--write")
+            self.run_update(Offline())
         self.assertEqual(self.path.read_text(), self.before)
 
-    def test_edit_keeps_hand_formatting_and_touches_only_versions_and_digests(self):
-        self.run_update(Registry(), "--write")
-        old, new = self.before.splitlines(), self.path.read_text().splitlines()
-        self.assertEqual(len(old), len(new))
-        for a, b in zip(old, new):
-            if a != b:
-                self.assertTrue('"version"' in a or '"darwin-' in a, a)
+    def test_pin_edits_preserve_unrelated_manifest_bytes_in_each_serialization(self):
+        template = Template('''{
+  "policy": {"note": "keep 1.0.0 and 2.0.0 verbatim"},
+  "npm": [{ "name": "demo", "version": "$npm" }],
+  "uv": [{"name": "library", "version": "1.0.0"}],
+  "python": [], "piPackages": {},
+  "external": {
+    "demo": {
+      "version": "$external", "repo": "owner/demo",
+      "sha256": {"darwin-arm64": "$arm", "darwin-amd64": "$amd"}
+    }
+  }
+}
+''')
+        before = template.substitute(npm="1.0.0", external="2.0.0", arm="c" * 64, amd="d" * 64)
+        expected = template.substitute(npm=NEWER, external=NEWER, arm="a" * 64, amd="b" * 64)
+        for shape in ("hand", "weekly", "compact"):
+            with self.subTest(shape=shape):
+                if shape == "hand":
+                    self.path.write_text(before)
+                    wanted = expected
+                elif shape == "weekly":
+                    atomic_json(self.path, json.loads(before))
+                    wanted = json.dumps(json.loads(expected), indent=2) + "\n"
+                else:
+                    self.path.write_text(json.dumps(json.loads(before), separators=(",", ":")))
+                    wanted = json.dumps(json.loads(expected), separators=(",", ":"))
+                code, out = self.run_update(Registry())
+                self.assertEqual(code, 0)
+                self.assertIn(NEWER, out)
+                self.assertEqual(self.path.read_bytes(), wanted.encode())
 
     def test_no_eligible_change_writes_nothing_and_says_so(self):
-        code, out = self.run_update(Registry(published="2026-11-18T00:00:00Z"), "--write")
+        code, out = self.run_update(Registry(published="2026-11-18T00:00:00Z"))
         self.assertEqual(code, 0)
         self.assertIn("no eligible changes", out)
         self.assertEqual(self.path.read_text(), self.before)

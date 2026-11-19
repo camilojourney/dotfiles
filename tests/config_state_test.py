@@ -1,4 +1,5 @@
 """Configuration/state separation with real directories, symlink chains and sockets."""
+import importlib.util
 import os
 import socket
 import subprocess
@@ -6,9 +7,13 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts/separate-config-state.py"
+spec = importlib.util.spec_from_file_location("separate_config_state", SCRIPT)
+migration = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(migration)
 
 
 class ConfigStateTest(unittest.TestCase):
@@ -144,7 +149,7 @@ class AdoptAppChangesTest(unittest.TestCase):
         self.root = Path(self.temp.name).resolve()
         self.source = self.root / "repo/obs"
         self.target = self.root / "home/obs"
-        self.backups = self.root / "state/config-adopt"
+        self.backups = self.root / "home/.local/state/config-adopt"
         (self.source / "scenes").mkdir(parents=True)
         self.target.joinpath("scenes").mkdir(parents=True)
         self.repo_file = self.source / "scenes/Streaming.json"
@@ -152,7 +157,7 @@ class AdoptAppChangesTest(unittest.TestCase):
         self.repo_file.write_text("repo\n")
 
     def run_adopt(self, *extra, success=True, files=("scenes/Streaming.json",)):
-        env = dict(os.environ, SEPARATE_CONFIG_BACKUP_DIR=str(self.backups))
+        env = dict(os.environ, HOME=str(self.root / "home"))
         result = subprocess.run(
             [sys.executable, str(SCRIPT), *extra, str(self.source), str(self.target), *files],
             check=False, capture_output=True, text=True, timeout=10, env=env,
@@ -192,12 +197,45 @@ class AdoptAppChangesTest(unittest.TestCase):
         self.assertEqual(self.backed_up_texts(), ["live\n", "repo\n"])
         self.assertIn("kept the repo version", result.stdout)
 
-    def test_identical_app_file_is_just_relinked_without_a_backup(self):
+    def test_identical_app_file_is_claimed_and_backed_up_before_relinking(self):
         self.app_saved("repo\n")
         self.run_adopt("--adopt-app-changes")
         self.assertTrue(self.live_file.is_symlink())
         self.assertEqual(self.repo_file.read_text(), "repo\n")
-        self.assertFalse(self.backups.exists())
+        self.assertEqual(self.backed_up_texts(), ["repo\n", "repo\n"])
+
+    def test_save_after_claim_survives_in_every_reconciliation_case(self):
+        rename = os.rename
+        for original, newer in (("repo\n", True), ("live\n", True), ("live\n", False)):
+            with self.subTest(original=original, newer=newer):
+                self.repo_file.write_text("repo\n")
+                self.app_saved(original, newer=newer)
+                before = self.backed_up_texts()
+
+                def save_after_claim(source, destination, *args, **kwargs):
+                    result = rename(source, destination, *args, **kwargs)
+                    if Path(source) == self.live_file:
+                        replacement = self.live_file.with_suffix(".new")
+                        replacement.write_text("concurrent save\n")
+                        os.replace(replacement, self.live_file)
+                    return result
+
+                with patch.dict(os.environ, HOME=str(self.root / "home")), patch.object(os, "rename", save_after_claim), self.assertRaises(FileExistsError):
+                    migration.separate(self.source, self.target, ["scenes/Streaming.json"], adopt=True)
+                self.assertFalse(self.live_file.is_symlink())
+                self.assertEqual(self.live_file.read_text(), "concurrent save\n")
+                self.assertEqual(self.repo_file.read_text(), original if newer else "repo\n")
+                self.assertEqual(self.backed_up_texts(), sorted([*before, original, "repo\n"]))
+
+    def test_repeated_adoptions_keep_every_snapshot_even_in_the_same_second(self):
+        with patch.dict(os.environ, HOME=str(self.root / "home")), patch.object(migration.time, "strftime", return_value="fixed-second-"):
+            for text in ("first save\n", "second save\n"):
+                self.live_file.unlink(missing_ok=True)
+                self.app_saved(text)
+                migration.separate(self.source, self.target, ["scenes/Streaming.json"], adopt=True)
+        self.assertEqual(self.repo_file.read_text(), "second save\n")
+        self.assertTrue(self.live_file.is_symlink())
+        self.assertEqual(self.backed_up_texts(), ["first save\n", "first save\n", "repo\n", "second save\n"])
 
     def test_backups_are_private_because_they_can_hold_stream_keys(self):
         self.app_saved("live\n")

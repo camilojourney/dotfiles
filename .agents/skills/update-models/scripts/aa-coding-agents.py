@@ -25,7 +25,7 @@ FLEET_VENDORS = ("openai", "anthropic", "google", "xai", "moonshot", "deepseek",
 
 def fetch_payload():
     req = urllib.request.Request(URL, headers={"User-Agent": "Mozilla/5.0 (Macintosh) Chrome/140"})
-    raw = urllib.request.urlopen(req, timeout=30)  # noqa: S310 - fixed https URL above.read().decode("utf-8")
+    raw = urllib.request.urlopen(req, timeout=30).read().decode("utf-8")  # noqa: S310 - fixed https URL above
     chunks = re.findall(r'self\.__next_f\.push\(\[1,"(.*?)"\]\)</script>', raw, re.DOTALL)
     return "".join(json.loads('"' + c + '"') for c in chunks)
 

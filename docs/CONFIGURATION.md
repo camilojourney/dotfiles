@@ -42,11 +42,16 @@ data stays local and remaining data stays in the checkout; resolve the reported
 conflict before retrying. Apps that atomically replace a configuration symlink
 can leave a changed local file. For apps that do this on every save (OBS, declared
 with `adoptAppChanges = true` in `nix/camilo-extra.nix`) activation reconciles it:
-the newer of the app's file and the repository file becomes the repository file,
-both versions are first copied to `${XDG_STATE_HOME:-~/.local/state}/config-adopt/`
-(owner-only, they can hold stream keys), and the link is restored. Other conflicts
-in the same run still stop activation, before anything is adopted. For every other
-app, review and merge the local change into its authored owner before retrying.
+adoption starts only after the OBS migration plan is conflict-free. The app file
+is atomically moved into a private backup and the repository version is saved
+there before either is adopted. The newer version becomes the repository file
+and the link is restored. Backups live under `~/.local/state/config-adopt/`
+(owner-only, they can hold stream keys), including when the files are identical.
+A replacement OBS saves during adoption is never overwritten: it stops relinking
+and remains local for the next run. Both reconciled versions remain saved, so
+adoption is lossless. Other apps' conflicts are Home Manager's responsibility
+and may stop activation after OBS adoption. For every other app, review and merge
+the local change into its authored owner before retrying.
 There is no automatic rollback into a directory-wide link because that could hide
 local app state.
 
