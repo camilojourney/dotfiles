@@ -70,7 +70,8 @@ return {
   },
 
   -- Wrapped pipe tables. Reader mode renders tables into a protected view,
-  -- while keeping the Markdown source intact and editable with `e`.
+  -- while keeping the Markdown source intact. `i`/`a`/`o` edit one line and
+  -- return to Reader; <leader>mw is the one switch between Reader and Source.
   {
     'ice345/markdown-table-wrap.nvim',
     ft = { 'markdown' },
@@ -90,9 +91,7 @@ return {
       },
     },
     keys = {
-      { '<leader>mw', '<cmd>MarkdownTableTogglePreview<cr>', desc = 'Toggle Wrapped Table Preview' },
-      { '<leader>mW', '<cmd>MarkdownTableReader<cr>', desc = 'Open Wrapped Table Reader' },
-      { '<leader>mE', '<cmd>MarkdownTableEditSource<cr>', desc = 'Edit Table Source' },
+      { '<leader>mw', '<cmd>MarkdownTableToggleReader<cr>', desc = 'Toggle Wrapped Tables / Source' },
     },
   },
 
