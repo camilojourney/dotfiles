@@ -30,6 +30,7 @@ In Vial: **File -> Save current layout...** and overwrite `keyball61plus.vil`.
 | QMK Settings -> Tap-Hold | Permissive Hold on |
 | Layer 0, left thumb Esc | `LT(2, Esc)`: tap for Esc, hold for layer 2 |
 | Layer 2 (hold Esc) | H J K L = arrows; Q row = F1-F12; A = lights on/off, S/X = effect, D/C = color, F/V = brightness, G/B = animation speed; Z = Ctrl+Opt+Cmd+D; 1 = Ctrl+Opt+Cmd+B; right half: volume and browser back/forward |
+| Layer 2, Enter position | `LCTL(KC_UP)`: hold Esc + tap Enter for Mission Control (all windows overview) |
 | Layer 2, Backspace position | `MO(1)`: hold Esc + Backspace to reach layer 3 (trackball settings) |
 | Layer 3 | Holykeebs pointer settings (Sens Set on A, HK Save on W, K/J up/down). The two Clear EEPROM keys are blanked so the layout cannot be wiped by accident; Bootloader keys remain on Tab and `\` |
 
@@ -43,6 +44,11 @@ macro's step.
   slowest. These apply to mice only, not the trackpad.
 - Natural scrolling stays off for the trackpad; the wheel direction is set in
   the macros instead.
+- Esc + Enter: **Mission Control**, using macOS's default Ctrl+Up shortcut.
+  Keep it enabled under System Settings -> Keyboard -> Keyboard Shortcuts ->
+  Mission Control -> **Mission Control**. Hold the left-thumb Esc key, tap
+  Enter with the right thumb, then release Esc. This preserves normal Enter
+  and uses both thumbs without replacing an existing layer-2 action.
 - Esc + Z: System Settings -> Keyboard -> Keyboard Shortcuts -> Mission Control
   -> **Turn Do Not Disturb On/Off**, recorded as Ctrl+Opt+Cmd+D.
 - Esc + 1: a Shortcuts app shortcut named **Baby Menu** with keyboard shortcut
