@@ -114,6 +114,10 @@ class RegistryTest(unittest.TestCase):
         selected, reasons = toolchain.select(manifest, NOW, PublicRegistry())
         self.assertEqual(selected["npm"][0]["version"], "98.0.0")
         self.assertEqual(selected["uv"][0]["version"], "0.31.3")
+        self.assertEqual(next(entry["version"] for entry in selected["uv"] if entry["name"] == "ruff"), "98.0.0")
+        self.assertEqual(selected["python"][0]["version"], "98.0.0")
+        self.assertEqual(set(selected["piPackages"].values()), {"98.0.0"})
+        self.assertTrue(all(entry["version"] == "98.0.0" for entry in selected["external"].values()))
         self.assertTrue(any("flagged by OSV" in reason for reason in reasons))
         self.assertEqual(manifest["npm"][0]["version"], original_npm_version)
 

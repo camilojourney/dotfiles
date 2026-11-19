@@ -135,9 +135,10 @@ stable releases only, public at least seven days (a fix for a known vulnerabilit
 in the current pin may skip the wait), clean in OSV, registry sha256 digests for
 external downloads, no downgrades.
 
-- Only the npm and external lanes move (the agent CLIs and pnpm, no-mistakes,
-  treehouse). Python and uv libraries stay on the Sunday lane, because a major
-  jump there can break scripts that import them.
+- Only the npm and external lanes are queried and updated (the agent CLIs and
+  pnpm, no-mistakes, treehouse). Python, uv libraries and Pi packages stay on the
+  Sunday lane; their registry or OSV failures cannot block a manual selection.
+  Major Python/uv jumps can break scripts that import those libraries.
 - Order: select and edit the manifest in place
   ([`update-now.py`](../scripts/agent-tools/update-now.py); running it alone also
   updates in place), rebuild, check with `update-now.py --verify` that every npm and

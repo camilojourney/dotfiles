@@ -80,6 +80,57 @@ class UpdateNowTest(unittest.TestCase):
         for lane in ("uv", "python", "piPackages", "policy", "setupHooks", "verify"):
             self.assertEqual(new[lane], old[lane], lane)
 
+    def test_manual_update_does_not_query_unavailable_unselected_lanes(self):
+        manifest = json.loads(self.before)
+        allowed = {("npm", entry["name"]) for entry in manifest["npm"]}
+        allowed.update(("Go", "github.com/" + entry["repo"]) for entry in manifest["external"].values())
+        release_calls, osv_calls = [], []
+
+        class UnrelatedRegistriesOffline(Registry):
+            def releases(self, lane, name, entry):
+                if lane not in ("npm", "external"):
+                    raise TimeoutError(f"{lane} registry unavailable")
+                release_calls.append((lane, name))
+                return super().releases(lane, name, entry)
+
+            def vulnerabilities(self, ecosystem, name, version):
+                if (ecosystem, name) not in allowed:
+                    raise TimeoutError(f"unrelated OSV query unavailable: {ecosystem}/{name}")
+                osv_calls.append((ecosystem, name))
+                return super().vulnerabilities(ecosystem, name, version)
+
+        code, _ = self.run_update(UnrelatedRegistriesOffline())
+        self.assertEqual(code, 0)
+        self.assertEqual(release_calls, [("npm", entry["name"]) for entry in manifest["npm"]] + [("external", name) for name in manifest["external"]])
+        self.assertEqual(set(osv_calls), allowed)
+        selected = json.loads(self.path.read_text())
+        self.assertTrue(all(entry["version"] == NEWER for entry in selected["npm"]))
+        self.assertTrue(all(entry["version"] == NEWER for entry in selected["external"].values()))
+        for lane in ("uv", "python", "piPackages"):
+            self.assertEqual(selected[lane], manifest[lane], lane)
+
+    def test_missing_external_digest_keeps_external_pins_but_updates_npm(self):
+        class MissingDigest(Registry):
+            def releases(self, lane, name, entry):
+                releases, digests = super().releases(lane, name, entry)
+                if lane == "external":
+                    digests = {NEWER: {"darwin-arm64": "a" * 64}}
+                return releases, digests
+
+        _, out = self.run_update(MissingDigest())
+        selected = json.loads(self.path.read_text())
+        self.assertEqual(selected["external"], json.loads(self.before)["external"])
+        self.assertTrue(all(entry["version"] == NEWER for entry in selected["npm"]))
+        self.assertIn("missing registry sha256 digests", out)
+
+    def test_manual_update_never_downgrades(self):
+        class OlderReleases(Registry):
+            def releases(self, lane, name, entry):
+                return [("0.0.0", "2026-10-01T00:00:00Z")], {"0.0.0": DIGESTS}
+
+        self.run_update(OlderReleases())
+        self.assertEqual(self.path.read_text(), self.before)
+
     def test_release_younger_than_seven_days_is_not_taken(self):
         self.run_update(Registry(published="2026-11-13T00:00:01Z"))
         self.assertEqual(self.path.read_text(), self.before)

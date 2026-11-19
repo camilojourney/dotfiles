@@ -118,8 +118,10 @@ def _adopt(entry, destination):
     finally:
         os.umask(previous)
     _private_copy(entry, backup / "repo")
-    if saved.stat().st_mtime > entry.stat().st_mtime:
+    saved_stat = saved.stat()
+    if saved_stat.st_mtime_ns > entry.stat().st_mtime_ns:
         shutil.copyfile(saved, entry)
+        os.utime(entry, ns=(saved_stat.st_atime_ns, saved_stat.st_mtime_ns))
         outcome = "adopted the app's newer file into the repository"
     else:
         outcome = "kept the repo version (the app's file was not newer)"
