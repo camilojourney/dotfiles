@@ -2,7 +2,7 @@
     "name": "Streaming",
     "sources": [
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Background",
             "uuid": "418502e7-ce79-45c3-abec-6265c4c9bbbd",
             "id": "color_source",
@@ -27,10 +27,11 @@
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Title - Starting Soon",
             "uuid": "2a969917-9904-4cba-8d20-ebba2e21bca2",
             "id": "text_ft2_source",
@@ -62,10 +63,11 @@
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Desktop Audio",
             "uuid": "44c7e3d5-b5ae-45a6-978a-ef317b54e173",
             "id": "sck_audio_capture",
@@ -89,16 +91,19 @@
             "hotkeys": {
                 "libobs.mute": [],
                 "libobs.unmute": [],
+                "libobs.monitor-on": [],
+                "libobs.monitor-off": [],
                 "libobs.push-to-mute": [],
                 "libobs.push-to-talk": []
             },
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Title - Be Right Back",
             "uuid": "23167df5-d4bd-43c3-84e4-91a58df459af",
             "id": "text_ft2_source",
@@ -130,10 +135,11 @@
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Title - Ending",
             "uuid": "f6a13e0b-979e-4b8e-a70b-a8d1e3c44799",
             "id": "text_ft2_source",
@@ -165,10 +171,11 @@
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Mic - Scarlett Solo",
             "uuid": "91fc223a-5616-4e98-83eb-f761a437cc81",
             "id": "coreaudio_input_capture",
@@ -190,16 +197,19 @@
             "hotkeys": {
                 "libobs.mute": [],
                 "libobs.unmute": [],
+                "libobs.monitor-on": [],
+                "libobs.monitor-off": [],
                 "libobs.push-to-mute": [],
                 "libobs.push-to-talk": []
             },
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "private_settings": {},
             "filters": [
                 {
-                    "prev_ver": 537001986,
+                    "prev_ver": 553648129,
                     "name": "Mono makeup gain",
                     "uuid": "d87f64ed-dfd6-4826-8840-7438c1b4112f",
                     "id": "gain_filter",
@@ -222,10 +232,11 @@
                     "deinterlace_mode": 0,
                     "deinterlace_field_order": 0,
                     "monitoring_type": 0,
+                    "monitoring_enabled": false,
                     "private_settings": {}
                 },
                 {
-                    "prev_ver": 537001986,
+                    "prev_ver": 553648129,
                     "name": "Noise suppression",
                     "uuid": "7db0f82a-5362-4b6e-a23f-b4e9ac5a0870",
                     "id": "noise_suppress_filter",
@@ -248,10 +259,11 @@
                     "deinterlace_mode": 0,
                     "deinterlace_field_order": 0,
                     "monitoring_type": 0,
+                    "monitoring_enabled": false,
                     "private_settings": {}
                 },
                 {
-                    "prev_ver": 537001986,
+                    "prev_ver": 553648129,
                     "name": "Expander",
                     "uuid": "f6518fb0-acc6-45b8-b2b7-383348add51f",
                     "id": "expander_filter",
@@ -281,10 +293,11 @@
                     "deinterlace_mode": 0,
                     "deinterlace_field_order": 0,
                     "monitoring_type": 0,
+                    "monitoring_enabled": false,
                     "private_settings": {}
                 },
                 {
-                    "prev_ver": 537001986,
+                    "prev_ver": 553648129,
                     "name": "Compressor",
                     "uuid": "32cafb9d-c199-4459-bef7-fd7d8d372ca3",
                     "id": "compressor_filter",
@@ -311,10 +324,11 @@
                     "deinterlace_mode": 0,
                     "deinterlace_field_order": 0,
                     "monitoring_type": 0,
+                    "monitoring_enabled": false,
                     "private_settings": {}
                 },
                 {
-                    "prev_ver": 537001986,
+                    "prev_ver": 553648129,
                     "name": "Limiter",
                     "uuid": "7a32961b-5f56-45a3-add9-4b1960dfa140",
                     "id": "limiter_filter",
@@ -338,12 +352,13 @@
                     "deinterlace_mode": 0,
                     "deinterlace_field_order": 0,
                     "monitoring_type": 0,
+                    "monitoring_enabled": false,
                     "private_settings": {}
                 }
             ]
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Camera - Sony A7 IV",
             "uuid": "055d3fd9-2561-451b-99da-abef2240f060",
             "id": "macos-avcapture-fast",
@@ -371,16 +386,19 @@
             "hotkeys": {
                 "libobs.mute": [],
                 "libobs.unmute": [],
+                "libobs.monitor-on": [],
+                "libobs.monitor-off": [],
                 "libobs.push-to-mute": [],
                 "libobs.push-to-talk": []
             },
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Display Capture",
             "uuid": "1cdcc0c1-3a03-49e9-999f-541dea4ae7b0",
             "id": "screen_capture",
@@ -404,16 +422,19 @@
             "hotkeys": {
                 "libobs.mute": [],
                 "libobs.unmute": [],
+                "libobs.monitor-on": [],
+                "libobs.monitor-off": [],
                 "libobs.push-to-mute": [],
                 "libobs.push-to-talk": []
             },
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Camera PiP",
             "uuid": "bf175b81-d9b1-49b1-9769-7caac1a852bb",
             "id": "source-clone",
@@ -436,16 +457,19 @@
             "hotkeys": {
                 "libobs.mute": [],
                 "libobs.unmute": [],
+                "libobs.monitor-on": [],
+                "libobs.monitor-off": [],
                 "libobs.push-to-mute": [],
                 "libobs.push-to-talk": []
             },
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "private_settings": {},
             "filters": [
                 {
-                    "prev_ver": 537001986,
+                    "prev_ver": 553648129,
                     "name": "Rounded corners",
                     "uuid": "21ef6d47-3754-494e-99b0-45ba047513fc",
                     "id": "advanced_masks_filter",
@@ -483,10 +507,11 @@
                     "deinterlace_mode": 0,
                     "deinterlace_field_order": 0,
                     "monitoring_type": 0,
+                    "monitoring_enabled": false,
                     "private_settings": {}
                 },
                 {
-                    "prev_ver": 537001986,
+                    "prev_ver": 553648129,
                     "name": "Outline",
                     "uuid": "006da0ed-0c28-464f-bc41-fab853fb8e7f",
                     "id": "obs_stroke_filter",
@@ -512,12 +537,13 @@
                     "deinterlace_mode": 0,
                     "deinterlace_field_order": 0,
                     "monitoring_type": 0,
+                    "monitoring_enabled": false,
                     "private_settings": {}
                 }
             ]
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Starting Soon",
             "uuid": "04f1a109-453f-429b-a834-ea2f50d2a6f9",
             "id": "scene",
@@ -724,11 +750,12 @@
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Camera",
             "uuid": "131faab9-1c8f-4408-9d69-c67ee726e423",
             "id": "scene",
@@ -935,11 +962,12 @@
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Screen + Camera",
             "uuid": "d766eefa-274a-4ae9-9c45-e997f5b9ea7f",
             "id": "scene",
@@ -1203,11 +1231,12 @@
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Screen",
             "uuid": "30b4cb22-c4fb-4e9f-ac5d-4352998ce119",
             "id": "scene",
@@ -1414,11 +1443,12 @@
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Be Right Back",
             "uuid": "198750f5-81f5-4b07-86b6-c5d959c4debf",
             "id": "scene",
@@ -1625,11 +1655,12 @@
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Ending",
             "uuid": "0fc8a25e-1b71-409d-b06b-3ffdd166c692",
             "id": "scene",
@@ -1893,11 +1924,12 @@
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Starting Soon (V)",
             "uuid": "53870da2-89b8-46af-9b85-542095fb23ff",
             "id": "scene",
@@ -1935,16 +1967,16 @@
                             "y": -1.0
                         },
                         "scale": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "scale_rel": {
                             "x": 1.0,
                             "y": 1.0
                         },
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1080.0,
+                            "y": 1920.0
                         },
                         "bounds_rel": {
                             "x": 1.125,
@@ -1982,24 +2014,24 @@
                         "id": 4,
                         "group_item_backup": false,
                         "pos": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 540.0,
+                            "y": 960.0
                         },
                         "pos_rel": {
                             "x": 0.0,
                             "y": 0.0
                         },
                         "scale": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "scale_rel": {
                             "x": 1.0,
                             "y": 1.0
                         },
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 960.0,
+                            "y": 400.0
                         },
                         "bounds_rel": {
                             "x": 1.0,
@@ -2035,16 +2067,18 @@
                 "libobs.show_scene_item.3": [],
                 "libobs.hide_scene_item.3": [],
                 "libobs.show_scene_item.4": [],
-                "libobs.hide_scene_item.4": []
+                "libobs.hide_scene_item.4": [],
+                "OBSBasic.SelectScene": []
             },
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "canvas_uuid": "952c4143-a48d-478d-a9d7-93a8ed24292a",
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Camera (V)",
             "uuid": "cd17e1e5-115a-4f57-8c9d-eda557c10217",
             "id": "scene",
@@ -2082,16 +2116,16 @@
                             "y": -1.0
                         },
                         "scale": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "scale_rel": {
                             "x": 1.0,
                             "y": 1.0
                         },
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1080.0,
+                            "y": 1920.0
                         },
                         "bounds_rel": {
                             "x": 1.125,
@@ -2125,16 +2159,18 @@
             "push-to-talk-delay": 0,
             "hotkeys": {
                 "libobs.show_scene_item.3": [],
-                "libobs.hide_scene_item.3": []
+                "libobs.hide_scene_item.3": [],
+                "OBSBasic.SelectScene": []
             },
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "canvas_uuid": "952c4143-a48d-478d-a9d7-93a8ed24292a",
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Screen + Camera (V)",
             "uuid": "8ce0aec3-0375-4de1-b35a-a180f84a587d",
             "id": "scene",
@@ -2172,16 +2208,16 @@
                             "y": -1.0
                         },
                         "scale": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "scale_rel": {
                             "x": 1.0,
                             "y": 1.0
                         },
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1080.0,
+                            "y": 1920.0
                         },
                         "bounds_rel": {
                             "x": 1.125,
@@ -2227,16 +2263,16 @@
                             "y": -1.0
                         },
                         "scale": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "scale_rel": {
                             "x": 1.0,
                             "y": 1.0
                         },
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1080.0,
+                            "y": 608.0
                         },
                         "bounds_rel": {
                             "x": 1.125,
@@ -2274,24 +2310,24 @@
                         "id": 6,
                         "group_item_backup": false,
                         "pos": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 21.0,
+                            "y": 152.0
                         },
                         "pos_rel": {
                             "x": -0.5406249761581421,
                             "y": -0.8416666984558105
                         },
                         "scale": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "scale_rel": {
                             "x": 1.0,
                             "y": 1.0
                         },
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1080.0,
+                            "y": 1312.0
                         },
                         "bounds_rel": {
                             "x": 1.125,
@@ -2329,16 +2365,18 @@
                 "libobs.show_scene_item.5": [],
                 "libobs.hide_scene_item.5": [],
                 "libobs.show_scene_item.6": [],
-                "libobs.hide_scene_item.6": []
+                "libobs.hide_scene_item.6": [],
+                "OBSBasic.SelectScene": []
             },
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "canvas_uuid": "952c4143-a48d-478d-a9d7-93a8ed24292a",
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Be Right Back (V)",
             "uuid": "d6b49dba-e5ab-4035-94d4-796fe2012deb",
             "id": "scene",
@@ -2376,16 +2414,16 @@
                             "y": -1.0
                         },
                         "scale": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "scale_rel": {
                             "x": 1.0,
                             "y": 1.0
                         },
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1080.0,
+                            "y": 1920.0
                         },
                         "bounds_rel": {
                             "x": 1.125,
@@ -2423,24 +2461,24 @@
                         "id": 4,
                         "group_item_backup": false,
                         "pos": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 540.0,
+                            "y": 960.0
                         },
                         "pos_rel": {
                             "x": 0.0,
                             "y": 0.0
                         },
                         "scale": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "scale_rel": {
                             "x": 1.0,
                             "y": 1.0
                         },
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 960.0,
+                            "y": 400.0
                         },
                         "bounds_rel": {
                             "x": 1.0,
@@ -2476,16 +2514,18 @@
                 "libobs.show_scene_item.3": [],
                 "libobs.hide_scene_item.3": [],
                 "libobs.show_scene_item.4": [],
-                "libobs.hide_scene_item.4": []
+                "libobs.hide_scene_item.4": [],
+                "OBSBasic.SelectScene": []
             },
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "canvas_uuid": "952c4143-a48d-478d-a9d7-93a8ed24292a",
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Ending (V)",
             "uuid": "7dfbf52a-5d7e-4755-a780-da768e2fd254",
             "id": "scene",
@@ -2523,16 +2563,16 @@
                             "y": -1.0
                         },
                         "scale": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "scale_rel": {
                             "x": 1.0,
                             "y": 1.0
                         },
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1080.0,
+                            "y": 1920.0
                         },
                         "bounds_rel": {
                             "x": 1.125,
@@ -2570,24 +2610,24 @@
                         "id": 4,
                         "group_item_backup": false,
                         "pos": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 540.0,
+                            "y": 960.0
                         },
                         "pos_rel": {
                             "x": 0.0,
                             "y": 0.0
                         },
                         "scale": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 1.0,
+                            "y": 1.0
                         },
                         "scale_rel": {
                             "x": 1.0,
                             "y": 1.0
                         },
                         "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
+                            "x": 960.0,
+                            "y": 400.0
                         },
                         "bounds_rel": {
                             "x": 1.0,
@@ -2623,11 +2663,13 @@
                 "libobs.show_scene_item.3": [],
                 "libobs.hide_scene_item.3": [],
                 "libobs.show_scene_item.4": [],
-                "libobs.hide_scene_item.4": []
+                "libobs.hide_scene_item.4": [],
+                "OBSBasic.SelectScene": []
             },
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "canvas_uuid": "952c4143-a48d-478d-a9d7-93a8ed24292a",
             "private_settings": {}
         }

@@ -1,12 +1,21 @@
 """Replace a checkout-wide directory link with config-only links, preserving state.
 
-Usage: separate-config-state.py SOURCE TARGET CONFIG [CONFIG ...]
+Usage: separate-config-state.py [--adopt-app-changes] SOURCE TARGET CONFIG [CONFIG ...]
 The Nix declaration supplies the allowlist. Unlisted entries move to TARGET,
 including hidden files and live sockets. Nothing is deleted or overwritten.
+
+Some apps (OBS) replace a config symlink with a real file whenever they save.
+With --adopt-app-changes such a file is not a conflict: the newer of the two
+versions becomes the repository file, both are first copied (privately, they can
+hold stream keys) to $SEPARATE_CONFIG_BACKUP_DIR or ~/.local/state/config-adopt,
+and the path is linked again. Every other conflict still stops the run.
 """
+import filecmp
 import os
+import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 
@@ -68,7 +77,7 @@ def _entries(source, target, kept):
             yield entry, destination, False
 
 
-def _check_destination(entry, destination, target, is_config):
+def _check_destination(entry, destination, target, is_config, adopt=False):
     parent = destination.parent
     while parent != target:
         if parent.is_symlink() or (parent.exists() and not parent.is_dir()):
@@ -78,14 +87,52 @@ def _check_destination(entry, destination, target, is_config):
         return
     if is_config and destination.is_symlink() and destination.resolve() == entry.resolve():
         return
+    if is_config and adopt and destination.is_file() and not destination.is_symlink():
+        return
     raise ValueError(f"target conflict; both versions preserved: {destination}")
 
 
-def _apply(entries):
+def _backup_root():
+    default = Path.home() / ".local/state/config-adopt"
+    return Path(os.environ.get("SEPARATE_CONFIG_BACKUP_DIR", default))
+
+
+def _private_copy(source, directory):
+    previous = os.umask(0o077)  # every directory created on the way is owner-only too
+    try:
+        directory.mkdir(parents=True, exist_ok=True)
+        copy = directory / source.name
+        shutil.copy2(source, copy)
+        copy.chmod(0o600)
+    finally:
+        os.umask(previous)
+
+
+def _adopt(entry, destination):
+    """Reconcile an app-written real file with its repository file, then relink."""
+    if filecmp.cmp(entry, destination, shallow=False):
+        destination.unlink()
+        return f"{destination}: identical, linked again"
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    backup = _backup_root() / stamp / destination.name
+    _private_copy(entry, backup / "repo")
+    _private_copy(destination, backup / "app")
+    if destination.stat().st_mtime > entry.stat().st_mtime:
+        shutil.copyfile(destination, entry)
+        outcome = "adopted the app's newer file into the repository"
+    else:
+        outcome = "kept the repo version (the app's file was not newer)"
+    destination.unlink()
+    return f"{destination}: {outcome}; both versions saved in {backup}"
+
+
+def _apply(entries, adopt=False):
     moved = 0
     for entry, destination, is_config in entries:
         destination.parent.mkdir(parents=True, exist_ok=True)
         if is_config:
+            if adopt and destination.is_file() and not destination.is_symlink():
+                print(f"separate-config-state: {_adopt(entry, destination)}")
             if not destination.is_symlink():
                 destination.symlink_to(entry)
         else:
@@ -98,7 +145,7 @@ def _apply(entries):
     return moved
 
 
-def separate(source: Path, target: Path, configs: list[str]) -> int:
+def separate(source: Path, target: Path, configs: list[str], adopt: bool = False) -> int:
     source, target = _checked_directories(source, target)
     kept = _configuration_files(source, configs)
     old_link = _check_target(source, target)
@@ -106,18 +153,21 @@ def separate(source: Path, target: Path, configs: list[str]) -> int:
     # Check the whole plan before detaching a managed parent or moving state.
     if not old_link:
         for entry, destination, is_config in entries:
-            _check_destination(entry, destination, target, is_config)
+            _check_destination(entry, destination, target, is_config, adopt)
     if old_link:
         target.unlink()
     target.mkdir(parents=True, exist_ok=True)
-    return _apply(entries)
+    return _apply(entries, adopt)
 
 
 def main():
-    if len(sys.argv) < 4:
-        raise ValueError("usage: separate-config-state.py SOURCE TARGET CONFIG [CONFIG ...]")
-    source, target = map(Path, sys.argv[1:3])
-    moved = separate(source, target, sys.argv[3:])
+    args = sys.argv[1:]
+    adopt = "--adopt-app-changes" in args
+    args = [arg for arg in args if arg != "--adopt-app-changes"]
+    if len(args) < 3:
+        raise ValueError("usage: separate-config-state.py [--adopt-app-changes] SOURCE TARGET CONFIG [CONFIG ...]")
+    source, target = map(Path, args[:2])
+    moved = separate(source, target, args[2:], adopt)
     print(f"separate-config-state: {target}: {moved} runtime entries relocated; config-only links ready")
 
 
